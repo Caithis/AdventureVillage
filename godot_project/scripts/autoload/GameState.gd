@@ -16,6 +16,7 @@ const SLIME_MAX_HP := 18
 const SLIME_ATTACK := 4
 const SLIME_SPEED := 0.85
 const SLIME_GEL_REWARD := 2
+const SLIME_GEL_SELL_VALUE := 5
 
 const SMALL_POTION_HEAL_AMOUNT := 15
 const POTION_USE_HP_RATIO := 0.40
@@ -130,6 +131,8 @@ func add_world_traveler_from_adventurer(adventurer: Node) -> Dictionary:
 		"speed": 1.0,
 		"combat_resolved": false,
 		"has_returned_to_town": false,
+		"has_sold_loot": false,
+		"sale_message": "",
 		"last_combat_log": "Traveling to Slime Nest.",
 	}
 
@@ -178,9 +181,14 @@ func get_returned_traveler_summary() -> String:
 	for traveler in returned_travelers:
 		var traveler_name := str(traveler.get("display_name", "Traveler"))
 		var status := str(traveler.get("status", "Returned"))
+		var sale_message := str(traveler.get("sale_message", ""))
 		var inventory: Dictionary = traveler.get("inventory", {})
 		var slime_gel := int(inventory.get(SLIME_GEL_ID, 0))
-		summary_parts.append("%s:%s Gel:%d" % [traveler_name, status, slime_gel])
+
+		if sale_message != "":
+			summary_parts.append("%s:%s %s" % [traveler_name, status, sale_message])
+		else:
+			summary_parts.append("%s:%s Gel:%d" % [traveler_name, status, slime_gel])
 
 		if summary_parts.size() >= 3:
 			break
@@ -246,6 +254,7 @@ func _mark_traveler_arrived_at_town(traveler: Dictionary) -> void:
 	if previous_status == "ReturningWithLoot":
 		traveler["status"] = "ArrivedAtTownWithLoot"
 		traveler["last_combat_log"] = "Returned to town with loot."
+		_sell_slime_gel_to_town(traveler)
 	elif previous_status == "InjuredReturning":
 		traveler["status"] = "ArrivedAtTownInjured"
 		traveler["last_combat_log"] = "Returned to town injured."
@@ -255,6 +264,29 @@ func _mark_traveler_arrived_at_town(traveler: Dictionary) -> void:
 
 	returned_travelers.append(traveler.duplicate(true))
 	state_changed.emit()
+
+func _sell_slime_gel_to_town(traveler: Dictionary) -> void:
+	if bool(traveler.get("has_sold_loot", false)):
+		return
+
+	var inventory: Dictionary = traveler.get("inventory", {})
+	var slime_gel_amount := int(inventory.get(SLIME_GEL_ID, 0))
+
+	if slime_gel_amount <= 0:
+		traveler["sale_message"] = "No loot to sell."
+		return
+
+	var sale_total := slime_gel_amount * SLIME_GEL_SELL_VALUE
+
+	town_inventory[SLIME_GEL_ID] = get_item_count(SLIME_GEL_ID) + slime_gel_amount
+	inventory[SLIME_GEL_ID] = 0
+
+	traveler["inventory"] = inventory
+	traveler["gold"] = int(traveler.get("gold", 0)) + sale_total
+	traveler["has_sold_loot"] = true
+	traveler["status"] = "SoldLoot"
+	traveler["sale_message"] = "Sold %d Slime Gel for %dg." % [slime_gel_amount, sale_total]
+	traveler["last_combat_log"] = traveler["sale_message"]
 
 func _move_position_toward(current_position: Vector2, target_position: Vector2, max_distance: float) -> Vector2:
 	var direction := target_position - current_position

@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.2.2 - Sell Slime Gel to General Store
+
+### Added
+- Slime Gel sell value.
+- Automatic Slime Gel sale when a returned traveler reaches town with loot.
+- Town Slime Gel inventory increase after sale.
+- Traveler gold increase after sale.
+- `SoldLoot` returned traveler status.
+- Sale result text in returned traveler summary.
+- Sale result text in world traveler marker label.
+
+### Changed
+- `ArrivedAtTownWithLoot` now immediately processes loot sale during the prototype loop.
+- Returned traveler records now include `sale_message`.
+- Debug UI returned traveler summary now shows sale results.
+
+### Not Yet Added
+- Visible adventurer re-entry into Town.
+- Physical General Store sell interaction.
+- Shop UI.
+- Item Resource-driven economy values.
+
 ## v0.2.1 - Return to Town With Loot
 
 ### Added
@@ -11,17 +33,6 @@
 - Returned traveler count in Debug UI.
 - Returned traveler summary in Debug UI.
 - Persistent scene architecture note.
-
-### Changed
-- World traveler simulation now handles outbound travel, combat result, and return travel.
-- World Map labels now show return and arrival states.
-
-### Not Yet Added
-- Loot selling.
-- Re-entering the Town scene as a visible adventurer.
-- Persistent Town scene while viewing the World Map.
-- Threat clearing.
-- Combat UI.
 
 ## v0.2.0 - First Combat Prototype
 

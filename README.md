@@ -1,26 +1,25 @@
 # Dungeon Frontier Guild-Town
 
-Version: v0.2.1 - Return to Town With Loot
+Version: v0.2.2 - Sell Slime Gel to General Store
 
 Dungeon Frontier Guild-Town is a Godot 4.x 2D pixel-art management/simulation project about running a frontier guild-town that supports adventurers, grows its economy, and survives escalating world-map threats.
 
-## What v0.2.1 Adds
+## What v0.2.2 Adds
 
-- `ReturningWithLoot` travelers now move back toward the town marker.
-- `InjuredReturning` travelers now move back toward the town marker.
-- Travelers that reach town change into returned-arrival states:
-  - `ArrivedAtTownWithLoot`
-  - `ArrivedAtTownInjured`
-- GameState tracks returned traveler records.
-- Debug UI shows returned traveler count.
-- Debug UI shows a short returned traveler summary.
-- World Map markers continue updating as travelers return.
+- Returned travelers with Slime Gel now sell it to the town automatically.
+- Slime Gel sell value is introduced.
+- Town Slime Gel inventory increases after sale.
+- Traveler gold increases after sale.
+- Returned traveler status changes to `SoldLoot`.
+- Debug UI shows sale result in the returned traveler summary.
+- World Map marker label reflects the sold-loot status.
 
-## Important Architecture Note
+## Prototype Economy Values
 
-The world simulation already runs through GameState, so world travelers can keep moving even if the player is not viewing the World Map.
-
-However, the Town scene is still unloaded when switching views. Later, we should refactor Main so both Town and World Map can stay loaded at the same time, with visibility toggled or the World Map shown as an overlay.
+- Small Potion buy price: 15 gold
+- Slime Gel sell value: 5 gold each
+- Slime reward: 2 Slime Gel
+- Total return sale from one Slime victory: 10 gold
 
 ## How to Run
 
@@ -32,11 +31,11 @@ However, the Town scene is still unloaded when switching views. Later, we should
 6. Switch to World Map.
 7. Watch the traveler move to the Slime Nest.
 8. Wait for combat to resolve.
-9. If the traveler wins, they should return with loot.
-10. If the traveler loses, they should return injured.
-11. Watch the traveler move back to the town marker.
-12. Confirm returned traveler count increases.
+9. If the traveler wins, they return with Slime Gel.
+10. When they reach town, they automatically sell the Slime Gel.
+11. Confirm Town Slime Gel inventory increases.
+12. Confirm the traveler status becomes `SoldLoot`.
 
 ## Current Limitation
 
-Returned travelers do not yet sell Slime Gel. They arrive back at town and are recorded as returned travelers. Selling loot is planned for v0.2.2.
+The sale is automatic and does not yet happen through a visible General Store interaction. Later, returned travelers should physically re-enter town, visit the General Store, sell loot, then decide whether to rest, shop again, or leave.

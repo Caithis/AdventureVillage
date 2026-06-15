@@ -2,7 +2,7 @@
 
 ## Current Version
 
-v0.2.1 - Return to Town With Loot
+v0.2.2 - Sell Slime Gel to General Store
 
 ## Godot Version
 
@@ -46,25 +46,30 @@ Target: Godot 4.x stable
 - ReturningWithLoot travelers move back toward town.
 - InjuredReturning travelers move back toward town.
 - Travelers arriving back at town become returned traveler records.
+- Returned travelers with Slime Gel automatically sell it to the town.
+- Town Slime Gel inventory increases after sale.
+- Traveler gold increases after sale.
+- Returned traveler status changes to SoldLoot.
 
 ## Current Test Flow
 
 1. Open `godot_project/` in Godot 4.x.
 2. Run the project.
 3. Confirm the game starts in Town view.
-4. Click `Spawn Adventurer`.
-5. Let the adventurer buy a potion and leave town.
-6. Confirm World Travelers count increases.
-7. Switch to World Map.
-8. Confirm the traveler marker appears near town.
-9. Watch the traveler move toward the Slime Nest.
-10. Confirm combat resolves at the Slime Nest.
-11. If the traveler wins, confirm status becomes `ReturningWithLoot`.
-12. If the traveler loses, confirm status becomes `InjuredReturning`.
-13. Confirm the traveler moves back toward the town marker.
-14. Confirm the traveler status becomes `ArrivedAtTownWithLoot` or `ArrivedAtTownInjured`.
-15. Confirm Returned Travelers count increases.
-16. Confirm returned traveler summary updates in Debug UI.
+4. Confirm Money starts at 500.
+5. Confirm Slime Gel stock starts at 0.
+6. Click `Spawn Adventurer`.
+7. Let the adventurer buy a potion and leave town.
+8. Confirm Money increases to 515 from the potion sale.
+9. Switch to World Map.
+10. Confirm the traveler moves to the Slime Nest.
+11. Confirm combat resolves.
+12. If the traveler wins, confirm the traveler receives 2 Slime Gel.
+13. Confirm the traveler returns to the town marker.
+14. Confirm the traveler status changes to SoldLoot.
+15. Confirm Town Slime Gel inventory increases by 2.
+16. Confirm the traveler gold increases by 10 from selling 2 Slime Gel.
+17. Confirm the returned traveler summary shows the sale result.
 
 ## Current Scope
 
@@ -92,10 +97,11 @@ Included:
 - Slime Gel reward
 - Traveler return movement
 - Returned traveler records
+- Automatic Slime Gel sale to town
 
 Not included:
-- Loot selling
-- Traveler respawning into Town scene
+- Visible returned adventurer re-entry into Town scene
+- Physical General Store sell interaction
 - Persistent Town and World Map scenes loaded at the same time
 - Threat clearing
 - Multiple enemies
@@ -103,7 +109,7 @@ Not included:
 - Combat animation
 - Combat UI
 - Shop UI
-- Item data Resources used in purchase logic
+- Item data Resources used in purchase/sale logic
 - Real building placement
 - Save/load
 - Tilemaps
@@ -127,12 +133,11 @@ Future direction:
 
 ## Next Planned Version
 
-v0.2.2 - Sell Slime Gel to General Store
+v0.2.3 - Persistent Town/World Scene Refactor
 
 Planned additions:
-- Returned travelers with Slime Gel sell it to the town.
-- Slime Gel sell value is introduced.
-- Town Slime Gel inventory increases.
-- Adventurer/traveler gold increases.
-- Returned traveler status changes to SoldLoot.
-- Debug UI shows the sale result.
+- Main keeps Town and World Map loaded at the same time.
+- Town and World Map views are hidden/shown instead of freed/reloaded.
+- Town adventurers should continue moving while World Map is visible.
+- World travelers should continue moving while Town is visible.
+- SceneRouter changes from load/free routing to visibility routing.
