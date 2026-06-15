@@ -46,3 +46,8 @@ Visible Slime spawning is now active. Slimes spawn near the Slime Nest, wander, 
 ## v0.3.3 Update Notes
 
 Visible Slime combat now has a short contact delay, FightingVisibleSlime status, damage/event floating text, defeated Slime display delay, and a re-engagement cooldown. Adventurers may now hunt multiple Slimes during one outing until HP drops to the retreat threshold or the prototype kill cap is reached.
+
+
+## v0.3.4 Update Notes
+
+Slime Nest growth now meaningfully affects spawn pressure, monster stats, detection radius, movement speed, Slime Gel reward scaling, and raid pressure score/state. This is still a prototype foundation, not a final raid system.

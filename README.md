@@ -1,87 +1,68 @@
 # Dungeon Frontier Guild-Town
 
-Version: v0.3.3 - Visible Combat Contact Polish
+Version: v0.3.4 - Slime Nest Growth Pressure
 
-## What v0.3.3 Adds
+## What v0.3.4 Adds
 
-This patch makes visible world-map combat clearer and less abrupt.
+This patch makes Slime Nest growth more meaningful.
 
-## Combat Contact Delay
-
-When a traveler and visible Slime touch, combat no longer resolves instantly.
-
-Instead:
+Slime Nest growth now affects:
 
 ```text
-Traveler contacts Slime
-→ Traveler status becomes FightingVisibleSlime
-→ Brief contact delay plays
-→ Combat resolves
-→ Floating result text appears
+Nest level
+Max active Slimes
+Spawn interval
+Slime HP
+Slime attack
+Slime aggro radius
+Slime wander radius
+Slime movement speed
+Slime Gel reward scaling
+Raid pressure score
+Raid pressure state
 ```
 
-Current delay:
+## Growth Pressure
+
+The Slime Nest now has a calculated pressure state:
 
 ```text
-Visible combat contact delay: 0.85 seconds
+Quiet
+Watch
+High
+Raid Risk
 ```
 
-## Floating Combat Feedback
+This is not a real raid system yet. It is the foundation for future raid pressure.
 
-World-map combat now shows clearer floating feedback:
+## Slime Scaling
+
+As the nest grows, newly spawned Slimes become stronger.
+
+Examples of scaling:
+- Higher nest level increases Slime HP.
+- Every few levels can increase Slime attack.
+- Slimes can wander and detect adventurers from farther away.
+- Spawn interval gets shorter.
+- Max active Slime count rises.
+
+## Debug Feedback
+
+The Debug UI now shows more useful Slime Nest pressure information:
 
 ```text
-Combat!
-Victory!
-Defeated!
--HP damage text
-Slime Defeated
-Ambush!
+Slime Nest status
+Growth
+Nest level
+Raid pressure state
+Active Slime count
+Spawn interval
+Current Slime HP / attack
+Raid pressure score
 ```
 
-Slimes now remain visible briefly after defeat so the player can see the defeated text before the marker disappears.
+## Important Design Note
 
-## Combat Cooldown
+This patch is not final polish.
 
-After combat resolves, travelers receive a short re-engage cooldown.
-
-```text
-Combat re-engage cooldown: 1.5 seconds
-```
-
-This helps prevent an adventurer from instantly getting chained into another fight the moment combat ends.
-
-## Multi-Monster Outing Prototype
-
-Adventurers no longer have to fight exactly one Slime and immediately return.
-
-Current behavior:
-
-```text
-Win against Slime
-→ If HP is still safe and hunt cap is not reached, keep hunting
-→ If HP is low or hunt cap is reached, return to town with loot
-```
-
-Prototype values:
-
-```text
-Retreat HP threshold: 50%
-Max Slime kills per outing: 3
-```
-
-This is the first step toward adventurers actually acting like monster hunters.
-
-## Weakened Retreat Danger
-
-A weakened traveler returning home can still be chased by a nearby Slime.
-
-Current fairness rules:
-
-```text
-Only weakened returning travelers can be chased.
-Only 1 Slime can target one traveler at a time.
-Combat cooldown prevents immediate chain fights.
-```
-
-This introduces danger during retreat without allowing full unfair swarms yet.
+It is prototype readability and pressure tuning. The project is still early: the major building systems, placement, resident adventurers, Guild Hall systems, UI, save/load, art, and content progression are not done yet.

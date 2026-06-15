@@ -281,7 +281,10 @@ func _build_traveler_label(traveler: Dictionary) -> String:
 	]
 
 func _build_slime_label(slime: Dictionary) -> String:
-	return "%s\n%s" % [
+	return "%s Lv.%d\n%s\nHP:%d ATK:%d" % [
 		str(slime.get("display_name", "Slime")),
-		str(slime.get("status", "Wandering"))
+		int(slime.get("level", 1)),
+		str(slime.get("status", "Wandering")),
+		int(slime.get("max_hp", GameState.get_current_slime_max_hp())),
+		int(slime.get("attack", GameState.get_current_slime_attack()))
 	]

@@ -122,9 +122,11 @@ func _refresh_state_labels() -> void:
 	returned_traveler_label.text = "Returned Travelers: %d" % GameState.get_returned_traveler_count()
 	world_traveler_summary_label.text = "Traveler Status: " + GameState.get_world_traveler_summary()
 	returned_traveler_summary_label.text = "Returned: " + GameState.get_returned_traveler_summary()
-	threat_label.text = "Slime Nest: %s | Growth %d" % [
+	threat_label.text = "Slime Nest: %s | Growth %d | Level %d | %s" % [
 		GameState.slime_nest_status,
-		GameState.slime_nest_growth
+		GameState.slime_nest_growth,
+		GameState.get_slime_nest_level(),
+		GameState.get_raid_pressure_state()
 	]
 	slime_spawn_label.text = "Slime Spawns: " + GameState.get_slime_spawn_summary()
 	night_policy_label.text = "Night Quests: " + GameState.get_night_quest_policy_text()

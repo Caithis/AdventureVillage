@@ -19,15 +19,26 @@ const SLIME_GEL_REWARD := 2
 const SLIME_GEL_SELL_VALUE := 5
 
 const SLIME_NEST_BASE_MAX_ACTIVE_SLIMES := 3
-const SLIME_NEST_HARD_MAX_ACTIVE_SLIMES := 6
+const SLIME_NEST_HARD_MAX_ACTIVE_SLIMES := 8
 const SLIME_NEST_BASE_SPAWN_INTERVAL := 5.0
-const SLIME_NEST_MIN_SPAWN_INTERVAL := 2.0
+const SLIME_NEST_MIN_SPAWN_INTERVAL := 1.6
 const SLIME_WANDER_RADIUS := 90.0
 const SLIME_WANDER_SPEED := 22.0
 const SLIME_AGGRO_SPEED := 36.0
 const SLIME_AGGRO_RADIUS := 95.0
 const SLIME_CONTACT_DISTANCE := 15.0
 const MAX_SLIMES_TARGETING_ONE_TRAVELER := 1
+
+const SLIME_HP_GROWTH_PER_LEVEL := 3
+const SLIME_ATTACK_GROWTH_PER_TWO_LEVELS := 1
+const SLIME_GEL_REWARD_GROWTH_PER_TWO_LEVELS := 1
+const SLIME_WANDER_RADIUS_GROWTH_PER_LEVEL := 12.0
+const SLIME_AGGRO_RADIUS_GROWTH_PER_LEVEL := 8.0
+const SLIME_WANDER_SPEED_GROWTH_PER_LEVEL := 1.5
+const SLIME_AGGRO_SPEED_GROWTH_PER_LEVEL := 2.0
+const RAID_PRESSURE_GROWTH_WEIGHT := 5
+const RAID_PRESSURE_ACTIVE_SLIME_WEIGHT := 3
+const RAID_PRESSURE_LEVEL_WEIGHT := 4
 const SLIME_DEFEAT_DISPLAY_SECONDS := 1.0
 
 const VISIBLE_COMBAT_CONTACT_DELAY := 0.85
@@ -256,18 +267,68 @@ func get_world_slime_count() -> int:
 			count += 1
 	return count
 
+func get_slime_nest_level() -> int:
+	return maxi(1, 1 + floori(float(slime_nest_growth) / 2.0))
+
 func get_slime_nest_max_active_slimes() -> int:
-	return mini(SLIME_NEST_BASE_MAX_ACTIVE_SLIMES + slime_nest_growth, SLIME_NEST_HARD_MAX_ACTIVE_SLIMES)
+	var level: int = get_slime_nest_level()
+	var growth_bonus: int = floori(float(slime_nest_growth) / 3.0)
+	return mini(SLIME_NEST_HARD_MAX_ACTIVE_SLIMES, maxi(3, SLIME_NEST_BASE_MAX_ACTIVE_SLIMES + level - 1 + growth_bonus))
 
 func get_slime_spawn_interval() -> float:
-	return maxf(SLIME_NEST_MIN_SPAWN_INTERVAL, SLIME_NEST_BASE_SPAWN_INTERVAL - float(slime_nest_growth) * 0.4)
+	var level: int = get_slime_nest_level()
+	var growth_pressure: float = float(slime_nest_growth) * 0.35
+	var level_pressure: float = float(level - 1) * 0.25
+	return maxf(SLIME_NEST_MIN_SPAWN_INTERVAL, SLIME_NEST_BASE_SPAWN_INTERVAL - growth_pressure - level_pressure)
+
+func get_current_slime_max_hp() -> int:
+	return SLIME_MAX_HP + (get_slime_nest_level() - 1) * SLIME_HP_GROWTH_PER_LEVEL
+
+func get_current_slime_attack() -> int:
+	return SLIME_ATTACK + floori(float(get_slime_nest_level() - 1) / 2.0) * SLIME_ATTACK_GROWTH_PER_TWO_LEVELS
+
+func get_current_slime_gel_reward() -> int:
+	return SLIME_GEL_REWARD + floori(float(get_slime_nest_level() - 1) / 2.0) * SLIME_GEL_REWARD_GROWTH_PER_TWO_LEVELS
+
+func get_current_slime_wander_radius() -> float:
+	return SLIME_WANDER_RADIUS + float(get_slime_nest_level() - 1) * SLIME_WANDER_RADIUS_GROWTH_PER_LEVEL
+
+func get_current_slime_aggro_radius() -> float:
+	return SLIME_AGGRO_RADIUS + float(get_slime_nest_level() - 1) * SLIME_AGGRO_RADIUS_GROWTH_PER_LEVEL
+
+func get_current_slime_wander_speed() -> float:
+	return SLIME_WANDER_SPEED + float(get_slime_nest_level() - 1) * SLIME_WANDER_SPEED_GROWTH_PER_LEVEL
+
+func get_current_slime_aggro_speed() -> float:
+	return SLIME_AGGRO_SPEED + float(get_slime_nest_level() - 1) * SLIME_AGGRO_SPEED_GROWTH_PER_LEVEL
+
+func get_raid_pressure_score() -> int:
+	return slime_nest_growth * RAID_PRESSURE_GROWTH_WEIGHT + get_world_slime_count() * RAID_PRESSURE_ACTIVE_SLIME_WEIGHT + get_slime_nest_level() * RAID_PRESSURE_LEVEL_WEIGHT
+
+func get_raid_pressure_state() -> String:
+	var pressure: int = get_raid_pressure_score()
+
+	if pressure < 20:
+		return "Quiet"
+
+	if pressure < 40:
+		return "Watch"
+
+	if pressure < 65:
+		return "High"
+
+	return "Raid Risk"
 
 func get_slime_spawn_summary() -> String:
-	return "Slimes %d/%d | Spawned %d | %.1fs" % [
+	return "L%d %s | Slimes %d/%d | %.1fs | HP %d ATK %d | Raid %d" % [
+		get_slime_nest_level(),
+		get_raid_pressure_state(),
 		get_world_slime_count(),
 		get_slime_nest_max_active_slimes(),
-		maxi(next_world_slime_id - 1, 0),
-		get_slime_spawn_interval()
+		get_slime_spawn_interval(),
+		get_current_slime_max_hp(),
+		get_current_slime_attack(),
+		get_raid_pressure_score()
 	]
 
 func claim_unclaimed_returned_travelers() -> Array[Dictionary]:
@@ -402,7 +463,7 @@ func _update_world_slimes(delta: float) -> bool:
 					changed = true
 				else:
 					var traveler_position: Vector2 = traveler.get("world_position", TOWN_WORLD_POSITION)
-					var moved_aggro: bool = _move_slime_toward_position(slime, traveler_position, SLIME_AGGRO_SPEED, delta)
+					var moved_aggro: bool = _move_slime_toward_position(slime, traveler_position, get_current_slime_aggro_speed(), delta)
 					changed = moved_aggro or changed
 
 					if _slime_reached_position(slime, traveler_position, SLIME_CONTACT_DISTANCE):
@@ -422,6 +483,9 @@ func _spawn_world_slime() -> Dictionary:
 	var slime: Dictionary = {
 		"id": next_world_slime_id,
 		"display_name": "Slime %d" % next_world_slime_id,
+		"level": get_slime_nest_level(),
+		"max_hp": get_current_slime_max_hp(),
+		"attack": get_current_slime_attack(),
 		"status": "Wandering",
 		"world_position": spawn_position,
 		"target_position": _get_random_slime_wander_position(),
@@ -438,12 +502,12 @@ func _spawn_world_slime() -> Dictionary:
 
 func _get_random_slime_wander_position() -> Vector2:
 	var angle: float = randf_range(0.0, TAU)
-	var distance: float = randf_range(20.0, SLIME_WANDER_RADIUS)
+	var distance: float = randf_range(20.0, get_current_slime_wander_radius())
 	return SLIME_NEST_WORLD_POSITION + Vector2(cos(angle), sin(angle)) * distance
 
 func _move_slime_toward_wander_target(slime: Dictionary, delta: float) -> bool:
 	var target_position: Vector2 = slime.get("target_position", _get_random_slime_wander_position())
-	var moved: bool = _move_slime_toward_position(slime, target_position, SLIME_WANDER_SPEED, delta)
+	var moved: bool = _move_slime_toward_position(slime, target_position, get_current_slime_wander_speed(), delta)
 
 	if _slime_reached_position(slime, target_position, 5.0):
 		slime["target_position"] = _get_random_slime_wander_position()
@@ -465,7 +529,7 @@ func _slime_reached_position(slime: Dictionary, target_position: Vector2, distan
 func _find_aggro_target_for_slime(slime: Dictionary) -> int:
 	var slime_position: Vector2 = slime.get("world_position", SLIME_NEST_WORLD_POSITION)
 	var best_traveler_id: int = -1
-	var best_distance: float = SLIME_AGGRO_RADIUS
+	var best_distance: float = get_current_slime_aggro_radius()
 
 	for traveler in world_travelers:
 		if not _can_slime_target_traveler(traveler):
@@ -804,19 +868,20 @@ func _resolve_slime_combat(traveler: Dictionary, slime_id: int = -1, encounter_s
 	var adventurer_speed: float = float(traveler.get("speed", 1.0))
 	var adventurer_meter: float = 0.0
 
-	var slime_starting_hp: int = SLIME_MAX_HP
+	var slime_starting_hp: int = get_current_slime_max_hp()
 	var slime_hp: int = slime_starting_hp
-	var slime_attack: int = SLIME_ATTACK
+	var slime_attack: int = get_current_slime_attack()
 	var slime_meter: float = 0.0
 	var night_combat: bool = _is_night()
 
 	if night_combat:
-		slime_hp = ceili(float(SLIME_MAX_HP) * NIGHT_SLIME_HP_MULTIPLIER)
+		slime_hp = ceili(float(get_current_slime_max_hp()) * NIGHT_SLIME_HP_MULTIPLIER)
 		slime_starting_hp = slime_hp
-		slime_attack = ceili(float(SLIME_ATTACK) * NIGHT_SLIME_ATTACK_MULTIPLIER)
+		slime_attack = ceili(float(get_current_slime_attack()) * NIGHT_SLIME_ATTACK_MULTIPLIER)
 		traveler["last_combat_log"] = "Night combat: Slime empowered."
 
 	var inventory: Dictionary = traveler.get("inventory", {})
+	var slime_gel_reward: int = get_current_slime_gel_reward()
 	var potion_used: bool = false
 
 	var rounds: int = 0
@@ -863,7 +928,7 @@ func _resolve_slime_combat(traveler: Dictionary, slime_id: int = -1, encounter_s
 		source_note = " Defeated visible Slime."
 
 	if slime_hp <= 0:
-		inventory[SLIME_GEL_ID] = int(inventory.get(SLIME_GEL_ID, 0)) + SLIME_GEL_REWARD
+		inventory[SLIME_GEL_ID] = int(inventory.get(SLIME_GEL_ID, 0)) + slime_gel_reward
 		traveler["inventory"] = inventory
 		traveler["slime_kills_this_outing"] = int(traveler.get("slime_kills_this_outing", 0)) + 1
 		_mark_slime_defeated(slime_id)
@@ -871,7 +936,8 @@ func _resolve_slime_combat(traveler: Dictionary, slime_id: int = -1, encounter_s
 		if _should_traveler_return_after_victory(traveler):
 			traveler["status"] = "ReturningWithLoot"
 			traveler["target_position"] = TOWN_WORLD_POSITION
-			traveler["last_combat_log"] = "Won vs Slime. Returning with loot. Kills %d/%d.%s%s" % [
+			traveler["last_combat_log"] = "Won vs Slime. +%d Gel. Returning. Kills %d/%d.%s%s" % [
+				slime_gel_reward,
 				int(traveler.get("slime_kills_this_outing", 0)),
 				MAX_SLIME_KILLS_PER_OUTING,
 				night_note,
@@ -880,7 +946,8 @@ func _resolve_slime_combat(traveler: Dictionary, slime_id: int = -1, encounter_s
 		else:
 			traveler["status"] = "SeekingNextSlime"
 			traveler["target_position"] = SLIME_NEST_WORLD_POSITION
-			traveler["last_combat_log"] = "Won vs Slime. Hunting next. Kills %d/%d.%s%s" % [
+			traveler["last_combat_log"] = "Won vs Slime. +%d Gel. Hunting next. Kills %d/%d.%s%s" % [
+				slime_gel_reward,
 				int(traveler.get("slime_kills_this_outing", 0)),
 				MAX_SLIME_KILLS_PER_OUTING,
 				night_note,
@@ -961,12 +1028,15 @@ func grow_slime_nest(amount: int = 1) -> void:
 	slime_nest_growth += amount
 
 	if slime_nest_growth <= 0:
+		slime_nest_growth = 0
 		slime_nest_status = "Dormant"
 	elif slime_nest_growth < 3:
 		slime_nest_status = "Growing"
 	elif slime_nest_growth < 6:
 		slime_nest_status = "Dangerous"
-	else:
+	elif slime_nest_growth < 9:
 		slime_nest_status = "Raid Risk"
+	else:
+		slime_nest_status = "Critical"
 
 	state_changed.emit()
