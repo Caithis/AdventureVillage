@@ -44,3 +44,12 @@ This is enough to prove the Inn's purpose before adding night behavior or Inn ec
 - Night does not yet increase world danger.
 - World travelers do not retreat just because it is night.
 - Adventurers do not have nuanced schedules yet.
+
+## v0.2.8 Notes
+
+- Inn payments are hardcoded.
+- Poor rest is simplified.
+- Town can be reduced by material purchases, but debt loss is not implemented yet.
+- Building purchase controls are documented but not implemented yet.
+- There is no building UI for material toggles yet.
+- Inn capacity and rooms are not implemented yet.

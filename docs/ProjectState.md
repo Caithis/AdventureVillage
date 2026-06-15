@@ -133,3 +133,16 @@ Current rest thresholds:
 - Energy at or below 40%.
 
 Night sleep overrides those thresholds when the adventurer is free/preparing. Adventurers already committed to world travel or quest behavior continue for now.
+
+## v0.2.8 Update Notes
+
+Economy changes:
+- Small Potion sales increase town money.
+- Slime Gel purchases now decrease town money.
+- Inn rest increases town money if the adventurer can pay.
+- Night lodging increases town money if the adventurer can pay.
+- Poor rest/sleep occurs if the adventurer cannot pay.
+
+Future economy goals recorded:
+- Debt / bankruptcy loss condition.
+- Building-level material purchasing controls.

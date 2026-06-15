@@ -1,3 +1,29 @@
+## v0.2.8 - Inn Income Prototype
+
+### Added
+- Inn rest fee.
+- Night lodging fee.
+- Adventurer payment for Inn rest.
+- Adventurer payment for Night sleep.
+- Town money increase from paid Inn use.
+- Poor rest if adventurer cannot afford normal Inn rest.
+- Poor sleep if adventurer cannot afford Night lodging.
+- Labels show lodging result.
+- Future debt/loss condition notes.
+- Future building purchase control notes.
+
+### Changed
+- Slime Gel selling now reduces town money.
+- General Store material purchase is now treated as an expense for the town.
+- Inn rest and Night sleep now have economy effects.
+
+### Not Yet Added
+- Paid Inn capacity.
+- Building click menus.
+- Purchase toggles/sliders.
+- Bankruptcy timer.
+- Game over state.
+
 ## v0.2.7 - Night Sleep Behavior
 
 ### Added

@@ -1,40 +1,64 @@
 # Dungeon Frontier Guild-Town
 
-Version: v0.2.7 - Night Sleep Behavior
+Version: v0.2.8 - Inn Income Prototype
 
-## What v0.2.7 Adds
+## What v0.2.8 Adds
 
-- Adventurer behavior now checks the GameClock phase.
-- Free/preparing adventurers seek the Inn during Night.
-- Adventurers already committed to travel/quest flow continue.
-- Night sleep restores HP and energy.
-- Adventurers can wait at the Inn until Day returns.
-- Recovery thresholds have been adjusted to reduce Inn overuse outside of night.
+This patch makes the first real two-sided town economy loop.
 
-## Prototype Rest Thresholds
+### Money In
 
-Outside of night sleep, adventurers now prefer the Inn only when:
+Adventurers now pay the Inn when resting or sleeping.
 
 ```text
-Health is at or below 50%
-Energy is at or below 40%
+Inn rest fee: 8 gold
+Night lodging fee: 5 gold
 ```
 
-Night sleep is separate:
+If the adventurer can afford the fee:
 
 ```text
-If it is Night and the adventurer is free/preparing, they seek the Inn to sleep.
+Adventurer gold decreases
+Town money increases
+Adventurer receives full rest
 ```
 
-## Updated Behavior
+If the adventurer cannot afford the fee:
 
 ```text
-Returned Adventurer
-→ Sell Slime Gel
-→ Check recovery need
-→ If HP <= 50% or Energy <= 40%, rest at Inn
-→ Else if Night, sleep at Inn
-→ Else prepare for another trip
+Adventurer receives poor rest
+Town money does not increase
+Poor rest only partially restores HP and energy
 ```
 
-Adventurers already in the world continue their quest behavior for now.
+### Money Out
+
+When adventurers sell Slime Gel to the General Store, the town now pays for those materials.
+
+```text
+Slime Gel value: 5 gold each
+2 Slime Gel sale: town money -10, adventurer gold +10
+```
+
+This fixes the earlier prototype issue where the adventurer gained gold but the village funds did not decrease.
+
+## Current Economy Loop
+
+```text
+Adventurer buys Small Potion
+→ Town money increases
+→ Adventurer leaves town
+→ Adventurer wins Slime Gel
+→ Adventurer sells Slime Gel
+→ Town money decreases
+→ Town Slime Gel stock increases
+→ Adventurer rests/sleeps at Inn
+→ Town money increases
+```
+
+## Future Economy Goals Noted
+
+Later production goals:
+- Debt/loss condition if the town cannot recover from negative funds within a time limit.
+- Building-level controls to disable or limit buying specific materials.
+- Building menus with sliders/toggles for material purchasing behavior.

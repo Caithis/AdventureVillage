@@ -5,6 +5,10 @@ const SMALL_POTION_ID := "small_potion"
 const SLIME_GEL_ID := "slime_gel"
 
 const SMALL_POTION_PRICE := 15
+const INN_REST_FEE := 8
+const NIGHT_LODGING_FEE := 5
+const POOR_REST_HP_RECOVERY := 8
+const POOR_REST_ENERGY_RECOVERY := 25
 const ENERGY_REST_THRESHOLD_RATIO := 0.40
 const HEALTH_REST_THRESHOLD_RATIO := 0.50
 
@@ -138,18 +142,35 @@ func should_seek_night_sleep() -> bool:
     return last_night_sleep_day != GameClock.day_number
 
 func rest_at_inn() -> void:
-    health = max_health
-    energy = max_energy
-    set_purchase_message("Rested at Inn")
-    _update_returned_record("RestedAtInn", "Rested at Inn. Energy restored.")
+    if gold >= INN_REST_FEE:
+        gold -= INN_REST_FEE
+        GameState.add_money(INN_REST_FEE)
+        health = max_health
+        energy = max_energy
+        set_purchase_message("Paid %dg for Inn rest" % INN_REST_FEE)
+        _update_returned_record("RestedAtInn", "Paid %dg for Inn rest." % INN_REST_FEE)
+    else:
+        health = mini(health + POOR_REST_HP_RECOVERY, max_health)
+        energy = mini(energy + POOR_REST_ENERGY_RECOVERY, max_energy)
+        set_purchase_message("Could not afford Inn. Poor rest.")
+        _update_returned_record("PoorRestAtInn", "Could not afford Inn. Poor rest.")
     _refresh_label()
 
 func sleep_at_inn_for_night() -> void:
-    health = max_health
-    energy = max_energy
-    last_night_sleep_day = GameClock.day_number
-    set_purchase_message("Slept at Inn for Night")
-    _update_returned_record("SleptAtInn", "Slept at Inn for Night.")
+    if gold >= NIGHT_LODGING_FEE:
+        gold -= NIGHT_LODGING_FEE
+        GameState.add_money(NIGHT_LODGING_FEE)
+        health = max_health
+        energy = max_energy
+        last_night_sleep_day = GameClock.day_number
+        set_purchase_message("Paid %dg for Night lodging" % NIGHT_LODGING_FEE)
+        _update_returned_record("SleptAtInn", "Paid %dg for Night lodging." % NIGHT_LODGING_FEE)
+    else:
+        health = mini(health + POOR_REST_HP_RECOVERY, max_health)
+        energy = mini(energy + POOR_REST_ENERGY_RECOVERY, max_energy)
+        last_night_sleep_day = GameClock.day_number
+        set_purchase_message("Could not afford lodging. Poor sleep.")
+        _update_returned_record("PoorSleepAtInn", "Could not afford lodging. Poor sleep.")
     _refresh_label()
 
 func try_buy_small_potion() -> String:
@@ -194,6 +215,7 @@ func try_sell_slime_gel() -> String:
 
     inventory[SLIME_GEL_ID] = 0
     gold += sale_total
+    GameState.add_money(-sale_total)
     GameState.add_item(SLIME_GEL_ID, slime_gel_amount)
 
     var sale_message := "Sold %d Slime Gel for %dg" % [slime_gel_amount, sale_total]

@@ -68,7 +68,7 @@ func _refresh_time_label() -> void:
 
 func _refresh_state_labels() -> void:
 	view_label.text = "View: " + GameState.current_view_name
-	money_label.text = "Money: %d" % GameState.money
+	money_label.text = "Village Funds: %d" % GameState.money
 	inventory_label.text = "Inventory: Potions %d | Slime Gel %d" % [
 		GameState.get_item_count("small_potion"),
 		GameState.get_item_count("slime_gel")
