@@ -4,6 +4,7 @@ class_name AdventurerAI
 var current_state: String = "Idle"
 
 var general_store_position: Vector2 = Vector2.ZERO
+var inn_position: Vector2 = Vector2.ZERO
 var exit_position: Vector2 = Vector2.ZERO
 var wait_timer: float = 0.0
 var purchase_result_wait_seconds: float = 1.25
@@ -11,6 +12,8 @@ var leaving_town_wait_seconds: float = 0.25
 var sell_result_wait_seconds: float = 1.5
 var prepare_next_trip_wait_seconds: float = 1.0
 var restock_result_wait_seconds: float = 1.25
+var inn_rest_seconds: float = 2.0
+var inn_result_wait_seconds: float = 1.0
 
 @onready var adventurer: Adventurer = get_parent() as Adventurer
 
@@ -41,6 +44,14 @@ func _process(delta: float) -> void:
             _state_sold_loot(delta)
         "NoLootToSell":
             _state_no_loot_to_sell(delta)
+        "CheckRecoveryNeed":
+            _state_check_recovery_need()
+        "GoToInn":
+            _state_go_to_inn()
+        "RestAtInn":
+            _state_rest_at_inn(delta)
+        "RestedAtInn", "SkipInnRest":
+            _state_inn_result(delta)
         "PrepareNextTrip":
             _state_prepare_next_trip(delta)
         "BuyPotionForNextTrip":
@@ -59,8 +70,9 @@ func start_town_routine(new_general_store_position: Vector2, new_exit_position: 
     exit_position = new_exit_position
     set_state("EnterTown")
 
-func start_return_to_town_routine(new_general_store_position: Vector2, new_exit_position: Vector2) -> void:
+func start_return_to_town_routine(new_general_store_position: Vector2, new_inn_position: Vector2, new_exit_position: Vector2) -> void:
     general_store_position = new_general_store_position
+    inn_position = new_inn_position
     exit_position = new_exit_position
     set_state("ReturnedToTown")
 
@@ -104,6 +116,20 @@ func set_state(new_state: String) -> void:
                 adventurer.clear_move_target()
         "NoLootToSell":
             wait_timer = sell_result_wait_seconds
+            if adventurer != null:
+                adventurer.clear_move_target()
+        "CheckRecoveryNeed":
+            if adventurer != null:
+                adventurer.clear_move_target()
+        "GoToInn":
+            if adventurer != null:
+                adventurer.set_move_target(inn_position)
+        "RestAtInn":
+            wait_timer = inn_rest_seconds
+            if adventurer != null:
+                adventurer.clear_move_target()
+        "RestedAtInn", "SkipInnRest":
+            wait_timer = inn_result_wait_seconds
             if adventurer != null:
                 adventurer.clear_move_target()
         "PrepareNextTrip":
@@ -205,9 +231,45 @@ func _state_sold_loot(delta: float) -> void:
     wait_timer -= delta
 
     if wait_timer <= 0.0:
-        set_state("PrepareNextTrip")
+        set_state("CheckRecoveryNeed")
 
 func _state_no_loot_to_sell(delta: float) -> void:
+    wait_timer -= delta
+
+    if wait_timer <= 0.0:
+        set_state("CheckRecoveryNeed")
+
+func _state_check_recovery_need() -> void:
+    if adventurer == null:
+        return
+
+    if adventurer.has_method("needs_inn_rest") and adventurer.needs_inn_rest():
+        if adventurer.has_method("is_injured") and adventurer.is_injured():
+            adventurer.set_purchase_message("Injured. Going to Inn.")
+        else:
+            adventurer.set_purchase_message("Low energy. Going to Inn.")
+        set_state("GoToInn")
+    else:
+        if adventurer.has_method("set_purchase_message"):
+            adventurer.set_purchase_message("No Inn rest needed.")
+        set_state("SkipInnRest")
+
+func _state_go_to_inn() -> void:
+    if adventurer == null:
+        return
+
+    if not adventurer.has_target and adventurer.has_reached_target():
+        set_state("RestAtInn")
+
+func _state_rest_at_inn(delta: float) -> void:
+    wait_timer -= delta
+
+    if wait_timer <= 0.0:
+        if adventurer != null and adventurer.has_method("rest_at_inn"):
+            adventurer.rest_at_inn()
+        set_state("RestedAtInn")
+
+func _state_inn_result(delta: float) -> void:
     wait_timer -= delta
 
     if wait_timer <= 0.0:

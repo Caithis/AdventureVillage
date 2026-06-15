@@ -5,6 +5,7 @@ const SMALL_POTION_ID := "small_potion"
 const SLIME_GEL_ID := "slime_gel"
 
 const SMALL_POTION_PRICE := 15
+const LOW_ENERGY_THRESHOLD := 60
 
 @onready var name_label: Label = $NameLabel
 @onready var ai: Node = $AdventurerAI
@@ -16,6 +17,8 @@ var gold: int = 50
 var happiness: int = 0
 var health: int = 30
 var max_health: int = 30
+var energy: int = 100
+var max_energy: int = 100
 var inventory: Dictionary = {}
 var current_state: String = "Idle"
 var last_purchase_message: String = ""
@@ -63,6 +66,8 @@ func setup_from_traveler_data(traveler_data: Dictionary) -> void:
     inventory = traveler_data.get("inventory", {}).duplicate(true)
     health = int(traveler_data.get("hp", 1))
     max_health = int(traveler_data.get("max_hp", 30))
+    energy = int(traveler_data.get("energy", 100))
+    max_energy = int(traveler_data.get("max_energy", 100))
     trip_count = int(traveler_data.get("trip_count", 0))
     max_trip_count = int(traveler_data.get("max_trip_count", 2))
     is_returned_adventurer = true
@@ -79,13 +84,13 @@ func start_town_routine(entrance_position: Vector2, general_store_position: Vect
     if ai != null and ai.has_method("start_town_routine"):
         ai.start_town_routine(general_store_position, exit_position)
 
-func start_return_to_town_routine(spawn_position: Vector2, general_store_position: Vector2, exit_position: Vector2) -> void:
+func start_return_to_town_routine(spawn_position: Vector2, general_store_position: Vector2, inn_position: Vector2, exit_position: Vector2) -> void:
     global_position = spawn_position
     target_position = spawn_position
     has_target = false
 
     if ai != null and ai.has_method("start_return_to_town_routine"):
-        ai.start_return_to_town_routine(general_store_position, exit_position)
+        ai.start_return_to_town_routine(general_store_position, inn_position, exit_position)
 
 func set_state(new_state: String) -> void:
     current_state = new_state
@@ -110,6 +115,19 @@ func should_continue_adventuring() -> bool:
 
 func needs_small_potion() -> bool:
     return get_item_count(SMALL_POTION_ID) <= 0
+
+func needs_inn_rest() -> bool:
+    return health < max_health or energy < LOW_ENERGY_THRESHOLD
+
+func is_injured() -> bool:
+    return health < max_health
+
+func rest_at_inn() -> void:
+    health = max_health
+    energy = max_energy
+    set_purchase_message("Rested at Inn")
+    _update_returned_record("RestedAtInn", "Rested at Inn. Energy restored.")
+    _refresh_label()
 
 func try_buy_small_potion() -> String:
     if get_item_count(SMALL_POTION_ID) > 0:
@@ -174,6 +192,8 @@ func _update_returned_record(new_status: String, sale_message: String) -> void:
         "inventory": inventory.duplicate(true),
         "trip_count": trip_count,
         "max_trip_count": max_trip_count,
+        "energy": energy,
+        "max_energy": max_energy,
         "status": new_status,
         "hp": health,
         "max_hp": max_health,
@@ -246,11 +266,15 @@ func _refresh_label() -> void:
     if last_purchase_message != "":
         message_line = "\n%s" % last_purchase_message
 
-    name_label.text = "%s Lv.%d\n%s | %dg | P:%d G:%d | T:%d/%d%s" % [
+    name_label.text = "%s Lv.%d\n%s | %dg | HP:%d/%d E:%d/%d\nP:%d G:%d | T:%d/%d%s" % [
         display_name,
         level,
         current_state,
         gold,
+        health,
+        max_health,
+        energy,
+        max_energy,
         potion_count,
         slime_gel_count,
         trip_count,

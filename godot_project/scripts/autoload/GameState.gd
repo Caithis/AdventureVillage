@@ -21,6 +21,9 @@ const SLIME_GEL_SELL_VALUE := 5
 const SMALL_POTION_HEAL_AMOUNT := 15
 const POTION_USE_HP_RATIO := 0.40
 
+const DEFAULT_MAX_ENERGY := 100
+const WORLD_TRIP_ENERGY_COST := 45
+
 var money: int = 500
 var current_view_name: String = "Unknown"
 
@@ -124,6 +127,8 @@ func add_world_traveler_from_adventurer(adventurer: Node) -> Dictionary:
 		"inventory": _safe_get_property(adventurer, "inventory", {}).duplicate(true),
 		"trip_count": _safe_get_property(adventurer, "trip_count", 0),
 		"max_trip_count": _safe_get_property(adventurer, "max_trip_count", 2),
+		"energy": _safe_get_property(adventurer, "energy", DEFAULT_MAX_ENERGY),
+		"max_energy": _safe_get_property(adventurer, "max_energy", DEFAULT_MAX_ENERGY),
 		"status": "TravelingToSlimeNest",
 		"world_position": TOWN_WORLD_POSITION,
 		"target_position": SLIME_NEST_WORLD_POSITION,
@@ -137,6 +142,9 @@ func add_world_traveler_from_adventurer(adventurer: Node) -> Dictionary:
 		"sale_message": "",
 		"last_combat_log": "Traveling to Slime Nest.",
 	}
+
+	traveler["energy"] = maxi(int(traveler.get("energy", DEFAULT_MAX_ENERGY)) - WORLD_TRIP_ENERGY_COST, 0)
+	traveler["last_combat_log"] = "Traveling to Slime Nest. Energy -%d." % WORLD_TRIP_ENERGY_COST
 
 	next_world_traveler_id += 1
 	world_travelers.append(traveler)
@@ -199,7 +207,8 @@ func get_world_traveler_summary() -> String:
 		var status := str(traveler.get("status", "Unknown"))
 		var trip_count := int(traveler.get("trip_count", 0))
 		var max_trip_count := int(traveler.get("max_trip_count", 2))
-		summary_parts.append("%s:%s T%d/%d" % [traveler_name, status, trip_count, max_trip_count])
+		var energy := int(traveler.get("energy", DEFAULT_MAX_ENERGY))
+		summary_parts.append("%s:%s T%d/%d E%d" % [traveler_name, status, trip_count, max_trip_count, energy])
 
 		if summary_parts.size() >= 3:
 			break
@@ -221,11 +230,12 @@ func get_returned_traveler_summary() -> String:
 		var sale_message := str(traveler.get("sale_message", ""))
 		var trip_count := int(traveler.get("trip_count", 0))
 		var max_trip_count := int(traveler.get("max_trip_count", 2))
+		var energy := int(traveler.get("energy", DEFAULT_MAX_ENERGY))
 
 		if sale_message != "":
-			summary_parts.append("%s:%s T%d/%d %s" % [traveler_name, status, trip_count, max_trip_count, sale_message])
+			summary_parts.append("%s:%s T%d/%d E%d %s" % [traveler_name, status, trip_count, max_trip_count, energy, sale_message])
 		else:
-			summary_parts.append("%s:%s T%d/%d" % [traveler_name, status, trip_count, max_trip_count])
+			summary_parts.append("%s:%s T%d/%d E%d" % [traveler_name, status, trip_count, max_trip_count, energy])
 
 		if summary_parts.size() >= 3:
 			break
@@ -299,9 +309,7 @@ func _mark_traveler_arrived_at_town(traveler: Dictionary) -> void:
 		traveler["last_combat_log"] = "Returned to town. Awaiting re-entry."
 
 	returned_travelers.append(traveler.duplicate(true))
-	# Do not emit state_changed here.
-	# Town claims returned travelers when state_changed is emitted after _update_world_travelers()
-	# finishes its loop. Emitting here allows Town to remove from world_travelers mid-loop.
+	# Do not emit state_changed here; emit after _update_world_travelers safely finishes its loop.
 
 func _move_position_toward(current_position: Vector2, target_position: Vector2, max_distance: float) -> Vector2:
 	var direction := target_position - current_position

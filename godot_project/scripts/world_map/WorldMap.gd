@@ -54,7 +54,7 @@ func _update_marker_positions_and_labels() -> void:
 
 		var marker: Node2D = traveler_markers[traveler_id]
 		var base_position: Vector2 = traveler.get("world_position", Vector2(642, 430))
-		var offset := Vector2((index % 5) * 22, int(index / 5) * 28)
+		var offset := Vector2((index % 5) * 22, floori(float(index) / 5.0) * 28)
 		marker.position = base_position + offset
 
 		var label := marker.get_node_or_null("Label") as Label
@@ -74,8 +74,8 @@ func _create_traveler_marker(traveler: Dictionary) -> Node2D:
 
 	var label := Label.new()
 	label.name = "Label"
-	label.position = Vector2(-65, -80)
-	label.size = Vector2(230, 90)
+	label.position = Vector2(-65, -88)
+	label.size = Vector2(245, 100)
 	label.text = _build_traveler_label(traveler)
 	marker.add_child(label)
 
@@ -88,13 +88,17 @@ func _build_traveler_label(traveler: Dictionary) -> String:
 	if log_line == "":
 		log_line = str(traveler.get("last_combat_log", ""))
 
-	return "%s\n%s | Gold:%d\nHP %d/%d | P:%d G:%d\n%s" % [
+	return "%s\n%s | Gold:%d\nHP %d/%d | E:%d/%d\nP:%d G:%d | T:%d/%d\n%s" % [
 		str(traveler.get("display_name", "Traveler")),
 		str(traveler.get("status", "Unknown")),
 		int(traveler.get("gold", 0)),
 		int(traveler.get("hp", 0)),
 		int(traveler.get("max_hp", 0)),
+		int(traveler.get("energy", 0)),
+		int(traveler.get("max_energy", 0)),
 		int(inventory.get("small_potion", 0)),
 		int(inventory.get("slime_gel", 0)),
+		int(traveler.get("trip_count", 0)),
+		int(traveler.get("max_trip_count", 0)),
 		log_line
 	]

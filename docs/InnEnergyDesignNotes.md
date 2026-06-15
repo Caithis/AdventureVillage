@@ -1,63 +1,45 @@
 # Inn and Energy Design Notes
 
-## Purpose
+## v0.2.6 Implementation
 
-This document records the intended future energy and Inn behavior.
+This version introduces the first working energy and Inn rest prototype.
 
-This is not implemented in v0.2.5.
+## Current Values
 
-## Design Intention
+```text
+Max Energy: 100
+Starting Energy: 100
+Energy lost per world trip: 45
+Low-energy threshold: 60
+Inn rest energy restore: full
+Inn HP restore: full
+```
 
-Adventurers should not endlessly bounce between town and dungeon forever. Their behavior should be naturally regulated by exhaustion, injury, night-time, supplies, and comfort needs.
+## Current Behavior
 
-## Energy System
+1. Adventurer leaves town.
+2. World traveler is created with current energy.
+3. World trip reduces energy.
+4. Traveler returns to town.
+5. Returned adventurer checks HP and energy.
+6. If energy is low or HP is below max, they walk to the Inn.
+7. Resting restores HP and energy.
+8. Adventurer returns to preparation behavior.
 
-Future adventurers should have an energy value.
+## Future Direction
 
-Energy should decrease from:
-- Traveling
-- Fighting
-- Exploring
-- Staying out at night
-- Carrying loot, possibly later
-- Repeated dungeon trips
+The Inn should eventually:
+- Generate lodging income.
+- Have room capacity.
+- Have quality/comfort ratings.
+- Affect happiness.
+- Affect whether adventurers want to become residents.
+- Become the default night-time destination for free adventurers.
 
-Low energy should make adventurers more likely to:
-- Return to town
-- Visit the Inn
-- Sleep/rest
-- Delay their next trip
-
-## Inn Behavior
-
-The Inn should become a core support building.
-
-Adventurers should use the Inn to:
-- Restore energy
-- Recover HP
-- Sleep at night
-- Improve happiness
-- Possibly generate town income
-
-## Night Behavior
+## Night Behavior Plan
 
 At night:
-- Most idle/free adventurers should seek the Inn to sleep.
-- Adventurers already committed to a quest may continue.
-- Adventurers in dangerous areas may attempt to return if low on supplies or energy.
-- Night should increase danger and make resting more valuable.
-
-## Implementation Recommendation
-
-Add this after the repeat loop works:
-
-v0.2.6:
-- Add energy.
-- Reduce energy after world trips.
-- Returned adventurers choose Inn if energy is low.
-- Inn restores energy.
-
-Later:
-- Link night phase from GameClock to AI decisions.
-- Add sleeping behavior.
-- Add Inn income.
+- Idle/free adventurers should seek the Inn.
+- Adventurers on active quests may continue.
+- Exhausted adventurers should return if possible.
+- Night danger may increase in frontier zones.
