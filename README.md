@@ -1,25 +1,24 @@
 # Dungeon Frontier Guild-Town
 
-Version: v0.2.2 - Sell Slime Gel to General Store
+Version: v0.2.3 - Persistent Town/World Scene Refactor
 
 Dungeon Frontier Guild-Town is a Godot 4.x 2D pixel-art management/simulation project about running a frontier guild-town that supports adventurers, grows its economy, and survives escalating world-map threats.
 
-## What v0.2.2 Adds
+## What v0.2.3 Adds
 
-- Returned travelers with Slime Gel now sell it to the town automatically.
-- Slime Gel sell value is introduced.
-- Town Slime Gel inventory increases after sale.
-- Traveler gold increases after sale.
-- Returned traveler status changes to `SoldLoot`.
-- Debug UI shows sale result in the returned traveler summary.
-- World Map marker label reflects the sold-loot status.
+- Main now loads Town once at startup.
+- Main now loads World Map once at startup.
+- SceneRouter now shows/hides views instead of freeing and reloading scenes.
+- Town adventurers continue processing while the World Map is visible.
+- World travelers continue processing while the Town is visible.
+- Spawn Adventurer now works even while viewing the World Map by spawning into the persistent Town scene.
+- Debug UI still switches between Town and World Map.
 
-## Prototype Economy Values
+## Why This Matters
 
-- Small Potion buy price: 15 gold
-- Slime Gel sell value: 5 gold each
-- Slime reward: 2 Slime Gel
-- Total return sale from one Slime victory: 10 gold
+Earlier versions destroyed the Town scene when switching to the World Map. That was fine for early prototyping, but it would eventually break the intended game design because town adventurers should keep shopping, walking, and leaving town while the player watches the World Map.
+
+This refactor moves the project closer to the intended final structure.
 
 ## How to Run
 
@@ -27,15 +26,13 @@ Dungeon Frontier Guild-Town is a Godot 4.x 2D pixel-art management/simulation pr
 2. Open/import the `godot_project/` folder.
 3. Run the project.
 4. Spawn an adventurer in Town.
-5. Let the adventurer buy a potion and leave town.
-6. Switch to World Map.
-7. Watch the traveler move to the Slime Nest.
-8. Wait for combat to resolve.
-9. If the traveler wins, they return with Slime Gel.
-10. When they reach town, they automatically sell the Slime Gel.
-11. Confirm Town Slime Gel inventory increases.
-12. Confirm the traveler status becomes `SoldLoot`.
+5. Immediately switch to World Map.
+6. Wait.
+7. The hidden Town scene should keep processing.
+8. The adventurer should eventually leave town and become a world traveler.
+9. World traveler count should increase while you are still on the World Map.
+10. The traveler should move to the Slime Nest, fight, return, and sell loot.
 
 ## Current Limitation
 
-The sale is automatic and does not yet happen through a visible General Store interaction. Later, returned travelers should physically re-enter town, visit the General Store, sell loot, then decide whether to rest, shop again, or leave.
+This keeps both scenes loaded, but the deeper simulation is still mixed between scene nodes and GameState dictionaries. Later we should move toward cleaner data-driven managers for adventurers, buildings, economy, threats, and world simulation.

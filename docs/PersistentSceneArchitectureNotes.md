@@ -1,8 +1,12 @@
 # Persistent Scene Architecture Notes
 
+## Current Version
+
+v0.2.3 implements the first persistent scene refactor.
+
 ## Design Goal
 
-Eventually, the Town map and World Map should both continue simulating while the player views either one.
+The Town map and World Map should both continue simulating while the player views either one.
 
 Example:
 - Player views World Map.
@@ -10,61 +14,66 @@ Example:
 - Player views Town.
 - World travelers still move, fight, return, and generate threats.
 
-## Current Architecture
+## Previous Architecture
 
-Current behavior:
-- Main scene switches between Town and World Map by loading one view and freeing the previous one.
-- World traveler simulation lives in GameState, so world travel continues globally.
-- Town adventurer node simulation only exists while the Town scene is loaded.
+Earlier versions used this pattern:
 
-This is acceptable for early prototyping but not the final architecture.
+```text
+Main
+  ViewContainer
+    CurrentView only
+  UI Layer
+```
 
-## Better Future Options
+Switching views did this:
+1. Free current view.
+2. Load requested scene.
+3. Add requested scene as current view.
 
-### Option A: Keep Both Scenes Loaded
+That was simple but caused a major design problem: the Town scene could not keep processing while the player viewed the World Map.
 
-Main scene contains:
-- TownRoot
-- WorldMapRoot
-- UI Layer
+## v0.2.3 Architecture
 
-Switching views would hide/show scenes instead of freeing them.
+Current pattern:
 
-Pros:
-- Easy to reason about.
-- Town nodes keep processing.
-- World Map nodes keep processing.
+```text
+Main
+  ViewContainer
+    Town
+    WorldMap
+  UI Layer
+    DebugUI
+```
 
-Cons:
-- More nodes active at once.
-- Need clean camera/input handling.
+Switching views now does this:
+1. Keep both views loaded.
+2. Show requested view.
+3. Hide other views.
+4. Update current view name.
 
-### Option B: Simulation Managers + Visual Scenes
+## Why This Helps
 
-Simulation lives in managers:
-- TownSimulation
-- WorldSimulation
-- EconomyManager
-- AdventurerManager
+This allows:
+- Town adventurers to keep moving while the player views the World Map.
+- World Map markers to keep updating while the player views Town.
+- Less scene reset behavior.
+- A cleaner path toward overlay-style maps and persistent simulation.
 
-Scenes only visualize current data.
+## Remaining Weakness
 
-Pros:
-- Scales better.
-- Better save/load.
-- Easier to run simulation without visuals.
+The game is still partly node-driven and partly data-driven.
 
-Cons:
-- More abstract.
-- Harder for beginner development at first.
+Current split:
+- Town adventurers are visible nodes.
+- World travelers are dictionaries in GameState.
+- Returned travelers are also dictionaries.
 
-### Recommendation
+Future improvement:
+- Create dedicated data records for adventurers.
+- Create a TownSimulation manager.
+- Create a WorldSimulation manager.
+- Let scenes visualize persistent data instead of owning all behavior.
 
-Use Option A first when we are ready to refactor:
-- Keep both scenes loaded.
-- Toggle visibility.
-- Keep simulation simple.
-- Later move deeper logic into data/managers.
+## Recommendation
 
-Do not do this refactor until the basic loop works:
-Town purchase → world travel → combat → return → sell loot.
+Keep this persistent scene approach for now. Do not jump into a large architecture rewrite until after returned travelers can visibly re-enter town and sell loot.

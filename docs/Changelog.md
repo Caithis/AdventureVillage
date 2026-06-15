@@ -1,5 +1,34 @@
 # Changelog
 
+## v0.2.3 - Persistent Town/World Scene Refactor
+
+### Added
+- Main loads Town once at startup.
+- Main loads World Map once at startup.
+- Main keeps both views alive.
+- View switching now uses visibility toggling.
+- `SceneRouter.go_to_town()` now shows the persistent Town view.
+- `SceneRouter.go_to_world_map()` now shows the persistent World Map view.
+- `SceneRouter.request_spawn_adventurer()` now spawns into the persistent Town view, even if the player is looking at the World Map.
+- `Main.get_view_by_name()` helper.
+- `Main.show_view()` visibility routing method.
+
+### Changed
+- Main no longer frees the current view when switching scenes.
+- SceneRouter no longer loads scene paths directly.
+- SceneRouter now asks Main to show already-loaded views.
+- Town adventurer node behavior can continue while the World Map is visible.
+- World Map marker behavior can continue while the Town is visible.
+
+### Fixed
+- The Town scene no longer resets every time the player switches to World Map.
+- Spawned town adventurers are no longer lost merely because the player opened World Map.
+
+### Not Yet Added
+- Returned adventurer re-entry as visible Town actors.
+- Physical town-based loot selling.
+- Full data-driven simulation managers.
+
 ## v0.2.2 - Sell Slime Gel to General Store
 
 ### Added
@@ -9,18 +38,6 @@
 - Traveler gold increase after sale.
 - `SoldLoot` returned traveler status.
 - Sale result text in returned traveler summary.
-- Sale result text in world traveler marker label.
-
-### Changed
-- `ArrivedAtTownWithLoot` now immediately processes loot sale during the prototype loop.
-- Returned traveler records now include `sale_message`.
-- Debug UI returned traveler summary now shows sale results.
-
-### Not Yet Added
-- Visible adventurer re-entry into Town.
-- Physical General Store sell interaction.
-- Shop UI.
-- Item Resource-driven economy values.
 
 ## v0.2.1 - Return to Town With Loot
 
@@ -30,9 +47,6 @@
 - `ArrivedAtTownWithLoot` status.
 - `ArrivedAtTownInjured` status.
 - Returned traveler records in `GameState`.
-- Returned traveler count in Debug UI.
-- Returned traveler summary in Debug UI.
-- Persistent scene architecture note.
 
 ## v0.2.0 - First Combat Prototype
 
@@ -43,9 +57,6 @@
 - Simple auto-combat resolver.
 - Small Potion usage during combat.
 - Slime Gel reward on victory.
-- `ReturningWithLoot` traveler status.
-- `InjuredReturning` traveler status.
-- Combat log text stored on traveler data.
 
 ## v0.1.4 - World Travel Placeholder
 
@@ -53,28 +64,19 @@
 - `world_travelers` tracking in `GameState`.
 - World traveler count in Debug UI.
 - World traveler data creation when an adventurer leaves town.
-- Placeholder world traveler markers on World Map.
 
 ### Fixed
 - Successful Small Potion purchases now add 15 gold to the town treasury.
-- General Store stopping points should now be more controlled.
 
 ## v0.1.3 - Small Potion Purchase
 
 ### Added
 - Small Potion purchase logic.
-- Small Potion test price set to 15 gold.
-- Adventurer checks town Small Potion stock and personal gold.
-- Adventurer loses gold after successful purchase.
-- Town Small Potion stock decreases after successful purchase.
-- Adventurer inventory gains `small_potion`.
 
 ## v0.1.2 - Adventurer Town Routine
 
 ### Added
 - Marker-based movement for placeholder adventurers.
-- Basic movement speed on `Adventurer.gd`.
-- Adventurer AI state flow.
 
 ## v0.1.1.1 - Autoload Name Conflict Hotfix
 
