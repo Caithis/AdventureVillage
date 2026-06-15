@@ -1,17 +1,22 @@
 # Known Issues
 
-## v0.1.1
+## v0.1.2
 
 Known limitations:
-- Adventurers spawn but do not move yet.
+- Adventurers move but do not buy items yet.
 - Adventurers do not persist when the Town scene is unloaded and reloaded.
 - Adventurers have placeholder visuals only.
 - No animation yet.
-- No shop purchasing yet.
+- Movement is straight-line movement, not pathfinding.
+- Multiple adventurers may visually overlap.
+- No collision avoidance.
+- No roads/path preferences.
+- Fixed building layout is temporary.
+- No player building placement yet.
 - No combat.
 - No save/load.
 - No real pixel-art sprites yet.
 
 ## Technical Notes
 
-Adventurer persistence is intentionally not solved in this patch. For now, spawned adventurers belong to the active Town scene. Later, we will decide whether persistent adventurers are scene nodes, data records, or both.
+The current movement system is intentionally simple. It proves that an adventurer can receive town marker positions and follow an AI routine. Pathfinding and road-aware movement should wait until the town-building grid is designed.

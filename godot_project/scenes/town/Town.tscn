@@ -78,8 +78,8 @@ position = Vector2(360, 460)
 position = Vector2(1210, 610)
 
 [node name="MarkerHintLabel" type="Label" parent="."]
-offset_left = 340.0
+offset_left = 285.0
 offset_top = 655.0
-offset_right = 1000.0
+offset_right = 1090.0
 offset_bottom = 685.0
-text = "v0.1.1: Spawn placeholder adventurers. Movement and shopping arrive in v0.1.2."
+text = "v0.1.2: Adventurers walk Entrance → General Store → Exit. Building placement is future work."

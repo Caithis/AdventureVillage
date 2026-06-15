@@ -4,6 +4,8 @@ const ADVENTURER_SCENE: PackedScene = preload("res://scenes/adventurers/Adventur
 
 @onready var adventurers_container: Node2D = $Adventurers
 @onready var town_entrance: Marker2D = $Markers/TownEntrance
+@onready var general_store_point: Marker2D = $Markers/GeneralStorePoint
+@onready var exit_to_world_point: Marker2D = $Markers/ExitToWorldPoint
 
 var spawn_count: int = 0
 
@@ -19,6 +21,13 @@ func spawn_placeholder_adventurer() -> void:
 
 	if adventurer.has_method("setup_placeholder"):
 		adventurer.setup_placeholder(_generate_adventurer_name(), "fighter", 1)
+
+	if adventurer.has_method("start_town_routine"):
+		adventurer.start_town_routine(
+			town_entrance.global_position + spawn_offset,
+			general_store_point.global_position + spawn_offset,
+			exit_to_world_point.global_position + spawn_offset
+		)
 
 	GameState.register_adventurer(adventurer)
 
