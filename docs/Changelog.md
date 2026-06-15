@@ -1,45 +1,40 @@
 # Changelog
 
+## v0.2.1 - Return to Town With Loot
+
+### Added
+- Return movement for `ReturningWithLoot` travelers.
+- Return movement for `InjuredReturning` travelers.
+- `ArrivedAtTownWithLoot` status.
+- `ArrivedAtTownInjured` status.
+- Returned traveler records in `GameState`.
+- Returned traveler count in Debug UI.
+- Returned traveler summary in Debug UI.
+- Persistent scene architecture note.
+
+### Changed
+- World traveler simulation now handles outbound travel, combat result, and return travel.
+- World Map labels now show return and arrival states.
+
+### Not Yet Added
+- Loot selling.
+- Re-entering the Town scene as a visible adventurer.
+- Persistent Town scene while viewing the World Map.
+- Threat clearing.
+- Combat UI.
+
 ## v0.2.0 - First Combat Prototype
 
 ### Added
 - World traveler movement toward Slime Nest.
-- World traveler combat stats:
-  - HP
-  - max HP
-  - attack
-  - speed
-- Slime prototype stats:
-  - HP
-  - attack
-  - speed
+- World traveler combat stats.
+- Slime prototype stats.
 - Simple auto-combat resolver.
-- Small Potion usage during combat when adventurer HP is low.
+- Small Potion usage during combat.
 - Slime Gel reward on victory.
 - `ReturningWithLoot` traveler status.
 - `InjuredReturning` traveler status.
 - Combat log text stored on traveler data.
-- World Map marker label now displays:
-  - traveler name
-  - status
-  - HP
-  - potion count
-  - Slime Gel count
-- Debug UI now includes a short world traveler status summary.
-
-### Changed
-- World traveler data now starts with combat stats.
-- World traveler markers now update continuously while on the World Map.
-- Slime Nest is now an actual prototype target rather than only a static marker.
-
-### Not Yet Added
-- Return-to-town movement.
-- Loot selling.
-- Threat clearing.
-- Combat animation.
-- Combat UI.
-- Multiple enemies.
-- Multiple threat types.
 
 ## v0.1.4 - World Travel Placeholder
 
@@ -48,8 +43,6 @@
 - World traveler count in Debug UI.
 - World traveler data creation when an adventurer leaves town.
 - Placeholder world traveler markers on World Map.
-- `LeavingTown` adventurer AI state.
-- Adventurer cleanup after reaching Town Exit.
 
 ### Fixed
 - Successful Small Potion purchases now add 15 gold to the town treasury.
@@ -60,7 +53,6 @@
 ### Added
 - Small Potion purchase logic.
 - Small Potion test price set to 15 gold.
-- Adventurer purchase states.
 - Adventurer checks town Small Potion stock and personal gold.
 - Adventurer loses gold after successful purchase.
 - Town Small Potion stock decreases after successful purchase.

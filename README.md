@@ -1,30 +1,26 @@
 # Dungeon Frontier Guild-Town
 
-Version: v0.2.0 - First Combat Prototype
+Version: v0.2.1 - Return to Town With Loot
 
 Dungeon Frontier Guild-Town is a Godot 4.x 2D pixel-art management/simulation project about running a frontier guild-town that supports adventurers, grows its economy, and survives escalating world-map threats.
 
-## What v0.2.0 Adds
+## What v0.2.1 Adds
 
-- World travelers now move toward the Slime Nest.
-- Slime enemy prototype data exists in code.
-- Simple auto-combat resolves when a traveler reaches the Slime Nest.
-- Adventurers have combat stats:
-  - HP
-  - max HP
-  - attack
-  - speed
-- Slime has combat stats:
-  - HP
-  - attack
-  - speed
-- Adventurers use one Small Potion if HP drops low enough.
-- If the adventurer wins:
-  - They gain Slime Gel.
-  - Their status changes to ReturningWithLoot.
-- If the adventurer loses:
-  - Their status changes to InjuredReturning.
-- World Map traveler markers update with status, HP, and inventory.
+- `ReturningWithLoot` travelers now move back toward the town marker.
+- `InjuredReturning` travelers now move back toward the town marker.
+- Travelers that reach town change into returned-arrival states:
+  - `ArrivedAtTownWithLoot`
+  - `ArrivedAtTownInjured`
+- GameState tracks returned traveler records.
+- Debug UI shows returned traveler count.
+- Debug UI shows a short returned traveler summary.
+- World Map markers continue updating as travelers return.
+
+## Important Architecture Note
+
+The world simulation already runs through GameState, so world travelers can keep moving even if the player is not viewing the World Map.
+
+However, the Town scene is still unloaded when switching views. Later, we should refactor Main so both Town and World Map can stay loaded at the same time, with visibility toggled or the World Map shown as an overlay.
 
 ## How to Run
 
@@ -34,10 +30,13 @@ Dungeon Frontier Guild-Town is a Godot 4.x 2D pixel-art management/simulation pr
 4. Spawn an adventurer in Town.
 5. Let the adventurer buy a potion and leave town.
 6. Switch to World Map.
-7. Watch the traveler move toward the Slime Nest.
-8. When the traveler reaches the Slime Nest, combat resolves.
-9. Check the traveler marker label for result.
+7. Watch the traveler move to the Slime Nest.
+8. Wait for combat to resolve.
+9. If the traveler wins, they should return with loot.
+10. If the traveler loses, they should return injured.
+11. Watch the traveler move back to the town marker.
+12. Confirm returned traveler count increases.
 
 ## Current Limitation
 
-Combat resolves instantly once the traveler reaches the Slime Nest. This is intentional for the first combat prototype. Later patches can add visible turn-by-turn combat, return-to-town travel, injury recovery, loot selling, and threat-clearing logic.
+Returned travelers do not yet sell Slime Gel. They arrive back at town and are recorded as returned travelers. Selling loot is planned for v0.2.2.

@@ -1,6 +1,6 @@
 # Combat Prototype Notes
 
-## v0.2.0 Combat Values
+## v0.2.1 Combat and Return Behavior
 
 Adventurer:
 - HP: 30
@@ -17,9 +17,18 @@ Slime:
 
 ## Current Behavior
 
-When a world traveler reaches the Slime Nest, combat resolves instantly in `GameState.gd`.
+1. Traveler moves from town marker to Slime Nest.
+2. Combat resolves instantly on arrival.
+3. If the traveler wins:
+   - Status becomes `ReturningWithLoot`.
+   - Inventory gains 2 Slime Gel.
+   - Traveler returns to town marker.
+   - Status becomes `ArrivedAtTownWithLoot`.
+4. If the traveler loses:
+   - Status becomes `InjuredReturning`.
+   - Traveler returns to town marker.
+   - Status becomes `ArrivedAtTownInjured`.
 
-This is temporary. Later combat should move into a dedicated system such as:
-- `CombatResolver.gd`
-- `WorldSimulation.gd`
-- `EnemyData.gd` Resource definitions
+## Next Step
+
+v0.2.2 should make returned travelers sell Slime Gel to the town.

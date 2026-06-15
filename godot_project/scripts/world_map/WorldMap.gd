@@ -74,8 +74,8 @@ func _create_traveler_marker(traveler: Dictionary) -> Node2D:
 
 	var label := Label.new()
 	label.name = "Label"
-	label.position = Vector2(-55, -54)
-	label.size = Vector2(180, 60)
+	label.position = Vector2(-65, -70)
+	label.size = Vector2(210, 80)
 	label.text = _build_traveler_label(traveler)
 	marker.add_child(label)
 
@@ -83,11 +83,12 @@ func _create_traveler_marker(traveler: Dictionary) -> Node2D:
 
 func _build_traveler_label(traveler: Dictionary) -> String:
 	var inventory: Dictionary = traveler.get("inventory", {})
-	return "%s\n%s\nHP %d/%d | P:%d G:%d" % [
+	return "%s\n%s\nHP %d/%d | P:%d G:%d\n%s" % [
 		str(traveler.get("display_name", "Traveler")),
 		str(traveler.get("status", "Unknown")),
 		int(traveler.get("hp", 0)),
 		int(traveler.get("max_hp", 0)),
 		int(inventory.get("small_potion", 0)),
-		int(inventory.get("slime_gel", 0))
+		int(inventory.get("slime_gel", 0)),
+		str(traveler.get("last_combat_log", ""))
 	]

@@ -9,6 +9,7 @@ const SLIME_NEST_WORLD_POSITION := Vector2(915, 275)
 const TOWN_WORLD_POSITION := Vector2(642, 430)
 
 const WORLD_TRAVELER_SPEED := 45.0
+const WORLD_RETURN_SPEED := 55.0
 const WORLD_ARRIVAL_DISTANCE := 8.0
 
 const SLIME_MAX_HP := 18
@@ -29,6 +30,7 @@ var town_inventory: Dictionary = {
 
 var adventurers: Array[Node] = []
 var world_travelers: Array[Dictionary] = []
+var returned_travelers: Array[Dictionary] = []
 var next_world_traveler_id: int = 1
 
 var slime_nest_status: String = "Dormant"
@@ -127,6 +129,7 @@ func add_world_traveler_from_adventurer(adventurer: Node) -> Dictionary:
 		"attack": 7,
 		"speed": 1.0,
 		"combat_resolved": false,
+		"has_returned_to_town": false,
 		"last_combat_log": "Traveling to Slime Nest.",
 	}
 
@@ -140,6 +143,12 @@ func get_world_travelers() -> Array[Dictionary]:
 
 func get_world_traveler_count() -> int:
 	return world_travelers.size()
+
+func get_returned_travelers() -> Array[Dictionary]:
+	return returned_travelers
+
+func get_returned_traveler_count() -> int:
+	return returned_travelers.size()
 
 func get_world_traveler_summary() -> String:
 	if world_travelers.is_empty():
@@ -160,6 +169,27 @@ func get_world_traveler_summary() -> String:
 
 	return " | ".join(summary_parts)
 
+func get_returned_traveler_summary() -> String:
+	if returned_travelers.is_empty():
+		return "None"
+
+	var summary_parts: Array[String] = []
+
+	for traveler in returned_travelers:
+		var traveler_name := str(traveler.get("display_name", "Traveler"))
+		var status := str(traveler.get("status", "Returned"))
+		var inventory: Dictionary = traveler.get("inventory", {})
+		var slime_gel := int(inventory.get(SLIME_GEL_ID, 0))
+		summary_parts.append("%s:%s Gel:%d" % [traveler_name, status, slime_gel])
+
+		if summary_parts.size() >= 3:
+			break
+
+	if returned_travelers.size() > 3:
+		summary_parts.append("+%d more" % (returned_travelers.size() - 3))
+
+	return " | ".join(summary_parts)
+
 func _update_world_travelers(delta: float) -> void:
 	if world_travelers.is_empty():
 		return
@@ -171,17 +201,21 @@ func _update_world_travelers(delta: float) -> void:
 		var status := str(traveler.get("status", ""))
 
 		if status == "TravelingToSlimeNest":
-			var current_position: Vector2 = traveler.get("world_position", TOWN_WORLD_POSITION)
-			var target_position: Vector2 = traveler.get("target_position", SLIME_NEST_WORLD_POSITION)
-			var new_position := _move_position_toward(current_position, target_position, WORLD_TRAVELER_SPEED * delta)
-			traveler["world_position"] = new_position
-			changed = true
+			changed = _move_traveler_toward_target(traveler, SLIME_NEST_WORLD_POSITION, WORLD_TRAVELER_SPEED, delta)
 
-			if new_position.distance_to(target_position) <= WORLD_ARRIVAL_DISTANCE:
-				traveler["world_position"] = target_position
+			if _traveler_reached_position(traveler, SLIME_NEST_WORLD_POSITION):
+				traveler["world_position"] = SLIME_NEST_WORLD_POSITION
 				traveler["status"] = "FightingSlime"
 				traveler["last_combat_log"] = "Encountered Slime."
 				_resolve_slime_combat(traveler)
+				changed = true
+
+		elif status == "ReturningWithLoot" or status == "InjuredReturning":
+			changed = _move_traveler_toward_target(traveler, TOWN_WORLD_POSITION, WORLD_RETURN_SPEED, delta)
+
+			if _traveler_reached_position(traveler, TOWN_WORLD_POSITION):
+				traveler["world_position"] = TOWN_WORLD_POSITION
+				_mark_traveler_arrived_at_town(traveler)
 				changed = true
 
 		world_travelers[index] = traveler
@@ -190,6 +224,37 @@ func _update_world_travelers(delta: float) -> void:
 	if changed and _world_simulation_emit_timer >= _world_simulation_emit_interval:
 		_world_simulation_emit_timer = 0.0
 		state_changed.emit()
+
+func _move_traveler_toward_target(traveler: Dictionary, target_position: Vector2, speed: float, delta: float) -> bool:
+	var current_position: Vector2 = traveler.get("world_position", TOWN_WORLD_POSITION)
+	var new_position := _move_position_toward(current_position, target_position, speed * delta)
+	traveler["target_position"] = target_position
+	traveler["world_position"] = new_position
+	return current_position != new_position
+
+func _traveler_reached_position(traveler: Dictionary, target_position: Vector2) -> bool:
+	var current_position: Vector2 = traveler.get("world_position", TOWN_WORLD_POSITION)
+	return current_position.distance_to(target_position) <= WORLD_ARRIVAL_DISTANCE
+
+func _mark_traveler_arrived_at_town(traveler: Dictionary) -> void:
+	if bool(traveler.get("has_returned_to_town", false)):
+		return
+
+	traveler["has_returned_to_town"] = true
+
+	var previous_status := str(traveler.get("status", ""))
+	if previous_status == "ReturningWithLoot":
+		traveler["status"] = "ArrivedAtTownWithLoot"
+		traveler["last_combat_log"] = "Returned to town with loot."
+	elif previous_status == "InjuredReturning":
+		traveler["status"] = "ArrivedAtTownInjured"
+		traveler["last_combat_log"] = "Returned to town injured."
+	else:
+		traveler["status"] = "ArrivedAtTown"
+		traveler["last_combat_log"] = "Returned to town."
+
+	returned_travelers.append(traveler.duplicate(true))
+	state_changed.emit()
 
 func _move_position_toward(current_position: Vector2, target_position: Vector2, max_distance: float) -> Vector2:
 	var direction := target_position - current_position
@@ -252,12 +317,15 @@ func _resolve_slime_combat(traveler: Dictionary) -> void:
 		inventory[SLIME_GEL_ID] = int(inventory.get(SLIME_GEL_ID, 0)) + SLIME_GEL_REWARD
 		traveler["inventory"] = inventory
 		traveler["status"] = "ReturningWithLoot"
-		traveler["last_combat_log"] = "Won vs Slime. Gained %d Slime Gel." % SLIME_GEL_REWARD
+		traveler["target_position"] = TOWN_WORLD_POSITION
+		traveler["last_combat_log"] = "Won vs Slime. Returning with %d Slime Gel." % SLIME_GEL_REWARD
 	elif adventurer_hp <= 0:
 		traveler["status"] = "InjuredReturning"
-		traveler["last_combat_log"] = "Lost vs Slime. Injured."
+		traveler["target_position"] = TOWN_WORLD_POSITION
+		traveler["last_combat_log"] = "Lost vs Slime. Returning injured."
 	else:
 		traveler["status"] = "InjuredReturning"
+		traveler["target_position"] = TOWN_WORLD_POSITION
 		traveler["last_combat_log"] = "Combat timed out. Retreating."
 
 	if potion_used:

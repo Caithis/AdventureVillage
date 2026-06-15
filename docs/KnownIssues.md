@@ -1,15 +1,15 @@
 # Known Issues
 
-## v0.2.0
+## v0.2.1
 
 Known limitations:
-- Combat resolves instantly when a traveler reaches the Slime Nest.
-- Travelers do not return to town yet.
-- Travelers do not sell loot yet.
+- Returned travelers do not sell loot yet.
+- Returned travelers do not respawn as visible Town adventurers yet.
+- Returned travelers remain world traveler markers at the town position.
 - Slime Nest is not cleared or weakened yet.
 - World traveler movement is straight-line movement.
-- World traveler movement only happens while the game is running, but it is managed globally by GameState.
-- World Map markers are rebuilt on state updates and updated each frame while World Map is visible.
+- World traveler simulation is global, but Town scene simulation is not persistent while viewing World Map.
+- Town scene is still unloaded when switching to World Map.
 - Potion price is still hardcoded in `Adventurer.gd`.
 - Slime combat stats are hardcoded in `GameState.gd`.
 - Purchase logic does not yet use `ItemData` Resources.
@@ -25,4 +25,4 @@ Known limitations:
 
 ## Technical Notes
 
-Combat is intentionally placed in `GameState.gd` for this prototype because world travelers are currently stored as dictionaries. This should eventually be refactored into a dedicated combat resolver or world simulation manager once the loop is proven.
+This patch intentionally records returned travelers instead of immediately converting them back into visible Town adventurers. This keeps the return loop testable before adding town re-entry and loot-selling behavior.
