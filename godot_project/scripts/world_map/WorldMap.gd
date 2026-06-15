@@ -31,12 +31,12 @@ func _refresh_world_travelers() -> void:
 	var active_ids: Array[int] = []
 
 	for index in range(GameState.get_world_travelers().size()):
-		var traveler := GameState.get_world_travelers()[index]
-		var traveler_id := int(traveler.get("id", index))
+		var traveler: Dictionary = GameState.get_world_travelers()[index]
+		var traveler_id: int = int(traveler.get("id", index))
 		active_ids.append(traveler_id)
 
 		if not traveler_markers.has(traveler_id):
-			var marker := _create_traveler_marker(traveler)
+			var marker: Node2D = _create_traveler_marker(traveler)
 			world_travelers_container.add_child(marker)
 			traveler_markers[traveler_id] = marker
 
@@ -58,12 +58,12 @@ func _refresh_slimes() -> void:
 	var active_ids: Array[int] = []
 
 	for index in range(GameState.get_world_slimes().size()):
-		var slime := GameState.get_world_slimes()[index]
-		var slime_id := int(slime.get("id", index))
+		var slime: Dictionary = GameState.get_world_slimes()[index]
+		var slime_id: int = int(slime.get("id", index))
 		active_ids.append(slime_id)
 
 		if not slime_markers.has(slime_id):
-			var marker := _create_slime_marker(slime)
+			var marker: Node2D = _create_slime_marker(slime)
 			slimes_container.add_child(marker)
 			slime_markers[slime_id] = marker
 			_spawn_floating_text(marker, "Slime Spawn")
@@ -83,18 +83,18 @@ func _refresh_slimes() -> void:
 	_update_slime_positions_and_labels()
 
 func _update_marker_positions_and_labels() -> void:
-	var travelers := GameState.get_world_travelers()
+	var travelers: Array[Dictionary] = GameState.get_world_travelers()
 
 	for index in range(travelers.size()):
-		var traveler := travelers[index]
-		var traveler_id := int(traveler.get("id", index))
+		var traveler: Dictionary = travelers[index]
+		var traveler_id: int = int(traveler.get("id", index))
 
 		if not traveler_markers.has(traveler_id):
 			continue
 
 		var marker: Node2D = traveler_markers[traveler_id]
 		var base_position: Vector2 = traveler.get("world_position", Vector2(642, 430))
-		var offset := Vector2((index % 5) * 22, floori(float(index) / 5.0) * 28)
+		var offset: Vector2 = Vector2((index % 5) * 22, floori(float(index) / 5.0) * 28)
 		marker.position = base_position + offset
 
 		var label := marker.get_node_or_null("Label") as Label
@@ -104,11 +104,11 @@ func _update_marker_positions_and_labels() -> void:
 		_show_world_event_if_needed(traveler, marker)
 
 func _update_slime_positions_and_labels() -> void:
-	var slimes := GameState.get_world_slimes()
+	var slimes: Array[Dictionary] = GameState.get_world_slimes()
 
 	for index in range(slimes.size()):
-		var slime := slimes[index]
-		var slime_id := int(slime.get("id", index))
+		var slime: Dictionary = slimes[index]
+		var slime_id: int = int(slime.get("id", index))
 
 		if not slime_markers.has(slime_id):
 			continue
@@ -135,8 +135,8 @@ func _create_traveler_marker(traveler: Dictionary) -> Node2D:
 
 	var label := Label.new()
 	label.name = "Label"
-	label.position = Vector2(-70, -96)
-	label.size = Vector2(270, 110)
+	label.position = Vector2(-70, -110)
+	label.size = Vector2(280, 125)
 	label.text = _build_traveler_label(traveler)
 	marker.add_child(label)
 
@@ -156,40 +156,50 @@ func _create_slime_marker(slime: Dictionary) -> Node2D:
 	var label := Label.new()
 	label.name = "Label"
 	label.position = Vector2(-45, 12)
-	label.size = Vector2(130, 48)
+	label.size = Vector2(150, 54)
 	label.text = _build_slime_label(slime)
 	marker.add_child(label)
 
 	return marker
 
 func _show_world_event_if_needed(traveler: Dictionary, marker: Node2D) -> void:
-	var traveler_id := int(traveler.get("id", -1))
+	var traveler_id: int = int(traveler.get("id", -1))
 	if traveler_id < 0:
 		return
 
-	var status := str(traveler.get("status", ""))
-	var log_line := str(traveler.get("last_combat_log", ""))
-	var event_key := "%s|%s" % [status, log_line]
+	var status: String = str(traveler.get("status", ""))
+	var log_line: String = str(traveler.get("last_combat_log", ""))
+	var floating_event_text: String = str(traveler.get("floating_event_text", ""))
+	var damage_taken: int = int(traveler.get("last_damage_taken", 0))
+	var damage_dealt: int = int(traveler.get("last_damage_dealt", 0))
+	var event_key: String = "%s|%s|%s|%d|%d" % [status, log_line, floating_event_text, damage_taken, damage_dealt]
 
 	if str(last_traveler_event_logs.get(traveler_id, "")) == event_key:
 		return
 
 	last_traveler_event_logs[traveler_id] = event_key
-	var event_text := _get_world_event_text(status, log_line)
 
+	var event_text: String = floating_event_text
 	if event_text == "":
-		return
+		event_text = _get_world_event_text(status, log_line)
 
-	_spawn_floating_text(marker, event_text)
+	if event_text != "":
+		_spawn_floating_text(marker, event_text)
+
+	if damage_taken > 0:
+		_spawn_floating_text(marker, "-%d HP" % damage_taken, Vector2(0, -66))
+
+	if damage_dealt > 0 and status == "FightingVisibleSlime":
+		_spawn_floating_text(marker, "%d dmg" % damage_dealt, Vector2(0, -90))
 
 func _show_slime_event_if_needed(slime: Dictionary, marker: Node2D) -> void:
-	var slime_id := int(slime.get("id", -1))
+	var slime_id: int = int(slime.get("id", -1))
 	if slime_id < 0:
 		return
 
-	var status := str(slime.get("status", ""))
-	var log_line := str(slime.get("last_event_log", ""))
-	var event_key := "%s|%s" % [status, log_line]
+	var status: String = str(slime.get("status", ""))
+	var log_line: String = str(slime.get("last_event_log", ""))
+	var event_key: String = "%s|%s" % [status, log_line]
 
 	if str(last_slime_event_logs.get(slime_id, "")) == event_key:
 		return
@@ -198,13 +208,23 @@ func _show_slime_event_if_needed(slime: Dictionary, marker: Node2D) -> void:
 
 	if status == "AggroTraveler":
 		_spawn_floating_text(marker, "Aggro!")
+	elif status == "Engaged":
+		_spawn_floating_text(marker, "Engaged")
+	elif status == "Defeated":
+		_spawn_floating_text(marker, "Slime Defeated")
 
 func _get_world_event_text(status: String, log_line: String) -> String:
+	if status == "FightingVisibleSlime":
+		return "Combat!"
+
 	if status == "NightQuesting":
 		return "Night Quest"
 
 	if status == "SearchingForSlime":
 		return "Searching..."
+
+	if status == "SeekingNextSlime":
+		return "Hunting..."
 
 	if status == "ReturningLowEnergyAtNight":
 		return "Too Tired - Return"
@@ -229,22 +249,22 @@ func _get_world_event_text(status: String, log_line: String) -> String:
 
 	return ""
 
-func _spawn_floating_text(anchor: Node2D, text: String) -> void:
+func _spawn_floating_text(anchor: Node2D, text: String, offset: Vector2 = Vector2(0, -42)) -> void:
 	var floating_text := FLOATING_TEXT_SCENE.instantiate()
 	add_child(floating_text)
-	floating_text.global_position = anchor.global_position + Vector2(0, -42)
+	floating_text.global_position = anchor.global_position + offset
 
 	if floating_text.has_method("setup"):
 		floating_text.setup(text)
 
 func _build_traveler_label(traveler: Dictionary) -> String:
 	var inventory: Dictionary = traveler.get("inventory", {})
-	var sale_message := str(traveler.get("sale_message", ""))
-	var log_line := sale_message
+	var sale_message: String = str(traveler.get("sale_message", ""))
+	var log_line: String = sale_message
 	if log_line == "":
 		log_line = str(traveler.get("last_combat_log", ""))
 
-	return "%s\n%s | Gold:%d\nHP %d/%d | E:%d/%d\nP:%d G:%d | T:%d/%d\n%s" % [
+	return "%s\n%s | Gold:%d\nHP %d/%d | E:%d/%d\nP:%d G:%d | T:%d/%d K:%d\n%s" % [
 		str(traveler.get("display_name", "Traveler")),
 		str(traveler.get("status", "Unknown")),
 		int(traveler.get("gold", 0)),
@@ -256,6 +276,7 @@ func _build_traveler_label(traveler: Dictionary) -> String:
 		int(inventory.get("slime_gel", 0)),
 		int(traveler.get("trip_count", 0)),
 		int(traveler.get("max_trip_count", 0)),
+		int(traveler.get("slime_kills_this_outing", 0)),
 		log_line
 	]
 

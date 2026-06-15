@@ -1,45 +1,44 @@
 # Changelog
 
-## v0.3.2 - Visible Slime Spawn Prototype
+## v0.3.3 - Visible Combat Contact Polish
 
 ### Added
-- World Slime data records in GameState.
-- Slime Nest active spawn count.
-- Spawn interval tied to nest growth.
-- Max active Slimes tied to nest growth.
-- Visible Slime markers on World Map.
-- Slime wandering near nest.
-- Adventurers target visible Slimes.
-- Travelers search near Slime Nest if no visible Slimes are active.
-- Slime aggro onto nearby outbound travelers.
-- Anti-swarm rule limiting Slimes targeting one traveler.
-- Visible Slime spawn documentation.
-- Combat fairness notes.
+- `FightingVisibleSlime` traveler status.
+- Visible combat contact delay before resolution.
+- Floating Combat text on contact.
+- Floating damage text after combat.
+- Floating Slime Defeated text before Slime marker removal.
+- Short combat re-engage cooldown.
+- Multi-monster outing behavior.
+- Traveler Slime kill count per outing.
+- Retreat HP threshold after combat.
+- Weakened retreat danger where Slimes can chase low-HP returning travelers.
+- Combat contact documentation.
+- Multi-monster outing documentation.
 
 ### Changed
-- Slime Nest combat no longer immediately resolves against a fully invisible enemy when traveler reaches the nest.
-- Traveler combat now references a visible Slime when one is available.
-- Victory removes/deactivates the visible Slime involved.
+- Travelers no longer automatically return after one Slime victory if they are still healthy.
+- Slimes are not removed instantly on defeat.
+- Visible combat is easier to read before the next monster system expansion.
 
 ### Not Yet Added
 - Animated combat.
-- Damage floating text.
-- Visible enemy death animation.
-- Full pathfinding.
-- Monster XP and loot ownership.
-- Parties or multi-adventurer combat.
+- Full damage tick combat.
+- XP ownership.
+- Loot weight/carry limit.
+- True flee mechanics.
+- Party combat.
 
-## v0.3.1.1 - FloatingText Type Inference Hotfix
-
-### Fixed
-- Fixed FloatingText parser error.
-
-## v0.3.1 - Floating Event Text Prototype
+## v0.3.2 - Visible Slime Spawn Prototype
 
 ### Added
-- Floating in-world event feedback.
+- Visible Slime markers.
+- Slime wandering.
+- Slime aggro.
+- Adventurers target visible Slimes.
 
 ## Earlier v0.3.x
 
+- Floating event text.
 - Building economy controls.
 - Debug UI collapse fix.

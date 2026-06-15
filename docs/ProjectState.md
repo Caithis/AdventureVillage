@@ -41,3 +41,8 @@ Floating event text now appears for economy and world-map combat/travel events. 
 ## v0.3.2 Update Notes
 
 Visible Slime spawning is now active. Slimes spawn near the Slime Nest, wander, and can aggro nearby outbound travelers. Travelers target visible Slimes instead of only resolving invisible nest combat. An anti-swarm rule limits Slimes targeting one traveler.
+
+
+## v0.3.3 Update Notes
+
+Visible Slime combat now has a short contact delay, FightingVisibleSlime status, damage/event floating text, defeated Slime display delay, and a re-engagement cooldown. Adventurers may now hunt multiple Slimes during one outing until HP drops to the retreat threshold or the prototype kill cap is reached.

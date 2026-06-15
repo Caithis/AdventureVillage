@@ -28,6 +28,12 @@ const SLIME_AGGRO_SPEED := 36.0
 const SLIME_AGGRO_RADIUS := 95.0
 const SLIME_CONTACT_DISTANCE := 15.0
 const MAX_SLIMES_TARGETING_ONE_TRAVELER := 1
+const SLIME_DEFEAT_DISPLAY_SECONDS := 1.0
+
+const VISIBLE_COMBAT_CONTACT_DELAY := 0.85
+const COMBAT_REENGAGE_COOLDOWN := 1.5
+const ADVENTURE_RETREAT_HP_RATIO := 0.50
+const MAX_SLIME_KILLS_PER_OUTING := 3
 
 const NIGHT_SLIME_HP_MULTIPLIER := 1.5
 const NIGHT_SLIME_ATTACK_MULTIPLIER := 1.5
@@ -66,7 +72,7 @@ var _world_simulation_emit_interval: float = 0.15
 var _slime_spawn_timer: float = 999.0
 
 func _process(delta: float) -> void:
-	var changed := false
+	var changed: bool = false
 	changed = _update_world_slimes(delta) or changed
 	changed = _update_world_travelers(delta) or changed
 
@@ -105,7 +111,7 @@ func remove_item(item_id: String, amount: int) -> bool:
 	if amount <= 0:
 		return false
 
-	var current_amount := get_item_count(item_id)
+	var current_amount: int = get_item_count(item_id)
 	if current_amount < amount:
 		return false
 
@@ -182,7 +188,7 @@ func add_world_traveler_from_adventurer(adventurer: Node) -> Dictionary:
 	if adventurer == null:
 		return {}
 
-	var traveler := {
+	var traveler: Dictionary = {
 		"id": next_world_traveler_id,
 		"display_name": _safe_get_property(adventurer, "display_name", "Unknown"),
 		"class_id": _safe_get_property(adventurer, "class_id", "fighter"),
@@ -191,6 +197,7 @@ func add_world_traveler_from_adventurer(adventurer: Node) -> Dictionary:
 		"inventory": _safe_get_property(adventurer, "inventory", {}).duplicate(true),
 		"trip_count": _safe_get_property(adventurer, "trip_count", 0),
 		"max_trip_count": _safe_get_property(adventurer, "max_trip_count", 2),
+		"slime_kills_this_outing": 0,
 		"last_night_sleep_day": _safe_get_property(adventurer, "last_night_sleep_day", -1),
 		"energy": _safe_get_property(adventurer, "energy", DEFAULT_MAX_ENERGY),
 		"max_energy": _safe_get_property(adventurer, "max_energy", DEFAULT_MAX_ENERGY),
@@ -203,9 +210,15 @@ func add_world_traveler_from_adventurer(adventurer: Node) -> Dictionary:
 		"attack": 7,
 		"speed": 1.0,
 		"combat_resolved": false,
+		"combat_contact_timer": 0.0,
+		"combat_cooldown_timer": 0.0,
+		"encounter_source": "",
 		"has_returned_to_town": false,
 		"town_reentry_claimed": false,
 		"sale_message": "",
+		"floating_event_text": "",
+		"last_damage_taken": 0,
+		"last_damage_dealt": 0,
 		"last_combat_log": "Traveling to Slime Nest.",
 	}
 
@@ -230,14 +243,18 @@ func get_returned_traveler_count() -> int:
 	return returned_travelers.size()
 
 func get_world_slimes() -> Array[Dictionary]:
-	var active_slimes: Array[Dictionary] = []
+	var visible_slimes: Array[Dictionary] = []
 	for slime in world_slimes:
 		if bool(slime.get("is_active", true)):
-			active_slimes.append(slime)
-	return active_slimes
+			visible_slimes.append(slime)
+	return visible_slimes
 
 func get_world_slime_count() -> int:
-	return get_world_slimes().size()
+	var count: int = 0
+	for slime in world_slimes:
+		if bool(slime.get("is_active", true)) and str(slime.get("status", "")) != "Defeated":
+			count += 1
+	return count
 
 func get_slime_nest_max_active_slimes() -> int:
 	return mini(SLIME_NEST_BASE_MAX_ACTIVE_SLIMES + slime_nest_growth, SLIME_NEST_HARD_MAX_ACTIVE_SLIMES)
@@ -258,7 +275,7 @@ func claim_unclaimed_returned_travelers() -> Array[Dictionary]:
 	var claimed_ids: Array[int] = []
 
 	for index in range(returned_travelers.size()):
-		var traveler := returned_travelers[index]
+		var traveler: Dictionary = returned_travelers[index]
 
 		if not bool(traveler.get("town_reentry_claimed", false)):
 			traveler["town_reentry_claimed"] = true
@@ -293,12 +310,13 @@ func get_world_traveler_summary() -> String:
 	var summary_parts: Array[String] = []
 
 	for traveler in world_travelers:
-		var traveler_name := str(traveler.get("display_name", "Traveler"))
-		var status := str(traveler.get("status", "Unknown"))
-		var trip_count := int(traveler.get("trip_count", 0))
-		var max_trip_count := int(traveler.get("max_trip_count", 2))
-		var energy := int(traveler.get("energy", DEFAULT_MAX_ENERGY))
-		summary_parts.append("%s:%s T%d/%d E%d" % [traveler_name, status, trip_count, max_trip_count, energy])
+		var traveler_name: String = str(traveler.get("display_name", "Traveler"))
+		var status: String = str(traveler.get("status", "Unknown"))
+		var trip_count: int = int(traveler.get("trip_count", 0))
+		var max_trip_count: int = int(traveler.get("max_trip_count", 2))
+		var energy: int = int(traveler.get("energy", DEFAULT_MAX_ENERGY))
+		var kills: int = int(traveler.get("slime_kills_this_outing", 0))
+		summary_parts.append("%s:%s T%d/%d E%d K%d" % [traveler_name, status, trip_count, max_trip_count, energy, kills])
 
 		if summary_parts.size() >= 3:
 			break
@@ -315,12 +333,12 @@ func get_returned_traveler_summary() -> String:
 	var summary_parts: Array[String] = []
 
 	for traveler in returned_travelers:
-		var traveler_name := str(traveler.get("display_name", "Traveler"))
-		var status := str(traveler.get("status", "Returned"))
-		var sale_message := str(traveler.get("sale_message", ""))
-		var trip_count := int(traveler.get("trip_count", 0))
-		var max_trip_count := int(traveler.get("max_trip_count", 2))
-		var energy := int(traveler.get("energy", DEFAULT_MAX_ENERGY))
+		var traveler_name: String = str(traveler.get("display_name", "Traveler"))
+		var status: String = str(traveler.get("status", "Returned"))
+		var sale_message: String = str(traveler.get("sale_message", ""))
+		var trip_count: int = int(traveler.get("trip_count", 0))
+		var max_trip_count: int = int(traveler.get("max_trip_count", 2))
+		var energy: int = int(traveler.get("energy", DEFAULT_MAX_ENERGY))
 
 		if sale_message != "":
 			summary_parts.append("%s:%s T%d/%d E%d %s" % [traveler_name, status, trip_count, max_trip_count, energy, sale_message])
@@ -336,7 +354,7 @@ func get_returned_traveler_summary() -> String:
 	return " | ".join(summary_parts)
 
 func _update_world_slimes(delta: float) -> bool:
-	var changed := false
+	var changed: bool = false
 	_slime_spawn_timer += delta
 
 	if get_world_slime_count() < get_slime_nest_max_active_slimes() and _slime_spawn_timer >= get_slime_spawn_interval():
@@ -345,49 +363,53 @@ func _update_world_slimes(delta: float) -> bool:
 		changed = true
 
 	for index in range(world_slimes.size()):
-		var slime := world_slimes[index]
+		var slime: Dictionary = world_slimes[index]
 
 		if not bool(slime.get("is_active", true)):
 			continue
 
-		var status := str(slime.get("status", "Wandering"))
+		var status: String = str(slime.get("status", "Wandering"))
 
-		if status == "Wandering":
-			var target_traveler_id := _find_aggro_target_for_slime(slime)
+		if status == "Defeated":
+			slime["defeat_timer"] = float(slime.get("defeat_timer", SLIME_DEFEAT_DISPLAY_SECONDS)) - delta
+			if float(slime.get("defeat_timer", 0.0)) <= 0.0:
+				slime["is_active"] = false
+			changed = true
+
+		elif status == "Engaged":
+			pass
+
+		elif status == "Wandering":
+			var target_traveler_id: int = _find_aggro_target_for_slime(slime)
 			if target_traveler_id >= 0:
 				slime["status"] = "AggroTraveler"
 				slime["target_traveler_id"] = target_traveler_id
 				slime["last_event_log"] = "Slime spotted an adventurer."
 				changed = true
 			else:
-				var moved := _move_slime_toward_wander_target(slime, delta)
+				var moved: bool = _move_slime_toward_wander_target(slime, delta)
 				changed = moved or changed
 
 		elif status == "AggroTraveler":
-			var traveler_index := _find_world_traveler_index_by_id(int(slime.get("target_traveler_id", -1)))
+			var traveler_index: int = _find_world_traveler_index_by_id(int(slime.get("target_traveler_id", -1)))
 			if traveler_index < 0:
-				slime["status"] = "Wandering"
-				slime["target_traveler_id"] = -1
-				slime["target_position"] = _get_random_slime_wander_position()
+				_release_slime_to_wander(slime)
 				changed = true
 			else:
-				var traveler := world_travelers[traveler_index]
-				var traveler_status := str(traveler.get("status", ""))
-				if not _is_outbound_status(traveler_status):
-					slime["status"] = "Wandering"
-					slime["target_traveler_id"] = -1
-					slime["target_position"] = _get_random_slime_wander_position()
+				var traveler: Dictionary = world_travelers[traveler_index]
+				if not _can_slime_continue_targeting_traveler(slime, traveler):
+					_release_slime_to_wander(slime)
 					changed = true
 				else:
 					var traveler_position: Vector2 = traveler.get("world_position", TOWN_WORLD_POSITION)
-					var moved_aggro := _move_slime_toward_position(slime, traveler_position, SLIME_AGGRO_SPEED, delta)
+					var moved_aggro: bool = _move_slime_toward_position(slime, traveler_position, SLIME_AGGRO_SPEED, delta)
 					changed = moved_aggro or changed
 
 					if _slime_reached_position(slime, traveler_position, SLIME_CONTACT_DISTANCE):
-						traveler["status"] = "FightingSlime"
-						traveler["last_combat_log"] = "Slime ambush!"
-						_resolve_slime_combat(traveler, int(slime.get("id", -1)), "ambush")
+						_start_visible_slime_combat(traveler, int(slime.get("id", -1)), "ambush")
 						world_travelers[traveler_index] = traveler
+						slime["status"] = "Engaged"
+						slime["last_event_log"] = "Engaged traveler."
 						changed = true
 
 		world_slimes[index] = slime
@@ -396,8 +418,8 @@ func _update_world_slimes(delta: float) -> bool:
 	return changed
 
 func _spawn_world_slime() -> Dictionary:
-	var spawn_position := _get_random_slime_wander_position()
-	var slime := {
+	var spawn_position: Vector2 = _get_random_slime_wander_position()
+	var slime: Dictionary = {
 		"id": next_world_slime_id,
 		"display_name": "Slime %d" % next_world_slime_id,
 		"status": "Wandering",
@@ -406,6 +428,7 @@ func _spawn_world_slime() -> Dictionary:
 		"home_position": SLIME_NEST_WORLD_POSITION,
 		"target_traveler_id": -1,
 		"is_active": true,
+		"defeat_timer": 0.0,
 		"last_event_log": "Spawned near Slime Nest."
 	}
 
@@ -414,13 +437,13 @@ func _spawn_world_slime() -> Dictionary:
 	return slime
 
 func _get_random_slime_wander_position() -> Vector2:
-	var angle := randf_range(0.0, TAU)
-	var distance := randf_range(20.0, SLIME_WANDER_RADIUS)
+	var angle: float = randf_range(0.0, TAU)
+	var distance: float = randf_range(20.0, SLIME_WANDER_RADIUS)
 	return SLIME_NEST_WORLD_POSITION + Vector2(cos(angle), sin(angle)) * distance
 
 func _move_slime_toward_wander_target(slime: Dictionary, delta: float) -> bool:
 	var target_position: Vector2 = slime.get("target_position", _get_random_slime_wander_position())
-	var moved := _move_slime_toward_position(slime, target_position, SLIME_WANDER_SPEED, delta)
+	var moved: bool = _move_slime_toward_position(slime, target_position, SLIME_WANDER_SPEED, delta)
 
 	if _slime_reached_position(slime, target_position, 5.0):
 		slime["target_position"] = _get_random_slime_wander_position()
@@ -430,7 +453,7 @@ func _move_slime_toward_wander_target(slime: Dictionary, delta: float) -> bool:
 
 func _move_slime_toward_position(slime: Dictionary, target_position: Vector2, speed: float, delta: float) -> bool:
 	var current_position: Vector2 = slime.get("world_position", SLIME_NEST_WORLD_POSITION)
-	var new_position := _move_position_toward(current_position, target_position, speed * delta)
+	var new_position: Vector2 = _move_position_toward(current_position, target_position, speed * delta)
 	slime["world_position"] = new_position
 	slime["target_position"] = target_position
 	return current_position != new_position
@@ -441,37 +464,71 @@ func _slime_reached_position(slime: Dictionary, target_position: Vector2, distan
 
 func _find_aggro_target_for_slime(slime: Dictionary) -> int:
 	var slime_position: Vector2 = slime.get("world_position", SLIME_NEST_WORLD_POSITION)
-	var best_traveler_id := -1
-	var best_distance := SLIME_AGGRO_RADIUS
+	var best_traveler_id: int = -1
+	var best_distance: float = SLIME_AGGRO_RADIUS
 
 	for traveler in world_travelers:
-		var traveler_status := str(traveler.get("status", ""))
-		if not _is_outbound_status(traveler_status):
+		if not _can_slime_target_traveler(traveler):
 			continue
 
-		var traveler_id := int(traveler.get("id", -1))
+		var traveler_id: int = int(traveler.get("id", -1))
 		if _count_slimes_targeting_traveler(traveler_id) >= MAX_SLIMES_TARGETING_ONE_TRAVELER:
 			continue
 
 		var traveler_position: Vector2 = traveler.get("world_position", TOWN_WORLD_POSITION)
-		var distance := slime_position.distance_to(traveler_position)
+		var distance: float = slime_position.distance_to(traveler_position)
 		if distance <= best_distance:
 			best_distance = distance
 			best_traveler_id = traveler_id
 
 	return best_traveler_id
 
+func _can_slime_target_traveler(traveler: Dictionary) -> bool:
+	if float(traveler.get("combat_cooldown_timer", 0.0)) > 0.0:
+		return false
+
+	var traveler_status: String = str(traveler.get("status", ""))
+
+	if _is_outbound_status(traveler_status):
+		return true
+
+	if _is_returning_status(traveler_status):
+		return _is_traveler_weakened_for_retreat_danger(traveler)
+
+	return false
+
+func _can_slime_continue_targeting_traveler(slime: Dictionary, traveler: Dictionary) -> bool:
+	if str(slime.get("status", "")) != "AggroTraveler":
+		return false
+
+	return _can_slime_target_traveler(traveler)
+
+func _is_traveler_weakened_for_retreat_danger(traveler: Dictionary) -> bool:
+	var hp: int = int(traveler.get("hp", 0))
+	var max_hp: int = int(traveler.get("max_hp", 30))
+	return hp <= _get_retreat_hp_threshold(max_hp)
+
+func _get_retreat_hp_threshold(max_hp: int) -> int:
+	return ceili(float(max_hp) * ADVENTURE_RETREAT_HP_RATIO)
+
 func _count_slimes_targeting_traveler(traveler_id: int) -> int:
-	var count := 0
+	var count: int = 0
 
 	for slime in world_slimes:
 		if not bool(slime.get("is_active", true)):
 			continue
 
-		if str(slime.get("status", "")) == "AggroTraveler" and int(slime.get("target_traveler_id", -1)) == traveler_id:
+		var status: String = str(slime.get("status", ""))
+		if (status == "AggroTraveler" or status == "Engaged") and int(slime.get("target_traveler_id", -1)) == traveler_id:
 			count += 1
 
 	return count
+
+func _release_slime_to_wander(slime: Dictionary) -> void:
+	slime["status"] = "Wandering"
+	slime["target_traveler_id"] = -1
+	slime["target_position"] = _get_random_slime_wander_position()
+	slime["last_event_log"] = "Returned to wandering."
 
 func _cleanup_inactive_slimes() -> void:
 	var active_slimes: Array[Dictionary] = []
@@ -484,42 +541,61 @@ func _update_world_travelers(delta: float) -> bool:
 	if world_travelers.is_empty():
 		return false
 
-	var changed := false
+	var changed: bool = false
 
 	for index in range(world_travelers.size()):
-		var traveler := world_travelers[index]
-		var status := str(traveler.get("status", ""))
+		var traveler: Dictionary = world_travelers[index]
+		_tick_traveler_timers(traveler, delta)
 
-		if _is_outbound_status(status):
+		var status: String = str(traveler.get("status", ""))
+
+		if status == "FightingVisibleSlime":
+			traveler["combat_contact_timer"] = float(traveler.get("combat_contact_timer", 0.0)) - delta
+			changed = true
+
+			if float(traveler.get("combat_contact_timer", 0.0)) <= 0.0:
+				_resolve_slime_combat(
+					traveler,
+					int(traveler.get("target_slime_id", -1)),
+					str(traveler.get("encounter_source", "targeted"))
+				)
+				changed = true
+
+		elif _is_outbound_status(status):
 			if _should_return_from_night_risk(traveler):
 				changed = true
+			elif float(traveler.get("combat_cooldown_timer", 0.0)) > 0.0:
+				if str(traveler.get("last_combat_log", "")) != "Catching breath before re-engaging.":
+					traveler["last_combat_log"] = "Catching breath before re-engaging."
+					traveler["floating_event_text"] = "Cooldown"
+					changed = true
 			else:
 				changed = _apply_night_questing_status(traveler) or changed
-				var target_slime := _get_target_slime_for_traveler(traveler)
+				var target_slime: Dictionary = _get_target_slime_for_traveler(traveler)
 
 				if not target_slime.is_empty():
 					var slime_position: Vector2 = target_slime.get("world_position", SLIME_NEST_WORLD_POSITION)
 					traveler["target_slime_id"] = int(target_slime.get("id", -1))
-					var moved_to_slime := _move_traveler_toward_target(traveler, slime_position, WORLD_TRAVELER_SPEED, delta)
+					var moved_to_slime: bool = _move_traveler_toward_target(traveler, slime_position, WORLD_TRAVELER_SPEED, delta)
 					changed = moved_to_slime or changed
 
 					if _traveler_reached_position(traveler, slime_position):
-						traveler["status"] = "FightingSlime"
-						traveler["last_combat_log"] = "Engaged visible Slime."
-						_resolve_slime_combat(traveler, int(target_slime.get("id", -1)), "targeted")
+						_start_visible_slime_combat(traveler, int(target_slime.get("id", -1)), "targeted")
+						_mark_slime_engaged(int(target_slime.get("id", -1)), int(traveler.get("id", -1)))
 						changed = true
 				else:
-					var moved_to_nest := _move_traveler_toward_target(traveler, SLIME_NEST_WORLD_POSITION, WORLD_TRAVELER_SPEED, delta)
+					var moved_to_nest: bool = _move_traveler_toward_target(traveler, SLIME_NEST_WORLD_POSITION, WORLD_TRAVELER_SPEED, delta)
 					changed = moved_to_nest or changed
 
 					if _traveler_reached_position(traveler, SLIME_NEST_WORLD_POSITION):
 						if status != "SearchingForSlime":
 							traveler["status"] = "SearchingForSlime"
 							traveler["last_combat_log"] = "At Slime Nest. Waiting for visible Slime."
+							traveler["floating_event_text"] = "Searching..."
 							changed = true
 
 		elif _is_returning_status(status):
-			var moved_back := _move_traveler_toward_target(traveler, TOWN_WORLD_POSITION, WORLD_RETURN_SPEED, delta)
+			var moved_back: bool = _move_traveler_toward_target(traveler, TOWN_WORLD_POSITION, WORLD_RETURN_SPEED, delta)
 			changed = moved_back or changed
 
 			if _traveler_reached_position(traveler, TOWN_WORLD_POSITION):
@@ -531,6 +607,11 @@ func _update_world_travelers(delta: float) -> bool:
 
 	return changed
 
+func _tick_traveler_timers(traveler: Dictionary, delta: float) -> void:
+	var cooldown: float = float(traveler.get("combat_cooldown_timer", 0.0))
+	if cooldown > 0.0:
+		traveler["combat_cooldown_timer"] = maxf(cooldown - delta, 0.0)
+
 func _is_night() -> bool:
 	return GameClock.get_phase_name() == "Night"
 
@@ -538,7 +619,8 @@ func _is_outbound_status(status: String) -> bool:
 	return status in [
 		"TravelingToSlimeNest",
 		"NightQuesting",
-        "SearchingForSlime"
+		"SearchingForSlime",
+        "SeekingNextSlime"
 	]
 
 func _should_return_from_night_risk(traveler: Dictionary) -> bool:
@@ -550,29 +632,33 @@ func _should_return_from_night_risk(traveler: Dictionary) -> bool:
 		traveler["target_position"] = TOWN_WORLD_POSITION
 		traveler["target_slime_id"] = -1
 		traveler["last_combat_log"] = "Night quests disabled. Returning to town."
+		traveler["floating_event_text"] = "Night Quests Off"
 		return true
 
-	var energy := int(traveler.get("energy", DEFAULT_MAX_ENERGY))
+	var energy: int = int(traveler.get("energy", DEFAULT_MAX_ENERGY))
 	if energy <= NIGHT_RETREAT_ENERGY_THRESHOLD:
 		traveler["status"] = "ReturningLowEnergyAtNight"
 		traveler["target_position"] = TOWN_WORLD_POSITION
 		traveler["target_slime_id"] = -1
 		traveler["last_combat_log"] = "Too tired for Night quest. Returning."
+		traveler["floating_event_text"] = "Too Tired - Return"
 		return true
 
 	return false
 
 func _apply_night_questing_status(traveler: Dictionary) -> bool:
-	var status := str(traveler.get("status", ""))
+	var status: String = str(traveler.get("status", ""))
 	if _is_night():
 		if status != "NightQuesting":
 			traveler["status"] = "NightQuesting"
 			traveler["last_combat_log"] = "Continuing quest at Night. Danger increased."
+			traveler["floating_event_text"] = "Night Quest"
 			return true
 	else:
 		if status == "NightQuesting":
 			traveler["status"] = "TravelingToSlimeNest"
 			traveler["last_combat_log"] = "Day returned. Night danger faded."
+			traveler["floating_event_text"] = "Day Returned"
 			return true
 
 	return false
@@ -586,20 +672,21 @@ func _is_returning_status(status: String) -> bool:
 	]
 
 func _get_target_slime_for_traveler(traveler: Dictionary) -> Dictionary:
-	var target_slime_id := int(traveler.get("target_slime_id", -1))
-	var existing_target := _get_active_slime_by_id(target_slime_id)
+	var traveler_id: int = int(traveler.get("id", -1))
+	var target_slime_id: int = int(traveler.get("target_slime_id", -1))
+	var existing_target: Dictionary = _get_active_slime_by_id(target_slime_id, traveler_id)
 	if not existing_target.is_empty():
 		return existing_target
 
 	var traveler_position: Vector2 = traveler.get("world_position", TOWN_WORLD_POSITION)
-	return _get_nearest_active_slime(traveler_position)
+	return _get_nearest_available_slime(traveler_position, traveler_id)
 
-func _get_active_slime_by_id(slime_id: int) -> Dictionary:
+func _get_active_slime_by_id(slime_id: int, traveler_id: int = -1) -> Dictionary:
 	if slime_id < 0:
 		return {}
 
 	for slime in world_slimes:
-		if not bool(slime.get("is_active", true)):
+		if not _is_slime_available_for_traveler(slime, traveler_id):
 			continue
 
 		if int(slime.get("id", -1)) == slime_id:
@@ -607,22 +694,35 @@ func _get_active_slime_by_id(slime_id: int) -> Dictionary:
 
 	return {}
 
-func _get_nearest_active_slime(from_position: Vector2) -> Dictionary:
+func _get_nearest_available_slime(from_position: Vector2, traveler_id: int) -> Dictionary:
 	var best_slime: Dictionary = {}
-	var best_distance := 999999.0
+	var best_distance: float = 999999.0
 
 	for slime in world_slimes:
-		if not bool(slime.get("is_active", true)):
+		if not _is_slime_available_for_traveler(slime, traveler_id):
 			continue
 
 		var slime_position: Vector2 = slime.get("world_position", SLIME_NEST_WORLD_POSITION)
-		var distance := from_position.distance_to(slime_position)
+		var distance: float = from_position.distance_to(slime_position)
 
 		if distance < best_distance:
 			best_distance = distance
 			best_slime = slime
 
 	return best_slime
+
+func _is_slime_available_for_traveler(slime: Dictionary, traveler_id: int) -> bool:
+	if not bool(slime.get("is_active", true)):
+		return false
+
+	var status: String = str(slime.get("status", ""))
+	if status == "Defeated" or status == "Engaged":
+		return false
+
+	if status == "AggroTraveler" and int(slime.get("target_traveler_id", -1)) != traveler_id:
+		return false
+
+	return true
 
 func _find_world_traveler_index_by_id(traveler_id: int) -> int:
 	for index in range(world_travelers.size()):
@@ -633,7 +733,7 @@ func _find_world_traveler_index_by_id(traveler_id: int) -> int:
 
 func _move_traveler_toward_target(traveler: Dictionary, target_position: Vector2, speed: float, delta: float) -> bool:
 	var current_position: Vector2 = traveler.get("world_position", TOWN_WORLD_POSITION)
-	var new_position := _move_position_toward(current_position, target_position, speed * delta)
+	var new_position: Vector2 = _move_position_toward(current_position, target_position, speed * delta)
 	traveler["target_position"] = target_position
 	traveler["world_position"] = new_position
 	return current_position != new_position
@@ -642,6 +742,25 @@ func _traveler_reached_position(traveler: Dictionary, target_position: Vector2) 
 	var current_position: Vector2 = traveler.get("world_position", TOWN_WORLD_POSITION)
 	return current_position.distance_to(target_position) <= WORLD_ARRIVAL_DISTANCE
 
+func _start_visible_slime_combat(traveler: Dictionary, slime_id: int, encounter_source: String) -> void:
+	traveler["status"] = "FightingVisibleSlime"
+	traveler["target_slime_id"] = slime_id
+	traveler["encounter_source"] = encounter_source
+	traveler["combat_contact_timer"] = VISIBLE_COMBAT_CONTACT_DELAY
+	traveler["last_combat_log"] = "Combat contact with visible Slime."
+	traveler["floating_event_text"] = "Combat!"
+
+func _mark_slime_engaged(slime_id: int, traveler_id: int) -> void:
+	for index in range(world_slimes.size()):
+		if int(world_slimes[index].get("id", -1)) == slime_id:
+			var slime: Dictionary = world_slimes[index]
+			if bool(slime.get("is_active", true)) and str(slime.get("status", "")) != "Defeated":
+				slime["status"] = "Engaged"
+				slime["target_traveler_id"] = traveler_id
+				slime["last_event_log"] = "Engaged traveler."
+				world_slimes[index] = slime
+			return
+
 func _mark_traveler_arrived_at_town(traveler: Dictionary) -> void:
 	if bool(traveler.get("has_returned_to_town", false)):
 		return
@@ -649,7 +768,7 @@ func _mark_traveler_arrived_at_town(traveler: Dictionary) -> void:
 	traveler["has_returned_to_town"] = true
 	traveler["target_slime_id"] = -1
 
-	var previous_status := str(traveler.get("status", ""))
+	var previous_status: String = str(traveler.get("status", ""))
 	if previous_status == "ReturningWithLoot":
 		traveler["status"] = "AwaitingTownReentryWithLoot"
 		traveler["last_combat_log"] = "Returned to town with loot. Awaiting re-entry."
@@ -667,11 +786,10 @@ func _mark_traveler_arrived_at_town(traveler: Dictionary) -> void:
 		traveler["last_combat_log"] = "Returned to town. Awaiting re-entry."
 
 	returned_travelers.append(traveler.duplicate(true))
-	# Do not emit state_changed here; emit after _process safely finishes simulation loops.
 
 func _move_position_toward(current_position: Vector2, target_position: Vector2, max_distance: float) -> Vector2:
-	var direction := target_position - current_position
-	var distance := direction.length()
+	var direction: Vector2 = target_position - current_position
+	var distance: float = direction.length()
 
 	if distance <= max_distance or distance <= 0.0:
 		return target_position
@@ -679,31 +797,29 @@ func _move_position_toward(current_position: Vector2, target_position: Vector2, 
 	return current_position + direction.normalized() * max_distance
 
 func _resolve_slime_combat(traveler: Dictionary, slime_id: int = -1, encounter_source: String = "") -> void:
-	if bool(traveler.get("combat_resolved", false)):
-		return
+	var starting_hp: int = int(traveler.get("hp", 30))
+	var adventurer_hp: int = starting_hp
+	var adventurer_max_hp: int = int(traveler.get("max_hp", 30))
+	var adventurer_attack: int = int(traveler.get("attack", 7))
+	var adventurer_speed: float = float(traveler.get("speed", 1.0))
+	var adventurer_meter: float = 0.0
 
-	traveler["combat_resolved"] = true
-
-	var adventurer_hp := int(traveler.get("hp", 30))
-	var adventurer_max_hp := int(traveler.get("max_hp", 30))
-	var adventurer_attack := int(traveler.get("attack", 7))
-	var adventurer_speed := float(traveler.get("speed", 1.0))
-	var adventurer_meter := 0.0
-
-	var slime_hp := SLIME_MAX_HP
-	var slime_attack := SLIME_ATTACK
-	var slime_meter := 0.0
-	var night_combat := _is_night()
+	var slime_starting_hp: int = SLIME_MAX_HP
+	var slime_hp: int = slime_starting_hp
+	var slime_attack: int = SLIME_ATTACK
+	var slime_meter: float = 0.0
+	var night_combat: bool = _is_night()
 
 	if night_combat:
 		slime_hp = ceili(float(SLIME_MAX_HP) * NIGHT_SLIME_HP_MULTIPLIER)
+		slime_starting_hp = slime_hp
 		slime_attack = ceili(float(SLIME_ATTACK) * NIGHT_SLIME_ATTACK_MULTIPLIER)
 		traveler["last_combat_log"] = "Night combat: Slime empowered."
 
 	var inventory: Dictionary = traveler.get("inventory", {})
-	var potion_used := false
+	var potion_used: bool = false
 
-	var rounds := 0
+	var rounds: int = 0
 	while adventurer_hp > 0 and slime_hp > 0 and rounds < 100:
 		rounds += 1
 		adventurer_meter += adventurer_speed
@@ -725,15 +841,22 @@ func _resolve_slime_combat(traveler: Dictionary, slime_id: int = -1, encounter_s
 			slime_meter = 0.0
 			adventurer_hp -= slime_attack
 
+	var damage_taken: int = maxi(starting_hp - adventurer_hp, 0)
+	var damage_dealt: int = maxi(slime_starting_hp - maxi(slime_hp, 0), 0)
+
 	traveler["hp"] = maxi(adventurer_hp, 0)
 	traveler["inventory"] = inventory
 	traveler["target_slime_id"] = -1
+	traveler["combat_contact_timer"] = 0.0
+	traveler["combat_cooldown_timer"] = COMBAT_REENGAGE_COOLDOWN
+	traveler["last_damage_taken"] = damage_taken
+	traveler["last_damage_dealt"] = damage_dealt
 
-	var night_note := ""
+	var night_note: String = ""
 	if night_combat:
 		night_note = " Night danger applied."
 
-	var source_note := ""
+	var source_note: String = ""
 	if encounter_source == "ambush":
 		source_note = " Ambushed by visible Slime."
 	elif encounter_source == "targeted":
@@ -742,26 +865,57 @@ func _resolve_slime_combat(traveler: Dictionary, slime_id: int = -1, encounter_s
 	if slime_hp <= 0:
 		inventory[SLIME_GEL_ID] = int(inventory.get(SLIME_GEL_ID, 0)) + SLIME_GEL_REWARD
 		traveler["inventory"] = inventory
-		traveler["status"] = "ReturningWithLoot"
-		traveler["target_position"] = TOWN_WORLD_POSITION
-		traveler["combat_resolved"] = false
-		traveler["last_combat_log"] = "Won vs Slime. Returning with %d Slime Gel.%s%s" % [SLIME_GEL_REWARD, night_note, source_note]
+		traveler["slime_kills_this_outing"] = int(traveler.get("slime_kills_this_outing", 0)) + 1
 		_mark_slime_defeated(slime_id)
+
+		if _should_traveler_return_after_victory(traveler):
+			traveler["status"] = "ReturningWithLoot"
+			traveler["target_position"] = TOWN_WORLD_POSITION
+			traveler["last_combat_log"] = "Won vs Slime. Returning with loot. Kills %d/%d.%s%s" % [
+				int(traveler.get("slime_kills_this_outing", 0)),
+				MAX_SLIME_KILLS_PER_OUTING,
+				night_note,
+				source_note
+			]
+		else:
+			traveler["status"] = "SeekingNextSlime"
+			traveler["target_position"] = SLIME_NEST_WORLD_POSITION
+			traveler["last_combat_log"] = "Won vs Slime. Hunting next. Kills %d/%d.%s%s" % [
+				int(traveler.get("slime_kills_this_outing", 0)),
+				MAX_SLIME_KILLS_PER_OUTING,
+				night_note,
+				source_note
+			]
+
+		traveler["floating_event_text"] = "Victory!"
+
 	elif adventurer_hp <= 0:
 		traveler["status"] = "InjuredReturning"
 		traveler["target_position"] = TOWN_WORLD_POSITION
-		traveler["combat_resolved"] = false
 		traveler["last_combat_log"] = "Lost vs Slime. Returning injured.%s%s" % [night_note, source_note]
+		traveler["floating_event_text"] = "Defeated!"
 		_release_slime_after_combat(slime_id)
 	else:
 		traveler["status"] = "InjuredReturning"
 		traveler["target_position"] = TOWN_WORLD_POSITION
-		traveler["combat_resolved"] = false
 		traveler["last_combat_log"] = "Combat timed out. Retreating.%s%s" % [night_note, source_note]
+		traveler["floating_event_text"] = "Retreat!"
 		_release_slime_after_combat(slime_id)
 
 	if potion_used:
 		traveler["last_combat_log"] += " Potion used."
+
+func _should_traveler_return_after_victory(traveler: Dictionary) -> bool:
+	var hp: int = int(traveler.get("hp", 0))
+	var max_hp: int = int(traveler.get("max_hp", 30))
+	if hp <= _get_retreat_hp_threshold(max_hp):
+		traveler["last_combat_log"] = "Health low. Returning."
+		return true
+
+	if int(traveler.get("slime_kills_this_outing", 0)) >= MAX_SLIME_KILLS_PER_OUTING:
+		return true
+
+	return false
 
 func _mark_slime_defeated(slime_id: int) -> void:
 	if slime_id < 0:
@@ -769,10 +923,12 @@ func _mark_slime_defeated(slime_id: int) -> void:
 
 	for index in range(world_slimes.size()):
 		if int(world_slimes[index].get("id", -1)) == slime_id:
-			var slime := world_slimes[index]
+			var slime: Dictionary = world_slimes[index]
 			slime["status"] = "Defeated"
-			slime["is_active"] = false
-			slime["last_event_log"] = "Defeated by adventurer."
+			slime["target_traveler_id"] = -1
+			slime["defeat_timer"] = SLIME_DEFEAT_DISPLAY_SECONDS
+			slime["is_active"] = true
+			slime["last_event_log"] = "Slime defeated."
 			world_slimes[index] = slime
 			return
 
@@ -782,7 +938,7 @@ func _release_slime_after_combat(slime_id: int) -> void:
 
 	for index in range(world_slimes.size()):
 		if int(world_slimes[index].get("id", -1)) == slime_id:
-			var slime := world_slimes[index]
+			var slime: Dictionary = world_slimes[index]
 			if bool(slime.get("is_active", true)):
 				slime["status"] = "Wandering"
 				slime["target_traveler_id"] = -1

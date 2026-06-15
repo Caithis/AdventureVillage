@@ -1,16 +1,15 @@
 # Known Issues
 
-## v0.3.2
+## v0.3.3
 
 Known limitations:
-- Slimes are simple ColorRect markers.
-- Slimes do not have polished sprites.
-- Slime wandering uses simple straight-line movement.
-- Combat still resolves instantly.
-- Slimes do not animate attacks.
-- Slimes do not have XP ownership or kill credit yet.
-- Anti-swarm rule is simple: one Slime target per traveler.
-- Slime Nest spawn cap is hardcoded.
-- Slime Nest growth affects max active count and spawn interval but not full ecosystem pressure yet.
+- Combat still resolves as a single calculation after a short delay.
+- Floating damage text is summary-style, not per-hit damage ticks.
+- Adventurers do not gain XP yet.
+- Kill credit is not tracked beyond prototype outing count.
+- Retreat is based mostly on HP and hunt cap.
+- Weakened retreat danger is simple and may need tuning.
+- Slimes still use simple straight-line movement.
+- Slime Defeated marker uses a simple timed display.
 - No full pathfinding.
-- No visible dungeon/nest menu yet.
+- No party combat.
