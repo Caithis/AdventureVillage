@@ -2,7 +2,7 @@
 
 ## Current Version
 
-v0.1.0 - Walking Skeleton
+v0.1.1 - Placeholder Adventurer Spawn
 
 ## Godot Version
 
@@ -20,6 +20,10 @@ Target: Godot 4.x stable
 - Debug UI can switch between Town and World Map.
 - Debug UI displays money, inventory, adventurer count, current view, and Slime Nest status.
 - Accelerated day/night clock runs.
+- Spawn Adventurer button is enabled.
+- Town scene can spawn placeholder adventurers.
+- Spawned adventurers register with GameState.
+- Debug UI adventurer count updates when adventurers spawn.
 
 ## Current Test Flow
 
@@ -27,17 +31,16 @@ Target: Godot 4.x stable
 2. Run the project.
 3. Confirm the game starts in Town view.
 4. Confirm the Debug UI appears in the upper-left.
-5. Confirm the clock moves and switches between Day and Night.
-6. Click `World Map`.
-7. Confirm the World Map view appears.
-8. Click `Town`.
-9. Confirm the Town view appears.
-10. Click `Add 25 Money`.
-11. Confirm money increases.
-12. Click `Add Slime Gel`.
-13. Confirm Slime Gel count increases.
-14. Click `Grow Slime Nest`.
-15. Confirm Slime Nest status/growth updates.
+5. Click `Spawn Adventurer`.
+6. Confirm one placeholder adventurer appears near the town entrance.
+7. Confirm the adventurer count increases.
+8. Click `Spawn Adventurer` multiple times.
+9. Confirm multiple adventurers appear with slight position offsets.
+10. Click `World Map`.
+11. Confirm the World Map view appears.
+12. Click `Town`.
+13. Confirm the Town view appears again.
+14. Spawn another adventurer after returning to Town.
 
 ## Current Scope
 
@@ -48,25 +51,29 @@ Included:
 - Placeholder world map scene
 - Placeholder Slime Nest status
 - Accelerated simulation clock
+- Placeholder adventurer scene
+- Placeholder adventurer spawn
+- Adventurer registration in GameState
 
 Not included:
-- Adventurer sprite/entity
-- Adventurer AI
+- Adventurer movement
+- Adventurer AI behavior beyond idle placeholder
 - Shopping behavior
 - Combat
 - Real building placement
 - Save/load
 - Tilemaps
-- Art pipeline
+- Final pixel art
 
 ## Next Planned Version
 
-v0.1.1 - Placeholder Adventurer Spawn
+v0.1.2 - Adventurer Town Routine
 
 Planned additions:
-- Adventurer.tscn
-- Adventurer.gd
-- AdventurerAI.gd
-- Spawn Adventurer button should create one placeholder adventurer in Town.
-- Adventurer should register with GameState.
-- Adventurer should move between Town entrance, General Store, and Town exit.
+- Adventurer moves from Town Entrance to General Store.
+- Adventurer waits briefly at General Store.
+- Adventurer buys one Small Potion if affordable and in stock.
+- Adventurer gold decreases.
+- Town Small Potion stock decreases.
+- Adventurer moves to Town Exit.
+- Adventurer state is visible in its label or Debug UI.

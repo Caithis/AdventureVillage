@@ -1,29 +1,48 @@
 # Changelog
 
-## v0.1.0 - Walking Skeleton
+## v0.1.1 - Placeholder Adventurer Spawn
 
 ### Added
-- Main scene.
-- Town scene.
-- World Map scene.
-- Debug UI scene.
-- GameClock autoload.
-- GameState autoload.
-- SceneRouter autoload.
-- Registered autoloads in `project.godot`.
-- Main scene set in `project.godot`.
-- Debug UI buttons for Town and World Map switching.
-- Debug UI labels for money, inventory, adventurer count, current view, time, and Slime Nest status.
-- Placeholder town layout with Guild Hall, Inn, and General Store.
-- Placeholder world map with Grassland Edge and Slime Nest.
-- Simple debug buttons for adding money, adding Slime Gel, and growing Slime Nest.
+- `Adventurer.tscn`.
+- `Adventurer.gd`.
+- `AdventurerAI.gd`.
+- Enabled Spawn Adventurer button in Debug UI.
+- Debug UI can request adventurer spawn through SceneRouter.
+- SceneRouter can forward spawn requests to the active Town scene.
+- Town scene can spawn placeholder adventurers.
+- Placeholder adventurers appear as 16x16 ColorRect bodies.
+- Adventurers have basic properties:
+  - display name
+  - class id
+  - level
+  - gold
+  - happiness
+  - health
+  - inventory
+- Adventurers register with GameState.
+- Debug UI adventurer count updates when adventurers spawn.
+- Randomized test names for spawned adventurers.
 
 ### Changed
-- Project moved from setup-only v0.0.1 to first visible running skeleton.
+- Town scene now includes an `Adventurers` node.
+- Town scene exposes `spawn_placeholder_adventurer()`.
+- Debug UI Spawn Adventurer button is no longer disabled.
 
 ### Not Yet Added
-- Adventurer entities.
-- Adventurer AI.
-- Shop purchasing.
+- Adventurer movement.
+- General Store shopping.
+- World travel.
 - Combat.
 - Threat clearing.
+
+## v0.1.1.1 - Autoload Name Conflict Hotfix
+
+### Fixed
+- Removed `class_name` from `GameClock.gd`.
+- Removed `class_name` from `GameState.gd`.
+- Removed `class_name` from `SceneRouter.gd`.
+- Fixed Godot parser error where class names hid Autoload singleton names.
+
+### Notes
+- Autoload singleton names remain unchanged in `project.godot`.
+- Other scripts should still call `GameClock`, `GameState`, and `SceneRouter` normally.

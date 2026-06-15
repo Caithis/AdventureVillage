@@ -2,7 +2,7 @@
 
 ## Current Version
 
-v0.1.0 - Walking Skeleton
+v0.1.1 - Placeholder Adventurer Spawn
 
 ## Core Fantasy
 
@@ -14,7 +14,7 @@ Build town infrastructure → attract adventurers → sell supplies → adventur
 
 ## Current Implemented Slice
 
-v0.1.0 implements only the visible shell:
+v0.1.1 implements:
 - Main scene
 - Town scene
 - World Map scene
@@ -22,7 +22,9 @@ v0.1.0 implements only the visible shell:
 - GameClock
 - GameState
 - SceneRouter
+- Placeholder adventurer spawning
 
 ## Next Design Target
 
-The next design target is a placeholder adventurer who can spawn into town and move through a simple routine.
+The next design target is a basic adventurer town routine:
+Town Entrance → General Store → buy Small Potion → Town Exit.

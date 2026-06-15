@@ -75,5 +75,4 @@ text = "Grow Slime Nest"
 
 [node name="SpawnAdventurerButton" type="Button" parent="PanelContainer/VBoxContainer"]
 layout_mode = 2
-disabled = true
-text = "Spawn Adventurer - v0.1.1"
+text = "Spawn Adventurer"

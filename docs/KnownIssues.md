@@ -1,18 +1,17 @@
 # Known Issues
 
-## v0.1.0
+## v0.1.1
 
 Known limitations:
-- No adventurer spawns yet.
-- The `Spawn Adventurer` button is intentionally disabled behavior for now and displays no entity.
-- Town and World Map use placeholder `ColorRect`/`Label` visuals.
-- No TileMap or real pixel art yet.
+- Adventurers spawn but do not move yet.
+- Adventurers do not persist when the Town scene is unloaded and reloaded.
+- Adventurers have placeholder visuals only.
+- No animation yet.
+- No shop purchasing yet.
 - No combat.
-- No economy simulation.
 - No save/load.
-- No settings menu.
-- No real game UI beyond Debug UI.
+- No real pixel-art sprites yet.
 
-## Possible Godot Import Notes
+## Technical Notes
 
-If Godot reports generated UID differences, that is fine. Godot may rewrite scene/resource UIDs locally.
+Adventurer persistence is intentionally not solved in this patch. For now, spawned adventurers belong to the active Town scene. Later, we will decide whether persistent adventurers are scene nodes, data records, or both.

@@ -26,7 +26,6 @@ builds/
 exports/
 *.exe
 *.pck
-*.zip
 
 # Temporary files
 *.tmp
