@@ -22,6 +22,7 @@ var movement_speed: float = 85.0
 var target_position: Vector2 = Vector2.ZERO
 var has_target: bool = false
 var arrival_distance: float = 3.0
+var has_entered_world_travel: bool = false
 
 func _ready() -> void:
     target_position = global_position
@@ -86,21 +87,32 @@ func try_buy_small_potion() -> String:
         set_purchase_message("Cannot afford potion")
         return "no_gold"
 
-    var removed_from_town := GameState.remove_item(SMALL_POTION_ID, 1)
-    if not removed_from_town:
+    var spent_gold := spend_gold(SMALL_POTION_PRICE)
+    if not spent_gold:
         set_purchase_message("Purchase failed")
         return "failed"
 
-    var spent_gold := spend_gold(SMALL_POTION_PRICE)
-    if not spent_gold:
-        # Safety rollback. This should not happen because gold is checked before removal.
-        GameState.add_item(SMALL_POTION_ID, 1)
+    var removed_from_town := GameState.remove_item(SMALL_POTION_ID, 1)
+    if not removed_from_town:
+        # Safety rollback. This should not happen because stock is checked first.
+        gold += SMALL_POTION_PRICE
         set_purchase_message("Purchase failed")
+        _refresh_label()
         return "failed"
 
     add_item(SMALL_POTION_ID, 1)
+    GameState.add_money(SMALL_POTION_PRICE)
     set_purchase_message("Bought potion")
     return "bought"
+
+func enter_world_travel() -> void:
+    if has_entered_world_travel:
+        return
+
+    has_entered_world_travel = true
+    set_state("LeavingTown")
+    GameState.add_world_traveler_from_adventurer(self)
+    queue_free()
 
 func add_item(item_id: String, amount: int) -> void:
     if amount <= 0:

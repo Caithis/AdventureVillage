@@ -13,8 +13,8 @@ anchor_bottom = 1.0
 layout_mode = 1
 offset_left = 10.0
 offset_top = 10.0
-offset_right = 310.0
-offset_bottom = 305.0
+offset_right = 330.0
+offset_bottom = 330.0
 
 [node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer"]
 layout_mode = 2
@@ -41,7 +41,11 @@ text = "Inventory: -"
 
 [node name="AdventurerLabel" type="Label" parent="PanelContainer/VBoxContainer"]
 layout_mode = 2
-text = "Adventurers: 0"
+text = "In-Town Adventurers: 0"
+
+[node name="WorldTravelerLabel" type="Label" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "World Travelers: 0"
 
 [node name="ThreatLabel" type="Label" parent="PanelContainer/VBoxContainer"]
 layout_mode = 2

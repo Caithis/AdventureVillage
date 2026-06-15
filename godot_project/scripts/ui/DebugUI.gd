@@ -5,6 +5,7 @@ extends Control
 @onready var money_label: Label = $PanelContainer/VBoxContainer/MoneyLabel
 @onready var inventory_label: Label = $PanelContainer/VBoxContainer/InventoryLabel
 @onready var adventurer_label: Label = $PanelContainer/VBoxContainer/AdventurerLabel
+@onready var world_traveler_label: Label = $PanelContainer/VBoxContainer/WorldTravelerLabel
 @onready var threat_label: Label = $PanelContainer/VBoxContainer/ThreatLabel
 
 @onready var town_button: Button = $PanelContainer/VBoxContainer/TownButton
@@ -69,7 +70,8 @@ func _refresh_state_labels() -> void:
 		GameState.get_item_count("small_potion"),
 		GameState.get_item_count("slime_gel")
 	]
-	adventurer_label.text = "Adventurers: %d" % GameState.get_adventurer_count()
+	adventurer_label.text = "In-Town Adventurers: %d" % GameState.get_adventurer_count()
+	world_traveler_label.text = "World Travelers: %d" % GameState.get_world_traveler_count()
 	threat_label.text = "Slime Nest: %s | Growth %d" % [
 		GameState.slime_nest_status,
 		GameState.slime_nest_growth

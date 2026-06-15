@@ -7,6 +7,7 @@ var general_store_position: Vector2 = Vector2.ZERO
 var exit_position: Vector2 = Vector2.ZERO
 var wait_timer: float = 0.0
 var purchase_result_wait_seconds: float = 1.25
+var leaving_town_wait_seconds: float = 0.25
 
 @onready var adventurer: Adventurer = get_parent() as Adventurer
 
@@ -25,8 +26,8 @@ func _process(delta: float) -> void:
             _state_purchase_result(delta)
         "GoToExit":
             _state_go_to_exit()
-        "IdleAtExit":
-            pass
+        "LeavingTown":
+            _state_leaving_town(delta)
         _:
             pass
 
@@ -57,7 +58,8 @@ func set_state(new_state: String) -> void:
         "GoToExit":
             if adventurer != null:
                 adventurer.set_move_target(exit_position)
-        "IdleAtExit":
+        "LeavingTown":
+            wait_timer = leaving_town_wait_seconds
             if adventurer != null:
                 adventurer.clear_move_target()
         _:
@@ -106,4 +108,10 @@ func _state_go_to_exit() -> void:
         return
 
     if not adventurer.has_target and adventurer.has_reached_target():
-        set_state("IdleAtExit")
+        set_state("LeavingTown")
+
+func _state_leaving_town(delta: float) -> void:
+    wait_timer -= delta
+
+    if wait_timer <= 0.0 and adventurer != null and adventurer.has_method("enter_world_travel"):
+        adventurer.enter_world_travel()

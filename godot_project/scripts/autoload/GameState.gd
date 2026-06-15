@@ -14,6 +14,8 @@ var town_inventory: Dictionary = {
 }
 
 var adventurers: Array[Node] = []
+var world_travelers: Array[Dictionary] = []
+var next_world_traveler_id: int = 1
 
 var slime_nest_status: String = "Dormant"
 var slime_nest_growth: int = 0
@@ -85,6 +87,43 @@ func _remove_invalid_adventurer_references() -> void:
 		if is_instance_valid(adventurer):
 			valid_adventurers.append(adventurer)
 	adventurers = valid_adventurers
+
+func add_world_traveler_from_adventurer(adventurer: Node) -> Dictionary:
+	if adventurer == null:
+		return {}
+
+	var traveler := {
+		"id": next_world_traveler_id,
+		"display_name": _safe_get_property(adventurer, "display_name", "Unknown"),
+		"class_id": _safe_get_property(adventurer, "class_id", "fighter"),
+		"level": _safe_get_property(adventurer, "level", 1),
+		"gold": _safe_get_property(adventurer, "gold", 0),
+		"inventory": _safe_get_property(adventurer, "inventory", {}).duplicate(true),
+		"status": "Near Town",
+		"world_position": Vector2(642, 430),
+	}
+
+	next_world_traveler_id += 1
+	world_travelers.append(traveler)
+	state_changed.emit()
+	return traveler
+
+func get_world_travelers() -> Array[Dictionary]:
+	return world_travelers
+
+func get_world_traveler_count() -> int:
+	return world_travelers.size()
+
+func _safe_get_property(object: Object, property_name: String, fallback: Variant) -> Variant:
+	if object == null:
+		return fallback
+
+	# In Godot 4, direct dynamic get() returns null if missing.
+	var value: Variant = object.get(property_name)
+	if value == null:
+		return fallback
+
+	return value
 
 func grow_slime_nest(amount: int = 1) -> void:
 	slime_nest_growth += amount

@@ -17,16 +17,22 @@ func spawn_placeholder_adventurer() -> void:
 	adventurers_container.add_child(adventurer)
 
 	var spawn_offset := Vector2((spawn_count % 8) * 24, -int(spawn_count / 8) * 24)
-	adventurer.global_position = town_entrance.global_position + spawn_offset
+	var queue_offset := Vector2((spawn_count % 4) * 18, int(spawn_count / 4) * 12)
+
+	var entrance_position := town_entrance.global_position + spawn_offset
+	var shop_position := general_store_point.global_position + queue_offset
+	var exit_position := exit_to_world_point.global_position + Vector2(0, spawn_offset.y)
+
+	adventurer.global_position = entrance_position
 
 	if adventurer.has_method("setup_placeholder"):
 		adventurer.setup_placeholder(_generate_adventurer_name(), "fighter", 1)
 
 	if adventurer.has_method("start_town_routine"):
 		adventurer.start_town_routine(
-			town_entrance.global_position + spawn_offset,
-			general_store_point.global_position + spawn_offset,
-			exit_to_world_point.global_position + spawn_offset
+			entrance_position,
+			shop_position,
+			exit_position
 		)
 
 	GameState.register_adventurer(adventurer)

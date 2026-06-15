@@ -63,9 +63,11 @@ offset_right = 120.0
 offset_bottom = 108.0
 text = "Slime Nest"
 
+[node name="WorldTravelers" type="Node2D" parent="."]
+
 [node name="HintLabel" type="Label" parent="."]
-offset_left = 385.0
+offset_left = 345.0
 offset_top = 655.0
-offset_right = 935.0
+offset_right = 980.0
 offset_bottom = 685.0
-text = "v0.1.1: Slime Nest is a placeholder threat. Threat-clearing arrives later."
+text = "v0.1.4: Traveler markers appear near town. Movement/combat arrives next."

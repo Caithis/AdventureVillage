@@ -1,5 +1,29 @@
 # Changelog
 
+## v0.1.4 - World Travel Placeholder
+
+### Added
+- `world_travelers` tracking in `GameState`.
+- World traveler count in Debug UI.
+- World traveler data creation when an adventurer leaves town.
+- Placeholder world traveler markers on World Map.
+- `LeavingTown` adventurer AI state.
+- Adventurer cleanup after reaching Town Exit.
+- Controlled General Store queue target offsets.
+
+### Fixed
+- Successful Small Potion purchases now add 15 gold to the town treasury.
+- Adventurers no longer use large spawn offsets as shop stopping offsets.
+- General Store stopping points should now be more controlled and less likely to appear past the building.
+
+### Not Yet Added
+- World traveler movement.
+- Slime Nest targeting.
+- Combat.
+- Loot return.
+- Save/load.
+- Player building placement.
+
 ## v0.1.3 - Small Potion Purchase
 
 ### Added
@@ -16,19 +40,6 @@
 - Town Small Potion stock decreases after a successful purchase.
 - Adventurer inventory gains `small_potion` after a successful purchase.
 - Adventurer label now displays carried potion count.
-- Debug UI updates when town potion stock changes.
-
-### Changed
-- Adventurer AI now attempts a purchase at the General Store before going to the Town Exit.
-- Adventurer wait-at-shop behavior now displays the purchase result state.
-
-### Not Yet Added
-- Shop UI.
-- Item Resource-driven prices.
-- World-map travel after exit.
-- Combat.
-- Threat clearing.
-- Player building placement.
 
 ## v0.1.2 - Adventurer Town Routine
 
@@ -41,9 +52,6 @@
   - `WaitAtGeneralStore`
   - `GoToExit`
   - `IdleAtExit`
-- Adventurer labels now update as the AI state changes.
-- Town scene now passes marker positions into the adventurer routine.
-- Future town-building design note added to project documentation.
 
 ## v0.1.1.1 - Autoload Name Conflict Hotfix
 
@@ -51,7 +59,6 @@
 - Removed `class_name` from `GameClock.gd`.
 - Removed `class_name` from `GameState.gd`.
 - Removed `class_name` from `SceneRouter.gd`.
-- Fixed Godot parser error where class names hid Autoload singleton names.
 
 ## v0.1.1 - Placeholder Adventurer Spawn
 
@@ -74,4 +81,3 @@
 - GameState autoload.
 - SceneRouter autoload.
 - Scene switching.
-- Placeholder town and world-map views.
