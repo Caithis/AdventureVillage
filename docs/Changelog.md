@@ -1,3 +1,23 @@
+## v0.2.7 - Night Sleep Behavior
+
+### Added
+- GameClock phase checks in adventurer AI.
+- Night sleep behavior for free/preparing adventurers.
+- `GoToInnForNight` state.
+- `SleepAtInn` state.
+- `SleptAtInn` state.
+- Adventurers can wait at the Inn until Day.
+- Adventurer night sleep tracking to prevent repeated sleep loops during the same night.
+- `docs/NightBehaviorDesignNotes.md`.
+
+### Changed
+- Regular Inn recovery threshold now uses stricter prototype values:
+  - HP at or below 50%.
+  - Energy at or below 40%.
+- Night sleep is separate from normal injury/energy recovery.
+- Adventurers no longer rest at the Inn after every moderate-energy trip.
+- Returned/preparing adventurers check for Night before leaving again.
+
 # Changelog
 
 ## v0.2.6 - Inn Rest / Energy Prototype

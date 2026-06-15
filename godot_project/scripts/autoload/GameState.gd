@@ -127,6 +127,7 @@ func add_world_traveler_from_adventurer(adventurer: Node) -> Dictionary:
 		"inventory": _safe_get_property(adventurer, "inventory", {}).duplicate(true),
 		"trip_count": _safe_get_property(adventurer, "trip_count", 0),
 		"max_trip_count": _safe_get_property(adventurer, "max_trip_count", 2),
+		"last_night_sleep_day": _safe_get_property(adventurer, "last_night_sleep_day", -1),
 		"energy": _safe_get_property(adventurer, "energy", DEFAULT_MAX_ENERGY),
 		"max_energy": _safe_get_property(adventurer, "max_energy", DEFAULT_MAX_ENERGY),
 		"status": "TravelingToSlimeNest",

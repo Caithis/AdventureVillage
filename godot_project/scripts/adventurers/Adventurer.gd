@@ -5,7 +5,8 @@ const SMALL_POTION_ID := "small_potion"
 const SLIME_GEL_ID := "slime_gel"
 
 const SMALL_POTION_PRICE := 15
-const LOW_ENERGY_THRESHOLD := 60
+const ENERGY_REST_THRESHOLD_RATIO := 0.40
+const HEALTH_REST_THRESHOLD_RATIO := 0.50
 
 @onready var name_label: Label = $NameLabel
 @onready var ai: Node = $AdventurerAI
@@ -26,6 +27,7 @@ var traveler_id: int = -1
 var is_returned_adventurer: bool = false
 var trip_count: int = 0
 var max_trip_count: int = 2
+var last_night_sleep_day: int = -1
 
 var movement_speed: float = 85.0
 var target_position: Vector2 = Vector2.ZERO
@@ -70,6 +72,7 @@ func setup_from_traveler_data(traveler_data: Dictionary) -> void:
     max_energy = int(traveler_data.get("max_energy", 100))
     trip_count = int(traveler_data.get("trip_count", 0))
     max_trip_count = int(traveler_data.get("max_trip_count", 2))
+    last_night_sleep_day = int(traveler_data.get("last_night_sleep_day", -1))
     is_returned_adventurer = true
     has_entered_world_travel = false
     name = "ReturnedAdventurer_%s_%d" % [display_name, traveler_id]
@@ -117,16 +120,36 @@ func needs_small_potion() -> bool:
     return get_item_count(SMALL_POTION_ID) <= 0
 
 func needs_inn_rest() -> bool:
-    return health < max_health or energy < LOW_ENERGY_THRESHOLD
+    return health <= get_health_rest_threshold() or energy <= get_energy_rest_threshold()
 
 func is_injured() -> bool:
-    return health < max_health
+    return health <= get_health_rest_threshold()
+
+func get_health_rest_threshold() -> int:
+    return ceili(float(max_health) * HEALTH_REST_THRESHOLD_RATIO)
+
+func get_energy_rest_threshold() -> int:
+    return ceili(float(max_energy) * ENERGY_REST_THRESHOLD_RATIO)
+
+func should_seek_night_sleep() -> bool:
+    if GameClock.get_phase_name() != "Night":
+        return false
+
+    return last_night_sleep_day != GameClock.day_number
 
 func rest_at_inn() -> void:
     health = max_health
     energy = max_energy
     set_purchase_message("Rested at Inn")
     _update_returned_record("RestedAtInn", "Rested at Inn. Energy restored.")
+    _refresh_label()
+
+func sleep_at_inn_for_night() -> void:
+    health = max_health
+    energy = max_energy
+    last_night_sleep_day = GameClock.day_number
+    set_purchase_message("Slept at Inn for Night")
+    _update_returned_record("SleptAtInn", "Slept at Inn for Night.")
     _refresh_label()
 
 func try_buy_small_potion() -> String:
@@ -192,6 +215,7 @@ func _update_returned_record(new_status: String, sale_message: String) -> void:
         "inventory": inventory.duplicate(true),
         "trip_count": trip_count,
         "max_trip_count": max_trip_count,
+        "last_night_sleep_day": last_night_sleep_day,
         "energy": energy,
         "max_energy": max_energy,
         "status": new_status,

@@ -123,3 +123,13 @@ Planned additions:
 - Free/idle adventurers seek the Inn at night.
 - Adventurers currently on quests continue unless low energy or injured.
 - Inn rest/sleep behavior becomes tied to day/night.
+
+## v0.2.7 Update Notes
+
+Night sleep behavior is now active for free/preparing town adventurers.
+
+Current rest thresholds:
+- HP at or below 50%.
+- Energy at or below 40%.
+
+Night sleep overrides those thresholds when the adventurer is free/preparing. Adventurers already committed to world travel or quest behavior continue for now.

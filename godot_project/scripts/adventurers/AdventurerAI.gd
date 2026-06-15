@@ -14,6 +14,7 @@ var prepare_next_trip_wait_seconds: float = 1.0
 var restock_result_wait_seconds: float = 1.25
 var inn_rest_seconds: float = 2.0
 var inn_result_wait_seconds: float = 1.0
+var night_sleep_seconds: float = 2.0
 
 @onready var adventurer: Adventurer = get_parent() as Adventurer
 
@@ -21,6 +22,10 @@ func _ready() -> void:
     set_state("Idle")
 
 func _process(delta: float) -> void:
+    if _should_interrupt_for_night_sleep():
+        set_state("GoToInnForNight")
+        return
+
     match current_state:
         "EnterTown":
             _state_enter_town()
@@ -52,6 +57,12 @@ func _process(delta: float) -> void:
             _state_rest_at_inn(delta)
         "RestedAtInn", "SkipInnRest":
             _state_inn_result(delta)
+        "GoToInnForNight":
+            _state_go_to_inn_for_night()
+        "SleepAtInn":
+            _state_sleep_at_inn(delta)
+        "SleptAtInn":
+            _state_slept_at_inn(delta)
         "PrepareNextTrip":
             _state_prepare_next_trip(delta)
         "BuyPotionForNextTrip":
@@ -83,8 +94,6 @@ func set_state(new_state: String) -> void:
         adventurer.set_state(current_state)
 
     match current_state:
-        "EnterTown":
-            pass
         "GoToGeneralStore":
             if adventurer != null:
                 adventurer.set_move_target(general_store_position)
@@ -102,19 +111,13 @@ func set_state(new_state: String) -> void:
             wait_timer = leaving_town_wait_seconds
             if adventurer != null:
                 adventurer.clear_move_target()
-        "ReturnedToTown":
-            pass
         "GoToGeneralStoreToSell":
             if adventurer != null:
                 adventurer.set_move_target(general_store_position)
         "SellSlimeGel":
             if adventurer != null:
                 adventurer.clear_move_target()
-        "SoldLoot":
-            wait_timer = sell_result_wait_seconds
-            if adventurer != null:
-                adventurer.clear_move_target()
-        "NoLootToSell":
+        "SoldLoot", "NoLootToSell":
             wait_timer = sell_result_wait_seconds
             if adventurer != null:
                 adventurer.clear_move_target()
@@ -129,6 +132,18 @@ func set_state(new_state: String) -> void:
             if adventurer != null:
                 adventurer.clear_move_target()
         "RestedAtInn", "SkipInnRest":
+            wait_timer = inn_result_wait_seconds
+            if adventurer != null:
+                adventurer.clear_move_target()
+        "GoToInnForNight":
+            if adventurer != null:
+                adventurer.set_purchase_message("Night. Going to Inn.")
+                adventurer.set_move_target(inn_position)
+        "SleepAtInn":
+            wait_timer = night_sleep_seconds
+            if adventurer != null:
+                adventurer.clear_move_target()
+        "SleptAtInn":
             wait_timer = inn_result_wait_seconds
             if adventurer != null:
                 adventurer.clear_move_target()
@@ -156,23 +171,34 @@ func set_state(new_state: String) -> void:
 func get_state() -> String:
     return current_state
 
+func _should_interrupt_for_night_sleep() -> bool:
+    if adventurer == null:
+        return false
+    if not adventurer.has_method("should_seek_night_sleep"):
+        return false
+    if not adventurer.should_seek_night_sleep():
+        return false
+
+    return current_state in [
+        "Idle",
+        "MaxTripsReached",
+        "PrepareNextTrip",
+        "SkipInnRest",
+        "RestedAtInn"
+    ]
+
 func _state_enter_town() -> void:
     set_state("GoToGeneralStore")
 
 func _state_go_to_general_store() -> void:
-    if adventurer == null:
-        return
-
-    if not adventurer.has_target and adventurer.has_reached_target():
+    if adventurer != null and not adventurer.has_target and adventurer.has_reached_target():
         set_state("BuySmallPotion")
 
 func _state_buy_small_potion() -> void:
     if adventurer == null or not adventurer.has_method("try_buy_small_potion"):
         set_state("SkipPurchaseFailed")
         return
-
     var result := adventurer.try_buy_small_potion()
-
     match result:
         "bought":
             set_state("BoughtPotion")
@@ -187,20 +213,15 @@ func _state_buy_small_potion() -> void:
 
 func _state_purchase_result(delta: float) -> void:
     wait_timer -= delta
-
     if wait_timer <= 0.0:
         set_state("GoToExit")
 
 func _state_go_to_exit() -> void:
-    if adventurer == null:
-        return
-
-    if not adventurer.has_target and adventurer.has_reached_target():
+    if adventurer != null and not adventurer.has_target and adventurer.has_reached_target():
         set_state("LeavingTown")
 
 func _state_leaving_town(delta: float) -> void:
     wait_timer -= delta
-
     if wait_timer <= 0.0 and adventurer != null and adventurer.has_method("enter_world_travel"):
         adventurer.enter_world_travel()
 
@@ -208,19 +229,14 @@ func _state_returned_to_town() -> void:
     set_state("GoToGeneralStoreToSell")
 
 func _state_go_to_general_store_to_sell() -> void:
-    if adventurer == null:
-        return
-
-    if not adventurer.has_target and adventurer.has_reached_target():
+    if adventurer != null and not adventurer.has_target and adventurer.has_reached_target():
         set_state("SellSlimeGel")
 
 func _state_sell_slime_gel() -> void:
     if adventurer == null or not adventurer.has_method("try_sell_slime_gel"):
         set_state("NoLootToSell")
         return
-
     var result := adventurer.try_sell_slime_gel()
-
     match result:
         "sold":
             set_state("SoldLoot")
@@ -229,41 +245,36 @@ func _state_sell_slime_gel() -> void:
 
 func _state_sold_loot(delta: float) -> void:
     wait_timer -= delta
-
     if wait_timer <= 0.0:
         set_state("CheckRecoveryNeed")
 
 func _state_no_loot_to_sell(delta: float) -> void:
     wait_timer -= delta
-
     if wait_timer <= 0.0:
         set_state("CheckRecoveryNeed")
 
 func _state_check_recovery_need() -> void:
     if adventurer == null:
         return
-
     if adventurer.has_method("needs_inn_rest") and adventurer.needs_inn_rest():
         if adventurer.has_method("is_injured") and adventurer.is_injured():
-            adventurer.set_purchase_message("Injured. Going to Inn.")
+            adventurer.set_purchase_message("Badly hurt. Going to Inn.")
         else:
-            adventurer.set_purchase_message("Low energy. Going to Inn.")
+            adventurer.set_purchase_message("Exhausted. Going to Inn.")
         set_state("GoToInn")
-    else:
-        if adventurer.has_method("set_purchase_message"):
-            adventurer.set_purchase_message("No Inn rest needed.")
-        set_state("SkipInnRest")
+        return
+    if adventurer.has_method("should_seek_night_sleep") and adventurer.should_seek_night_sleep():
+        set_state("GoToInnForNight")
+        return
+    adventurer.set_purchase_message("No Inn rest needed.")
+    set_state("SkipInnRest")
 
 func _state_go_to_inn() -> void:
-    if adventurer == null:
-        return
-
-    if not adventurer.has_target and adventurer.has_reached_target():
+    if adventurer != null and not adventurer.has_target and adventurer.has_reached_target():
         set_state("RestAtInn")
 
 func _state_rest_at_inn(delta: float) -> void:
     wait_timer -= delta
-
     if wait_timer <= 0.0:
         if adventurer != null and adventurer.has_method("rest_at_inn"):
             adventurer.rest_at_inn()
@@ -271,37 +282,51 @@ func _state_rest_at_inn(delta: float) -> void:
 
 func _state_inn_result(delta: float) -> void:
     wait_timer -= delta
-
     if wait_timer <= 0.0:
         set_state("PrepareNextTrip")
 
-func _state_prepare_next_trip(delta: float) -> void:
-    wait_timer -= delta
+func _state_go_to_inn_for_night() -> void:
+    if adventurer != null and not adventurer.has_target and adventurer.has_reached_target():
+        set_state("SleepAtInn")
 
+func _state_sleep_at_inn(delta: float) -> void:
+    wait_timer -= delta
+    if wait_timer <= 0.0:
+        if adventurer != null and adventurer.has_method("sleep_at_inn_for_night"):
+            adventurer.sleep_at_inn_for_night()
+        set_state("SleptAtInn")
+
+func _state_slept_at_inn(delta: float) -> void:
+    wait_timer -= delta
     if wait_timer > 0.0:
         return
-
-    if adventurer == null:
+    if GameClock.get_phase_name() == "Night":
+        if adventurer != null and adventurer.has_method("set_purchase_message"):
+            adventurer.set_purchase_message("Sleeping until Day")
         return
+    set_state("PrepareNextTrip")
 
+func _state_prepare_next_trip(delta: float) -> void:
+    wait_timer -= delta
+    if wait_timer > 0.0 or adventurer == null:
+        return
+    if adventurer.has_method("should_seek_night_sleep") and adventurer.should_seek_night_sleep():
+        set_state("GoToInnForNight")
+        return
     if adventurer.has_method("should_continue_adventuring") and not adventurer.should_continue_adventuring():
         set_state("MaxTripsReached")
         return
-
     if adventurer.has_method("needs_small_potion") and adventurer.needs_small_potion():
         set_state("BuyPotionForNextTrip")
     else:
-        if adventurer.has_method("set_purchase_message"):
-            adventurer.set_purchase_message("Potion ready. Leaving again.")
+        adventurer.set_purchase_message("Potion ready. Leaving again.")
         set_state("GoToExitForNextTrip")
 
 func _state_buy_potion_for_next_trip() -> void:
     if adventurer == null or not adventurer.has_method("try_buy_small_potion"):
         set_state("SkipRestockFailed")
         return
-
     var result := adventurer.try_buy_small_potion()
-
     match result:
         "bought":
             set_state("RestockedPotion")
@@ -316,13 +341,9 @@ func _state_buy_potion_for_next_trip() -> void:
 
 func _state_restock_result(delta: float) -> void:
     wait_timer -= delta
-
     if wait_timer <= 0.0:
         set_state("GoToExitForNextTrip")
 
 func _state_go_to_exit_for_next_trip() -> void:
-    if adventurer == null:
-        return
-
-    if not adventurer.has_target and adventurer.has_reached_target():
+    if adventurer != null and not adventurer.has_target and adventurer.has_reached_target():
         set_state("LeavingTown")

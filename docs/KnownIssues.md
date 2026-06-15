@@ -35,3 +35,12 @@ This patch uses a simple state-machine approach for recovery. It is intentionall
 4. Continue preparation loop.
 
 This is enough to prove the Inn's purpose before adding night behavior or Inn economy.
+
+## v0.2.7 Notes
+
+- Night sleep is free.
+- Inn has no capacity.
+- Inn has no visible income yet.
+- Night does not yet increase world danger.
+- World travelers do not retreat just because it is night.
+- Adventurers do not have nuanced schedules yet.

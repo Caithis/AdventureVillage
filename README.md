@@ -1,51 +1,40 @@
 # Dungeon Frontier Guild-Town
 
-Version: v0.2.6 - Inn Rest / Energy Prototype
+Version: v0.2.7 - Night Sleep Behavior
 
-Dungeon Frontier Guild-Town is a Godot 4.x 2D pixel-art management/simulation project about running a frontier guild-town that supports adventurers, grows its economy, and survives escalating world-map threats.
+## What v0.2.7 Adds
 
-## What v0.2.6 Adds
+- Adventurer behavior now checks the GameClock phase.
+- Free/preparing adventurers seek the Inn during Night.
+- Adventurers already committed to travel/quest flow continue.
+- Night sleep restores HP and energy.
+- Adventurers can wait at the Inn until Day returns.
+- Recovery thresholds have been adjusted to reduce Inn overuse outside of night.
 
-- Adventurers now have energy.
-- World trips reduce adventurer energy.
-- Returned adventurers check energy before leaving again.
-- Low-energy adventurers walk to the Inn.
-- Injured adventurers prioritize the Inn.
-- Inn rest restores energy.
-- Inn rest also restores HP.
-- After resting, adventurers return to the General Store preparation loop.
-- Adventurer labels now show HP and energy.
+## Prototype Rest Thresholds
 
-## Prototype Energy Values
+Outside of night sleep, adventurers now prefer the Inn only when:
 
 ```text
-Max Energy: 100
-Starting Energy: 100
-Energy lost per world trip: 45
-Low-energy threshold: 60
-Inn rest restore: 100 energy
-Inn HP recovery: full HP
+Health is at or below 50%
+Energy is at or below 40%
 ```
 
-## Updated Loop
+Night sleep is separate:
 
 ```text
-Spawn Adventurer
-→ Buy Small Potion
-→ Leave Town
-→ World trip costs energy
-→ Fight Slime
-→ Return to Town
-→ Re-enter as visible town adventurer
+If it is Night and the adventurer is free/preparing, they seek the Inn to sleep.
+```
+
+## Updated Behavior
+
+```text
+Returned Adventurer
 → Sell Slime Gel
-→ Check HP / energy
-→ If injured or tired, go to Inn
-→ Rest at Inn
-→ Return to preparation loop
-→ Buy potion if needed
-→ Leave again if under max trip count
+→ Check recovery need
+→ If HP <= 50% or Energy <= 40%, rest at Inn
+→ Else if Night, sleep at Inn
+→ Else prepare for another trip
 ```
 
-## Current Limitation
-
-Inn rest is free and simplified. Later, Inn rest should generate income, require beds/rooms, take more realistic time, and connect to night-time behavior.
+Adventurers already in the world continue their quest behavior for now.
