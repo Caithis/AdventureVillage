@@ -43,6 +43,11 @@ const SLIME_DEFEAT_DISPLAY_SECONDS := 1.0
 
 const VISIBLE_COMBAT_CONTACT_DELAY := 0.85
 const COMBAT_REENGAGE_COOLDOWN := 1.5
+const FLEE_RETURN_SPEED := 82.0
+const FLEE_GRACE_SECONDS := 1.1
+const FLEE_SAFE_DISTANCE_FROM_TOWN := 140.0
+const FLEE_SLIME_AGGRO_RADIUS_MULTIPLIER := 0.45
+const MAX_SLIME_RETREAT_CHASES_PER_TRIP := 1
 const ADVENTURE_RETREAT_HP_RATIO := 0.50
 const MAX_SLIME_KILLS_PER_OUTING := 3
 
@@ -223,6 +228,8 @@ func add_world_traveler_from_adventurer(adventurer: Node) -> Dictionary:
 		"combat_resolved": false,
 		"combat_contact_timer": 0.0,
 		"combat_cooldown_timer": 0.0,
+		"flee_grace_timer": 0.0,
+		"slime_chases_during_retreat": 0,
 		"encounter_source": "",
 		"has_returned_to_town": false,
 		"town_reentry_claimed": false,
@@ -529,7 +536,7 @@ func _slime_reached_position(slime: Dictionary, target_position: Vector2, distan
 func _find_aggro_target_for_slime(slime: Dictionary) -> int:
 	var slime_position: Vector2 = slime.get("world_position", SLIME_NEST_WORLD_POSITION)
 	var best_traveler_id: int = -1
-	var best_distance: float = get_current_slime_aggro_radius()
+	var best_distance: float = 999999.0
 
 	for traveler in world_travelers:
 		if not _can_slime_target_traveler(traveler):
@@ -541,7 +548,9 @@ func _find_aggro_target_for_slime(slime: Dictionary) -> int:
 
 		var traveler_position: Vector2 = traveler.get("world_position", TOWN_WORLD_POSITION)
 		var distance: float = slime_position.distance_to(traveler_position)
-		if distance <= best_distance:
+		var max_target_distance: float = _get_slime_aggro_radius_for_traveler(traveler)
+
+		if distance <= max_target_distance and distance < best_distance:
 			best_distance = distance
 			best_traveler_id = traveler_id
 
@@ -551,13 +560,16 @@ func _can_slime_target_traveler(traveler: Dictionary) -> bool:
 	if float(traveler.get("combat_cooldown_timer", 0.0)) > 0.0:
 		return false
 
+	if float(traveler.get("flee_grace_timer", 0.0)) > 0.0:
+		return false
+
 	var traveler_status: String = str(traveler.get("status", ""))
 
 	if _is_outbound_status(traveler_status):
 		return true
 
 	if _is_returning_status(traveler_status):
-		return _is_traveler_weakened_for_retreat_danger(traveler)
+		return _can_slime_chase_returning_traveler(traveler)
 
 	return false
 
@@ -566,6 +578,27 @@ func _can_slime_continue_targeting_traveler(slime: Dictionary, traveler: Diction
 		return false
 
 	return _can_slime_target_traveler(traveler)
+
+func _get_slime_aggro_radius_for_traveler(traveler: Dictionary) -> float:
+	var traveler_status: String = str(traveler.get("status", ""))
+
+	if _is_returning_status(traveler_status):
+		return get_current_slime_aggro_radius() * FLEE_SLIME_AGGRO_RADIUS_MULTIPLIER
+
+	return get_current_slime_aggro_radius()
+
+func _can_slime_chase_returning_traveler(traveler: Dictionary) -> bool:
+	if not _is_traveler_weakened_for_retreat_danger(traveler):
+		return false
+
+	if int(traveler.get("slime_chases_during_retreat", 0)) >= MAX_SLIME_RETREAT_CHASES_PER_TRIP:
+		return false
+
+	var traveler_position: Vector2 = traveler.get("world_position", TOWN_WORLD_POSITION)
+	if traveler_position.distance_to(TOWN_WORLD_POSITION) <= FLEE_SAFE_DISTANCE_FROM_TOWN:
+		return false
+
+	return true
 
 func _is_traveler_weakened_for_retreat_danger(traveler: Dictionary) -> bool:
 	var hp: int = int(traveler.get("hp", 0))
@@ -613,6 +646,10 @@ func _update_world_travelers(delta: float) -> bool:
 
 		var status: String = str(traveler.get("status", ""))
 
+		if _is_outbound_status(status) and _should_flee_from_low_hp(traveler):
+			changed = true
+			status = str(traveler.get("status", ""))
+
 		if status == "FightingVisibleSlime":
 			traveler["combat_contact_timer"] = float(traveler.get("combat_contact_timer", 0.0)) - delta
 			changed = true
@@ -659,7 +696,8 @@ func _update_world_travelers(delta: float) -> bool:
 							changed = true
 
 		elif _is_returning_status(status):
-			var moved_back: bool = _move_traveler_toward_target(traveler, TOWN_WORLD_POSITION, WORLD_RETURN_SPEED, delta)
+			var return_speed: float = _get_return_speed_for_status(status)
+			var moved_back: bool = _move_traveler_toward_target(traveler, TOWN_WORLD_POSITION, return_speed, delta)
 			changed = moved_back or changed
 
 			if _traveler_reached_position(traveler, TOWN_WORLD_POSITION):
@@ -675,6 +713,10 @@ func _tick_traveler_timers(traveler: Dictionary, delta: float) -> void:
 	var cooldown: float = float(traveler.get("combat_cooldown_timer", 0.0))
 	if cooldown > 0.0:
 		traveler["combat_cooldown_timer"] = maxf(cooldown - delta, 0.0)
+
+	var flee_grace: float = float(traveler.get("flee_grace_timer", 0.0))
+	if flee_grace > 0.0:
+		traveler["flee_grace_timer"] = maxf(flee_grace - delta, 0.0)
 
 func _is_night() -> bool:
 	return GameClock.get_phase_name() == "Night"
@@ -704,6 +746,7 @@ func _should_return_from_night_risk(traveler: Dictionary) -> bool:
 		traveler["status"] = "ReturningLowEnergyAtNight"
 		traveler["target_position"] = TOWN_WORLD_POSITION
 		traveler["target_slime_id"] = -1
+		traveler["flee_grace_timer"] = FLEE_GRACE_SECONDS
 		traveler["last_combat_log"] = "Too tired for Night quest. Returning."
 		traveler["floating_event_text"] = "Too Tired - Return"
 		return true
@@ -731,9 +774,35 @@ func _is_returning_status(status: String) -> bool:
 	return status in [
 		"ReturningWithLoot",
 		"InjuredReturning",
+		"FleeingToTown",
 		"ReturningLowEnergyAtNight",
         "ReturningNightRestricted"
 	]
+
+func _get_return_speed_for_status(status: String) -> float:
+	if status == "FleeingToTown" or status == "InjuredReturning" or status == "ReturningLowEnergyAtNight":
+		return FLEE_RETURN_SPEED
+
+	return WORLD_RETURN_SPEED
+
+func _should_flee_from_low_hp(traveler: Dictionary) -> bool:
+	if not _is_traveler_weakened_for_retreat_danger(traveler):
+		return false
+
+	var status: String = str(traveler.get("status", ""))
+	if status == "FleeingToTown":
+		return false
+
+	_send_traveler_fleeing_to_town(traveler, "HP low. Fleeing to town.")
+	return true
+
+func _send_traveler_fleeing_to_town(traveler: Dictionary, message: String) -> void:
+	traveler["status"] = "FleeingToTown"
+	traveler["target_position"] = TOWN_WORLD_POSITION
+	traveler["target_slime_id"] = -1
+	traveler["flee_grace_timer"] = FLEE_GRACE_SECONDS
+	traveler["last_combat_log"] = message
+	traveler["floating_event_text"] = "Flee!"
 
 func _get_target_slime_for_traveler(traveler: Dictionary) -> Dictionary:
 	var traveler_id: int = int(traveler.get("id", -1))
@@ -807,6 +876,11 @@ func _traveler_reached_position(traveler: Dictionary, target_position: Vector2) 
 	return current_position.distance_to(target_position) <= WORLD_ARRIVAL_DISTANCE
 
 func _start_visible_slime_combat(traveler: Dictionary, slime_id: int, encounter_source: String) -> void:
+	var previous_status: String = str(traveler.get("status", ""))
+
+	if _is_returning_status(previous_status):
+		traveler["slime_chases_during_retreat"] = int(traveler.get("slime_chases_during_retreat", 0)) + 1
+
 	traveler["status"] = "FightingVisibleSlime"
 	traveler["target_slime_id"] = slime_id
 	traveler["encounter_source"] = encounter_source
@@ -839,6 +913,9 @@ func _mark_traveler_arrived_at_town(traveler: Dictionary) -> void:
 	elif previous_status == "InjuredReturning":
 		traveler["status"] = "AwaitingTownReentryInjured"
 		traveler["last_combat_log"] = "Returned to town injured. Awaiting re-entry."
+	elif previous_status == "FleeingToTown":
+		traveler["status"] = "AwaitingTownReentryFled"
+		traveler["last_combat_log"] = "Fled back to town. Awaiting re-entry."
 	elif previous_status == "ReturningLowEnergyAtNight":
 		traveler["status"] = "AwaitingTownReentryTired"
 		traveler["last_combat_log"] = "Returned from Night due to low energy."
@@ -934,15 +1011,27 @@ func _resolve_slime_combat(traveler: Dictionary, slime_id: int = -1, encounter_s
 		_mark_slime_defeated(slime_id)
 
 		if _should_traveler_return_after_victory(traveler):
-			traveler["status"] = "ReturningWithLoot"
-			traveler["target_position"] = TOWN_WORLD_POSITION
-			traveler["last_combat_log"] = "Won vs Slime. +%d Gel. Returning. Kills %d/%d.%s%s" % [
-				slime_gel_reward,
-				int(traveler.get("slime_kills_this_outing", 0)),
-				MAX_SLIME_KILLS_PER_OUTING,
-				night_note,
-				source_note
-			]
+			if _is_traveler_weakened_for_retreat_danger(traveler):
+				traveler["status"] = "FleeingToTown"
+				traveler["flee_grace_timer"] = FLEE_GRACE_SECONDS
+				traveler["target_position"] = TOWN_WORLD_POSITION
+				traveler["last_combat_log"] = "Won vs Slime. +%d Gel. Low HP, fleeing. Kills %d/%d.%s%s" % [
+					slime_gel_reward,
+					int(traveler.get("slime_kills_this_outing", 0)),
+					MAX_SLIME_KILLS_PER_OUTING,
+					night_note,
+					source_note
+				]
+			else:
+				traveler["status"] = "ReturningWithLoot"
+				traveler["target_position"] = TOWN_WORLD_POSITION
+				traveler["last_combat_log"] = "Won vs Slime. +%d Gel. Returning. Kills %d/%d.%s%s" % [
+					slime_gel_reward,
+					int(traveler.get("slime_kills_this_outing", 0)),
+					MAX_SLIME_KILLS_PER_OUTING,
+					night_note,
+					source_note
+				]
 		else:
 			traveler["status"] = "SeekingNextSlime"
 			traveler["target_position"] = SLIME_NEST_WORLD_POSITION
@@ -954,17 +1043,24 @@ func _resolve_slime_combat(traveler: Dictionary, slime_id: int = -1, encounter_s
 				source_note
 			]
 
-		traveler["floating_event_text"] = "Victory!"
+		if str(traveler.get("status", "")) == "FleeingToTown":
+			traveler["floating_event_text"] = "Flee!"
+		elif str(traveler.get("status", "")) == "ReturningWithLoot":
+			traveler["floating_event_text"] = "Return!"
+		else:
+			traveler["floating_event_text"] = "Victory!"
 
 	elif adventurer_hp <= 0:
 		traveler["status"] = "InjuredReturning"
 		traveler["target_position"] = TOWN_WORLD_POSITION
+		traveler["flee_grace_timer"] = FLEE_GRACE_SECONDS
 		traveler["last_combat_log"] = "Lost vs Slime. Returning injured.%s%s" % [night_note, source_note]
 		traveler["floating_event_text"] = "Defeated!"
 		_release_slime_after_combat(slime_id)
 	else:
 		traveler["status"] = "InjuredReturning"
 		traveler["target_position"] = TOWN_WORLD_POSITION
+		traveler["flee_grace_timer"] = FLEE_GRACE_SECONDS
 		traveler["last_combat_log"] = "Combat timed out. Retreating.%s%s" % [night_note, source_note]
 		traveler["floating_event_text"] = "Retreat!"
 		_release_slime_after_combat(slime_id)

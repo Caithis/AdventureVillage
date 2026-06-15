@@ -51,3 +51,8 @@ Visible Slime combat now has a short contact delay, FightingVisibleSlime status,
 ## v0.3.4 Update Notes
 
 Slime Nest growth now meaningfully affects spawn pressure, monster stats, detection radius, movement speed, Slime Gel reward scaling, and raid pressure score/state. This is still a prototype foundation, not a final raid system.
+
+
+## v0.3.5 Update Notes
+
+Adventurers now have clearer flee behavior. Low-HP travelers stop hunting Slimes, clear their target, and flee toward town. Slimes can still chase weakened returners, but only with stricter fairness rules: reduced aggro radius, one chase per retreat, a flee grace timer, and a town safety radius.

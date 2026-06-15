@@ -1,45 +1,40 @@
 # Changelog
 
+## v0.3.5 - Adventurer Retreat and Flee Prototype
+
+### Added
+- `FleeingToTown` world traveler status.
+- Low-HP outbound travelers clear Slime targets and flee toward town.
+- Faster flee return speed.
+- Flee grace timer after retreat begins.
+- Reduced Slime aggro radius against retreating travelers.
+- One-retreat-chase-per-trip rule.
+- Town safety radius where Slimes stop chasing fleeing travelers.
+- Floating/status feedback for fleeing and retreating.
+- Retreat and flee design notes.
+
+### Changed
+- Low-HP victorious travelers now flee instead of simply returning normally.
+- Injured/low-energy returners get a short grace window before Slimes can re-engage.
+- Slime chase behavior against returning travelers is more conservative.
+
+### Not Yet Added
+- Pathfinding around monsters.
+- Road-based escape bonuses.
+- Adventurer flee animation.
+- True disengage mini-game.
+- Party rescue behavior.
+- Guild Hall safety policy UI.
+
 ## v0.3.4 - Slime Nest Growth Pressure
 
 ### Added
-- Slime Nest level calculation.
-- Slime Nest raid pressure score.
-- Slime Nest raid pressure state.
-- Growth-scaled max active Slimes.
-- Growth-scaled spawn interval.
-- Growth-scaled Slime HP.
-- Growth-scaled Slime attack.
-- Growth-scaled Slime Gel reward.
-- Growth-scaled Slime wander radius.
-- Growth-scaled Slime aggro radius.
-- Growth-scaled Slime movement speed.
-- Slime labels now show level, HP, and attack.
-- Debug UI shows nest level and pressure state.
-- Development status document.
-
-### Changed
-- Slime Nest growth now affects more than spawn count.
-- Slime Nest pressure is now clearer in Debug UI.
-- Growth status now includes Critical beyond Raid Risk.
-
-### Not Yet Added
-- Actual raids.
-- Town defense.
-- Raid warnings/events.
-- Nest-clearing rewards.
-- Multiple monster types.
-
-## v0.3.3 - Visible Combat Contact Polish
-
-### Added
-- FightingVisibleSlime status.
-- Combat contact delay.
-- Multi-monster outings.
+- Slime Nest growth pressure scaling.
+- Raid pressure foundation.
 
 ## Earlier v0.3.x
 
+- Visible Slime combat.
 - Visible Slime spawning.
 - Floating event text.
 - Building economy controls.
-- Debug UI collapse fix.

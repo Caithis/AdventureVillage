@@ -75,3 +75,15 @@ The next stretch should focus on foundational gameplay systems:
 4. Building placement foundation.
 5. Guild Hall actions/policies.
 6. Save/load once data systems stabilize.
+
+
+## v0.3.5 Status Update
+
+Estimated progress remains early:
+
+```text
+Prototype / vertical-slice foundation: about 13%
+Full intended game: about 6-8%
+```
+
+This patch improves survival/readability inside the prototype loop. It does not mean combat is final or polished. Major town-building and progression systems are still ahead.

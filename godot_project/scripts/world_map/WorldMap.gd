@@ -226,6 +226,15 @@ func _get_world_event_text(status: String, log_line: String) -> String:
 	if status == "SeekingNextSlime":
 		return "Hunting..."
 
+	if status == "FleeingToTown":
+		return "Fleeing!"
+
+	if status == "ReturningWithLoot":
+		return "Returning"
+
+	if status == "InjuredReturning":
+		return "Retreat!"
+
 	if status == "ReturningLowEnergyAtNight":
 		return "Too Tired - Return"
 

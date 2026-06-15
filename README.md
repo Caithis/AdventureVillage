@@ -1,68 +1,69 @@
 # Dungeon Frontier Guild-Town
 
-Version: v0.3.4 - Slime Nest Growth Pressure
+Version: v0.3.5 - Adventurer Retreat and Flee Prototype
 
-## What v0.3.4 Adds
+## What v0.3.5 Adds
 
-This patch makes Slime Nest growth more meaningful.
+This patch improves how weakened world travelers retreat.
 
-Slime Nest growth now affects:
+## Flee Behavior
+
+Low-HP travelers now actively avoid further Slime targets.
+
+Current retreat rule:
 
 ```text
-Nest level
-Max active Slimes
-Spawn interval
-Slime HP
-Slime attack
-Slime aggro radius
-Slime wander radius
-Slime movement speed
-Slime Gel reward scaling
-Raid pressure score
-Raid pressure state
+If traveler HP <= 50%:
+    Stop hunting Slimes
+    Clear Slime target
+    Flee directly toward town
 ```
 
-## Growth Pressure
-
-The Slime Nest now has a calculated pressure state:
+The traveler status can now show:
 
 ```text
-Quiet
-Watch
-High
-Raid Risk
+FleeingToTown
 ```
 
-This is not a real raid system yet. It is the foundation for future raid pressure.
+## Faster Return
 
-## Slime Scaling
+Fleeing or injured travelers move faster when returning to town.
 
-As the nest grows, newly spawned Slimes become stronger.
-
-Examples of scaling:
-- Higher nest level increases Slime HP.
-- Every few levels can increase Slime attack.
-- Slimes can wander and detect adventurers from farther away.
-- Spawn interval gets shorter.
-- Max active Slime count rises.
-
-## Debug Feedback
-
-The Debug UI now shows more useful Slime Nest pressure information:
+Current prototype values:
 
 ```text
-Slime Nest status
-Growth
-Nest level
-Raid pressure state
-Active Slime count
-Spawn interval
-Current Slime HP / attack
-Raid pressure score
+Normal return speed: existing return speed
+Flee return speed: 82
+```
+
+This helps retreat feel more deliberate and gives weakened adventurers a better chance to survive.
+
+## Stricter Slime Chase Rules
+
+Slimes can still chase weakened retreating adventurers, but the rules are stricter now:
+
+```text
+Only weakened returning travelers can be chased
+Only 1 Slime may target a traveler
+Only 1 retreat chase is allowed per trip
+Slimes use a reduced aggro radius against retreating travelers
+Travelers get a short grace period after deciding to flee
+Slimes stop chasing near the town safety radius
+```
+
+This keeps retreat dangerous without making it feel like an automatic death sentence.
+
+## Retreat Feedback
+
+Added clearer floating/status feedback:
+
+```text
+Flee!
+Fleeing!
+Retreat!
+Returning
 ```
 
 ## Important Design Note
 
-This patch is not final polish.
-
-It is prototype readability and pressure tuning. The project is still early: the major building systems, placement, resident adventurers, Guild Hall systems, UI, save/load, art, and content progression are not done yet.
+This is still prototype safety tuning, not final combat polish. The goal is to make the basic loop more fair and readable before adding more content.
