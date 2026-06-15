@@ -1,19 +1,28 @@
 # Dungeon Frontier Guild-Town
 
-Version: v0.2.4 - Returned Adventurer Re-entry
+Version: v0.2.5 - Basic Adventurer Loop Repeat
 
 Dungeon Frontier Guild-Town is a Godot 4.x 2D pixel-art management/simulation project about running a frontier guild-town that supports adventurers, grows its economy, and survives escalating world-map threats.
 
-## What v0.2.4 Adds
+## What v0.2.5 Adds
 
-- Returned travelers now become visible town adventurers again.
-- Returned adventurers spawn near the Town Exit.
-- Returned adventurers walk to the General Store.
-- Returned adventurers sell Slime Gel through a visible town routine.
-- Automatic world-map Slime Gel sale has been removed.
-- Town Slime Gel inventory increases during the visible General Store sale.
-- Adventurer gold increases after selling Slime Gel.
-- Returned adventurer label shows sale state and sale result.
+- After selling loot, returned adventurers can prepare for another trip.
+- Returned adventurers wait briefly after `SoldLoot`.
+- Returned adventurers check whether they need a Small Potion.
+- Returned adventurers buy another Small Potion if available and affordable.
+- Returned adventurers leave town again for another Slime Nest trip.
+- A prototype max trip count prevents infinite loops.
+- World-map `AwaitingTownReentry` markers are removed after the Town scene claims the returned traveler.
+
+## Prototype Loop Limit
+
+Current max trip count:
+
+```text
+2 trips per adventurer
+```
+
+This prevents the prototype from running forever while still proving that the repeat loop works.
 
 ## Updated Loop
 
@@ -27,10 +36,21 @@ Spawn Adventurer
 → Re-enter as visible town adventurer
 → Walk to General Store
 → Sell Slime Gel
-→ Town gains Slime Gel
-→ Adventurer gains gold
+→ Wait briefly
+→ Check potion
+→ Buy potion if needed/possible
+→ Leave town again
+→ Repeat until max trip count is reached
 ```
 
 ## Current Limitation
 
-Returned adventurers sell loot and then idle at the General Store. They do not yet rest, shop again, leave for another trip, become residents, or despawn into a long-term data model.
+There is no Inn/rest/energy behavior yet. Exhaustion and night-time sleeping are planned design features, but this patch only proves loop repetition.
+
+## Hotfix v0.2.5.1 Notice
+
+This package includes a crash fix for returned travelers.
+
+Fixed:
+- Crash when a world traveler returned to town.
+- Integer division warnings in `Town.gd`.

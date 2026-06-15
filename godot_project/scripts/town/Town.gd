@@ -24,8 +24,8 @@ func spawn_placeholder_adventurer() -> void:
 	var adventurer := ADVENTURER_SCENE.instantiate()
 	adventurers_container.add_child(adventurer)
 
-	var spawn_offset := Vector2((spawn_count % 8) * 24, -int(spawn_count / 8) * 24)
-	var queue_offset := Vector2((spawn_count % 4) * 18, int(spawn_count / 4) * 12)
+	var spawn_offset := Vector2((spawn_count % 8) * 24, -floori(float(spawn_count) / 8.0) * 24)
+	var queue_offset := Vector2((spawn_count % 4) * 18, floori(float(spawn_count) / 4.0) * 12)
 
 	var entrance_position := town_entrance.global_position + spawn_offset
 	var shop_position := general_store_point.global_position + queue_offset
@@ -67,9 +67,10 @@ func _spawn_returned_adventurer(traveler_data: Dictionary) -> void:
 	var adventurer := ADVENTURER_SCENE.instantiate()
 	adventurers_container.add_child(adventurer)
 
-	var return_offset := Vector2((return_spawn_count % 5) * 22, -int(return_spawn_count / 5) * 22)
+	var return_offset := Vector2((return_spawn_count % 5) * 22, -floori(float(return_spawn_count) / 5.0) * 22)
 	var spawn_position := exit_to_world_point.global_position + Vector2(-65, -20) + return_offset
-	var shop_position := general_store_point.global_position + Vector2((return_spawn_count % 4) * 18, 24 + int(return_spawn_count / 4) * 12)
+	var shop_position := general_store_point.global_position + Vector2((return_spawn_count % 4) * 18, 24 + floori(float(return_spawn_count) / 4.0) * 12)
+	var exit_position := exit_to_world_point.global_position + Vector2(0, return_offset.y)
 
 	adventurer.global_position = spawn_position
 
@@ -77,7 +78,7 @@ func _spawn_returned_adventurer(traveler_data: Dictionary) -> void:
 		adventurer.setup_from_traveler_data(traveler_data)
 
 	if adventurer.has_method("start_return_to_town_routine"):
-		adventurer.start_return_to_town_routine(spawn_position, shop_position)
+		adventurer.start_return_to_town_routine(spawn_position, shop_position, exit_position)
 
 	GameState.register_adventurer(adventurer)
 

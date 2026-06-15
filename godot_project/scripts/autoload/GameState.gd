@@ -122,11 +122,13 @@ func add_world_traveler_from_adventurer(adventurer: Node) -> Dictionary:
 		"level": _safe_get_property(adventurer, "level", 1),
 		"gold": _safe_get_property(adventurer, "gold", 0),
 		"inventory": _safe_get_property(adventurer, "inventory", {}).duplicate(true),
+		"trip_count": _safe_get_property(adventurer, "trip_count", 0),
+		"max_trip_count": _safe_get_property(adventurer, "max_trip_count", 2),
 		"status": "TravelingToSlimeNest",
 		"world_position": TOWN_WORLD_POSITION,
 		"target_position": SLIME_NEST_WORLD_POSITION,
-		"max_hp": 30,
-		"hp": 30,
+		"max_hp": _safe_get_property(adventurer, "max_health", 30),
+		"hp": _safe_get_property(adventurer, "health", 30),
 		"attack": 7,
 		"speed": 1.0,
 		"combat_resolved": false,
@@ -155,6 +157,7 @@ func get_returned_traveler_count() -> int:
 
 func claim_unclaimed_returned_travelers() -> Array[Dictionary]:
 	var claimed: Array[Dictionary] = []
+	var claimed_ids: Array[int] = []
 
 	for index in returned_travelers.size():
 		var traveler := returned_travelers[index]
@@ -163,11 +166,20 @@ func claim_unclaimed_returned_travelers() -> Array[Dictionary]:
 			traveler["town_reentry_claimed"] = true
 			returned_travelers[index] = traveler
 			claimed.append(traveler.duplicate(true))
+			claimed_ids.append(int(traveler.get("id", -1)))
+
+	for traveler_id in claimed_ids:
+		_remove_world_traveler_by_id(traveler_id)
 
 	if not claimed.is_empty():
 		state_changed.emit()
 
 	return claimed
+
+func _remove_world_traveler_by_id(traveler_id: int) -> void:
+	for index in range(world_travelers.size() - 1, -1, -1):
+		if int(world_travelers[index].get("id", -1)) == traveler_id:
+			world_travelers.remove_at(index)
 
 func update_returned_traveler_record(traveler_id: int, updated_data: Dictionary) -> void:
 	for index in returned_travelers.size():
@@ -185,7 +197,9 @@ func get_world_traveler_summary() -> String:
 	for traveler in world_travelers:
 		var traveler_name := str(traveler.get("display_name", "Traveler"))
 		var status := str(traveler.get("status", "Unknown"))
-		summary_parts.append("%s:%s" % [traveler_name, status])
+		var trip_count := int(traveler.get("trip_count", 0))
+		var max_trip_count := int(traveler.get("max_trip_count", 2))
+		summary_parts.append("%s:%s T%d/%d" % [traveler_name, status, trip_count, max_trip_count])
 
 		if summary_parts.size() >= 3:
 			break
@@ -205,13 +219,13 @@ func get_returned_traveler_summary() -> String:
 		var traveler_name := str(traveler.get("display_name", "Traveler"))
 		var status := str(traveler.get("status", "Returned"))
 		var sale_message := str(traveler.get("sale_message", ""))
-		var inventory: Dictionary = traveler.get("inventory", {})
-		var slime_gel := int(inventory.get(SLIME_GEL_ID, 0))
+		var trip_count := int(traveler.get("trip_count", 0))
+		var max_trip_count := int(traveler.get("max_trip_count", 2))
 
 		if sale_message != "":
-			summary_parts.append("%s:%s %s" % [traveler_name, status, sale_message])
+			summary_parts.append("%s:%s T%d/%d %s" % [traveler_name, status, trip_count, max_trip_count, sale_message])
 		else:
-			summary_parts.append("%s:%s Gel:%d" % [traveler_name, status, slime_gel])
+			summary_parts.append("%s:%s T%d/%d" % [traveler_name, status, trip_count, max_trip_count])
 
 		if summary_parts.size() >= 3:
 			break
@@ -285,7 +299,9 @@ func _mark_traveler_arrived_at_town(traveler: Dictionary) -> void:
 		traveler["last_combat_log"] = "Returned to town. Awaiting re-entry."
 
 	returned_travelers.append(traveler.duplicate(true))
-	state_changed.emit()
+	# Do not emit state_changed here.
+	# Town claims returned travelers when state_changed is emitted after _update_world_travelers()
+	# finishes its loop. Emitting here allows Town to remove from world_travelers mid-loop.
 
 func _move_position_toward(current_position: Vector2, target_position: Vector2, max_distance: float) -> Vector2:
 	var direction := target_position - current_position
@@ -327,7 +343,7 @@ func _resolve_slime_combat(traveler: Dictionary) -> void:
 
 		if adventurer_meter >= 1.0:
 			adventurer_meter = 0.0
-			slime_hp -= int(traveler.get("attack", 7))
+			slime_hp -= adventurer_attack
 
 			if slime_hp <= 0:
 				break

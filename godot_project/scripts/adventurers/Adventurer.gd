@@ -21,6 +21,8 @@ var current_state: String = "Idle"
 var last_purchase_message: String = ""
 var traveler_id: int = -1
 var is_returned_adventurer: bool = false
+var trip_count: int = 0
+var max_trip_count: int = 2
 
 var movement_speed: float = 85.0
 var target_position: Vector2 = Vector2.ZERO
@@ -61,7 +63,10 @@ func setup_from_traveler_data(traveler_data: Dictionary) -> void:
     inventory = traveler_data.get("inventory", {}).duplicate(true)
     health = int(traveler_data.get("hp", 1))
     max_health = int(traveler_data.get("max_hp", 30))
+    trip_count = int(traveler_data.get("trip_count", 0))
+    max_trip_count = int(traveler_data.get("max_trip_count", 2))
     is_returned_adventurer = true
+    has_entered_world_travel = false
     name = "ReturnedAdventurer_%s_%d" % [display_name, traveler_id]
     last_purchase_message = str(traveler_data.get("last_combat_log", "Returned to town."))
     _refresh_label()
@@ -74,13 +79,13 @@ func start_town_routine(entrance_position: Vector2, general_store_position: Vect
     if ai != null and ai.has_method("start_town_routine"):
         ai.start_town_routine(general_store_position, exit_position)
 
-func start_return_to_town_routine(spawn_position: Vector2, general_store_position: Vector2) -> void:
+func start_return_to_town_routine(spawn_position: Vector2, general_store_position: Vector2, exit_position: Vector2) -> void:
     global_position = spawn_position
     target_position = spawn_position
     has_target = false
 
     if ai != null and ai.has_method("start_return_to_town_routine"):
-        ai.start_return_to_town_routine(general_store_position)
+        ai.start_return_to_town_routine(general_store_position, exit_position)
 
 func set_state(new_state: String) -> void:
     current_state = new_state
@@ -99,6 +104,12 @@ func clear_move_target() -> void:
 
 func has_reached_target() -> bool:
     return global_position.distance_to(target_position) <= arrival_distance
+
+func should_continue_adventuring() -> bool:
+    return trip_count < max_trip_count
+
+func needs_small_potion() -> bool:
+    return get_item_count(SMALL_POTION_ID) <= 0
 
 func try_buy_small_potion() -> String:
     if get_item_count(SMALL_POTION_ID) > 0:
@@ -161,6 +172,8 @@ func _update_returned_record(new_status: String, sale_message: String) -> void:
         "level": level,
         "gold": gold,
         "inventory": inventory.duplicate(true),
+        "trip_count": trip_count,
+        "max_trip_count": max_trip_count,
         "status": new_status,
         "hp": health,
         "max_hp": max_health,
@@ -176,7 +189,9 @@ func enter_world_travel() -> void:
         return
 
     has_entered_world_travel = true
+    trip_count += 1
     set_state("LeavingTown")
+    set_purchase_message("Leaving for trip %d/%d" % [trip_count, max_trip_count])
     GameState.add_world_traveler_from_adventurer(self)
     queue_free()
 
@@ -231,12 +246,14 @@ func _refresh_label() -> void:
     if last_purchase_message != "":
         message_line = "\n%s" % last_purchase_message
 
-    name_label.text = "%s Lv.%d\n%s | %dg | P:%d G:%d%s" % [
+    name_label.text = "%s Lv.%d\n%s | %dg | P:%d G:%d | T:%d/%d%s" % [
         display_name,
         level,
         current_state,
         gold,
         potion_count,
         slime_gel_count,
+        trip_count,
+        max_trip_count,
         message_line
     ]

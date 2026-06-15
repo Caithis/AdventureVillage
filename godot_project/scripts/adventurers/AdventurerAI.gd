@@ -9,6 +9,8 @@ var wait_timer: float = 0.0
 var purchase_result_wait_seconds: float = 1.25
 var leaving_town_wait_seconds: float = 0.25
 var sell_result_wait_seconds: float = 1.5
+var prepare_next_trip_wait_seconds: float = 1.0
+var restock_result_wait_seconds: float = 1.25
 
 @onready var adventurer: Adventurer = get_parent() as Adventurer
 
@@ -35,8 +37,20 @@ func _process(delta: float) -> void:
             _state_go_to_general_store_to_sell()
         "SellSlimeGel":
             _state_sell_slime_gel()
-        "SoldLoot", "NoLootToSell":
-            _state_sell_result(delta)
+        "SoldLoot":
+            _state_sold_loot(delta)
+        "NoLootToSell":
+            _state_no_loot_to_sell(delta)
+        "PrepareNextTrip":
+            _state_prepare_next_trip(delta)
+        "BuyPotionForNextTrip":
+            _state_buy_potion_for_next_trip()
+        "RestockedPotion", "SkipRestockNoStock", "SkipRestockNoGold", "RestockAlreadyHasPotion", "SkipRestockFailed":
+            _state_restock_result(delta)
+        "GoToExitForNextTrip":
+            _state_go_to_exit_for_next_trip()
+        "MaxTripsReached":
+            pass
         _:
             pass
 
@@ -45,8 +59,9 @@ func start_town_routine(new_general_store_position: Vector2, new_exit_position: 
     exit_position = new_exit_position
     set_state("EnterTown")
 
-func start_return_to_town_routine(new_general_store_position: Vector2) -> void:
+func start_return_to_town_routine(new_general_store_position: Vector2, new_exit_position: Vector2) -> void:
     general_store_position = new_general_store_position
+    exit_position = new_exit_position
     set_state("ReturnedToTown")
 
 func set_state(new_state: String) -> void:
@@ -83,10 +98,32 @@ func set_state(new_state: String) -> void:
         "SellSlimeGel":
             if adventurer != null:
                 adventurer.clear_move_target()
-        "SoldLoot", "NoLootToSell":
+        "SoldLoot":
             wait_timer = sell_result_wait_seconds
             if adventurer != null:
                 adventurer.clear_move_target()
+        "NoLootToSell":
+            wait_timer = sell_result_wait_seconds
+            if adventurer != null:
+                adventurer.clear_move_target()
+        "PrepareNextTrip":
+            wait_timer = prepare_next_trip_wait_seconds
+            if adventurer != null:
+                adventurer.clear_move_target()
+        "BuyPotionForNextTrip":
+            if adventurer != null:
+                adventurer.clear_move_target()
+        "RestockedPotion", "SkipRestockNoStock", "SkipRestockNoGold", "RestockAlreadyHasPotion", "SkipRestockFailed":
+            wait_timer = restock_result_wait_seconds
+            if adventurer != null:
+                adventurer.clear_move_target()
+        "GoToExitForNextTrip":
+            if adventurer != null:
+                adventurer.set_move_target(exit_position)
+        "MaxTripsReached":
+            if adventurer != null:
+                adventurer.clear_move_target()
+                adventurer.set_purchase_message("Max prototype trips reached")
         _:
             pass
 
@@ -164,9 +201,66 @@ func _state_sell_slime_gel() -> void:
         _:
             set_state("NoLootToSell")
 
-func _state_sell_result(delta: float) -> void:
+func _state_sold_loot(delta: float) -> void:
     wait_timer -= delta
 
     if wait_timer <= 0.0:
-        # For now, returned adventurers remain visible and idle after selling.
-        pass
+        set_state("PrepareNextTrip")
+
+func _state_no_loot_to_sell(delta: float) -> void:
+    wait_timer -= delta
+
+    if wait_timer <= 0.0:
+        set_state("PrepareNextTrip")
+
+func _state_prepare_next_trip(delta: float) -> void:
+    wait_timer -= delta
+
+    if wait_timer > 0.0:
+        return
+
+    if adventurer == null:
+        return
+
+    if adventurer.has_method("should_continue_adventuring") and not adventurer.should_continue_adventuring():
+        set_state("MaxTripsReached")
+        return
+
+    if adventurer.has_method("needs_small_potion") and adventurer.needs_small_potion():
+        set_state("BuyPotionForNextTrip")
+    else:
+        if adventurer.has_method("set_purchase_message"):
+            adventurer.set_purchase_message("Potion ready. Leaving again.")
+        set_state("GoToExitForNextTrip")
+
+func _state_buy_potion_for_next_trip() -> void:
+    if adventurer == null or not adventurer.has_method("try_buy_small_potion"):
+        set_state("SkipRestockFailed")
+        return
+
+    var result := adventurer.try_buy_small_potion()
+
+    match result:
+        "bought":
+            set_state("RestockedPotion")
+        "no_stock":
+            set_state("SkipRestockNoStock")
+        "no_gold":
+            set_state("SkipRestockNoGold")
+        "already_has_potion":
+            set_state("RestockAlreadyHasPotion")
+        _:
+            set_state("SkipRestockFailed")
+
+func _state_restock_result(delta: float) -> void:
+    wait_timer -= delta
+
+    if wait_timer <= 0.0:
+        set_state("GoToExitForNextTrip")
+
+func _state_go_to_exit_for_next_trip() -> void:
+    if adventurer == null:
+        return
+
+    if not adventurer.has_target and adventurer.has_reached_target():
+        set_state("LeavingTown")
