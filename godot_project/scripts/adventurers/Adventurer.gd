@@ -3,6 +3,7 @@ class_name Adventurer
 
 const SMALL_POTION_ID := "small_potion"
 const SLIME_GEL_ID := "slime_gel"
+const FLOATING_TEXT_SCENE: PackedScene = preload("res://scenes/ui/FloatingText.tscn")
 
 const SMALL_POTION_PRICE := 15
 const INN_REST_FEE := 8
@@ -148,11 +149,14 @@ func rest_at_inn() -> void:
         health = max_health
         energy = max_energy
         set_purchase_message("Paid %dg for Inn rest" % INN_REST_FEE)
+        show_floating_text("-%dg Inn Rest" % INN_REST_FEE)
+        show_floating_text("+HP +Energy", Vector2(0, -58))
         _update_returned_record("RestedAtInn", "Paid %dg for Inn rest." % INN_REST_FEE)
     else:
         health = mini(health + POOR_REST_HP_RECOVERY, max_health)
         energy = mini(energy + POOR_REST_ENERGY_RECOVERY, max_energy)
         set_purchase_message("Could not afford Inn. Poor rest.")
+        show_floating_text("Poor Rest")
         _update_returned_record("PoorRestAtInn", "Could not afford Inn. Poor rest.")
     _refresh_label()
 
@@ -164,26 +168,32 @@ func sleep_at_inn_for_night() -> void:
         energy = max_energy
         last_night_sleep_day = GameClock.day_number
         set_purchase_message("Paid %dg for Night lodging" % NIGHT_LODGING_FEE)
+        show_floating_text("-%dg Lodging" % NIGHT_LODGING_FEE)
+        show_floating_text("Slept Well", Vector2(0, -58))
         _update_returned_record("SleptAtInn", "Paid %dg for Night lodging." % NIGHT_LODGING_FEE)
     else:
         health = mini(health + POOR_REST_HP_RECOVERY, max_health)
         energy = mini(energy + POOR_REST_ENERGY_RECOVERY, max_energy)
         last_night_sleep_day = GameClock.day_number
         set_purchase_message("Could not afford lodging. Poor sleep.")
+        show_floating_text("Poor Sleep")
         _update_returned_record("PoorSleepAtInn", "Could not afford lodging. Poor sleep.")
     _refresh_label()
 
 func try_buy_small_potion() -> String:
     if get_item_count(SMALL_POTION_ID) > 0:
         set_purchase_message("Already has potion")
+        show_floating_text("Potion ready")
         return "already_has_potion"
 
     if not GameState.has_item(SMALL_POTION_ID, 1):
         set_purchase_message("No potions in stock")
+        show_floating_text("No potions")
         return "no_stock"
 
     if gold < SMALL_POTION_PRICE:
         set_purchase_message("Cannot afford potion")
+        show_floating_text("Can\'t afford potion")
         return "no_gold"
 
     var spent_gold := spend_gold(SMALL_POTION_PRICE)
@@ -201,6 +211,7 @@ func try_buy_small_potion() -> String:
     add_item(SMALL_POTION_ID, 1)
     GameState.add_money(SMALL_POTION_PRICE)
     set_purchase_message("Bought potion")
+    show_floating_text("-15g Potion")
     return "bought"
 
 func try_sell_slime_gel() -> String:
@@ -208,11 +219,13 @@ func try_sell_slime_gel() -> String:
 
     if slime_gel_amount <= 0:
         set_purchase_message("No Slime Gel to sell")
+        show_floating_text("No loot")
         _update_returned_record("NoLootToSell", "No loot to sell.")
         return "no_loot"
 
     if not GameState.can_general_store_buy_item(SLIME_GEL_ID):
         set_purchase_message("General Store not buying Slime Gel")
+        show_floating_text("Sale Blocked")
         _update_returned_record("SaleBlocked", "Store not buying Slime Gel.")
         return "buying_disabled"
 
@@ -225,6 +238,8 @@ func try_sell_slime_gel() -> String:
 
     var sale_message := "Sold %d Slime Gel for %dg" % [slime_gel_amount, sale_total]
     set_purchase_message(sale_message)
+    show_floating_text("+%dg Sell Loot" % sale_total)
+    show_floating_text("+%d Slime Gel Stock" % slime_gel_amount, Vector2(0, -58))
     _update_returned_record("SoldLoot", sale_message)
     _refresh_label()
     return "sold"
@@ -263,6 +278,7 @@ func enter_world_travel() -> void:
     trip_count += 1
     set_state("LeavingTown")
     set_purchase_message("Leaving for trip %d/%d" % [trip_count, max_trip_count])
+    show_floating_text("Trip %d/%d" % [trip_count, max_trip_count])
     GameState.add_world_traveler_from_adventurer(self)
     queue_free()
 
@@ -306,6 +322,20 @@ func _move_toward_target(delta: float) -> void:
         return
 
     global_position += direction.normalized() * step
+
+func show_floating_text(text: String, offset: Vector2 = Vector2(0, -34)) -> void:
+    var floating_text := FLOATING_TEXT_SCENE.instantiate()
+    var target_parent := get_parent()
+
+    if target_parent == null:
+        add_child(floating_text)
+        floating_text.position = offset
+    else:
+        target_parent.add_child(floating_text)
+        floating_text.global_position = global_position + offset
+
+    if floating_text.has_method("setup"):
+        floating_text.setup(text)
 
 func _refresh_label() -> void:
     if name_label == null:

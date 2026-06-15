@@ -1,15 +1,13 @@
 # Known Issues
 
-## v0.3.0
+## v0.3.1
 
 Known limitations:
-- Only the General Store is clickable.
-- Only Slime Gel has a material buying toggle.
-- The building menu is a prototype and not styled.
-- The hover highlight is a simple rectangle, not a polished outline shader.
-- Building menu does not yet support sliders.
-- Building settings are not saved/loaded.
-- Debug UI collapse is simple show/hide behavior.
-- Floating event text is not implemented yet.
+- Floating text is plain Label text.
+- Floating text is not color-coded yet.
+- Floating text can overlap if many events happen at once.
+- Building economy text appears over the adventurer involved, not the building.
+- Combat floating text appears over world traveler markers, not visible enemies.
+- There is no central event bus yet.
+- Floating text uses prototype timing and positioning.
 - Visible wandering monsters are not implemented yet.
-- Fixed building layout is still temporary.

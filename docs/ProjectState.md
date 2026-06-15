@@ -31,3 +31,8 @@ v0.3.0 - Basic Building Economy Controls
 - Floating event text.
 - Visible wandering monsters.
 - Save/load.
+
+
+## v0.3.1 Update Notes
+
+Floating event text now appears for economy and world-map combat/travel events. This is a prototype and should later move to an event bus / floating text manager.

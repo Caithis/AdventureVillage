@@ -1,79 +1,72 @@
 # Dungeon Frontier Guild-Town
 
-Version: v0.3.0 - Basic Building Economy Controls
+Version: v0.3.1 - Floating Event Text Prototype
 
-## What v0.3.0 Adds
+## What v0.3.1 Adds
 
-This patch starts the foundation for building-level economy controls.
+This patch adds the first version of in-world event feedback.
 
-## General Store Material Buying
+Instead of relying only on labels and the Debug UI, important events now appear as floating text.
 
-The General Store now has a buying policy for Slime Gel:
+## Floating Text Events
 
-```text
-Buy Slime Gel: Enabled / Disabled
-```
+### Town / Adventurer Events
 
-If enabled:
+Floating text now appears for:
 
 ```text
-Returned adventurer can sell Slime Gel.
-Village funds decrease.
-Town Slime Gel stock increases.
-Adventurer gold increases.
+Potion purchases
+Slime Gel sales
+Sale blocked by General Store buying policy
+Inn rest payment
+Night lodging payment
+Poor rest / poor sleep
+Adventurer leaving town
 ```
 
-If disabled:
+### World Map Events
+
+Floating text now appears above world traveler markers for:
 
 ```text
-Returned adventurer cannot sell Slime Gel.
-Adventurer keeps their Slime Gel.
-Village funds do not decrease.
-Adventurer label shows that the store is not buying Slime Gel.
+Victory
+Defeat
+Night retreat
+Night quest restriction retreat
+NightQuesting status
+Day returned / night danger faded
 ```
 
-## Building Interaction
+## Why This Matters
 
-The General Store can now be clicked.
-
-When clicked:
+This is the first step toward the kind of game feedback the final version needs:
 
 ```text
-General Store menu opens.
-Menu shows whether Slime Gel buying is enabled.
-Menu has a toggle button for buying Slime Gel.
++15g above General Store / adventurer
+-10g when town buys materials
++2 Slime Gel when resources are stocked
+Victory! above traveler
+Defeated! above traveler
+Sale Blocked when a store refuses material
 ```
 
-The General Store also highlights when the cursor hovers over it.
+For now, most town-side text appears above the adventurer involved in the event. Later, we can route building-related text to the building itself.
 
-This is a prototype interaction system. Later, this should expand into a real building menu system for all buildings.
+## Current Limitation
 
-## Debug UI Improvement
+Floating text is functional but not polished. It uses simple labels that rise and fade.
 
-The Debug UI is now collapsible.
+Future improvements:
+- Color-coded positive/negative/resource/combat text
+- Icons
+- Pixel-art font styling
+- Text above buildings, enemies, and world threats
+- Event queue to avoid overlapping text
 
-```text
-Hide Debug
-Show Debug
-```
+## Hotfix v0.3.1.1 Notice
 
-The scrollable debug controls remain available, but the panel can now be minimized so you can watch the simulation more clearly.
-
-## Future Direction
-
-This is the beginning of:
-- Building click menus
-- Hover highlights
-- Material buy toggles
-- Material stock controls
-- Building budget controls
-- Future sliders for buying limits
-
-## Hotfix v0.3.0.1 Notice
-
-This package fixes the Debug UI collapse/layout bug.
+This package fixes the launch-blocking `FloatingText.gd` parser error.
 
 Fixed:
-- Hide Debug now shrinks the panel instead of leaving the large empty shadow box.
-- Show Debug restores the full debug list.
-- ScrollContainer has a stable height so the list displays properly.
+- `Cannot infer the type of "fade_ratio"`
+- `FloatingText.gd` now uses explicit float typing with `clampf()`.

@@ -1,8 +1,12 @@
 extends Node2D
 
+const FLOATING_TEXT_SCENE: PackedScene = preload("res://scenes/ui/FloatingText.tscn")
+
 @onready var world_travelers_container: Node2D = $WorldTravelers
 
 var traveler_markers: Dictionary = {}
+var last_traveler_event_logs: Dictionary = {}
+var floating_text_offsets: Dictionary = {}
 
 func _ready() -> void:
 	print("World Map scene loaded.")
@@ -61,6 +65,8 @@ func _update_marker_positions_and_labels() -> void:
 		if label != null:
 			label.text = _build_traveler_label(traveler)
 
+		_show_world_event_if_needed(traveler, marker)
+
 func _create_traveler_marker(traveler: Dictionary) -> Node2D:
 	var marker := Node2D.new()
 	marker.name = "WorldTraveler_%s" % str(traveler.get("id", 0))
@@ -80,6 +86,58 @@ func _create_traveler_marker(traveler: Dictionary) -> Node2D:
 	marker.add_child(label)
 
 	return marker
+
+func _show_world_event_if_needed(traveler: Dictionary, marker: Node2D) -> void:
+	var traveler_id := int(traveler.get("id", -1))
+	if traveler_id < 0:
+		return
+
+	var status := str(traveler.get("status", ""))
+	var log_line := str(traveler.get("last_combat_log", ""))
+	var event_key := "%s|%s" % [status, log_line]
+
+	if str(last_traveler_event_logs.get(traveler_id, "")) == event_key:
+		return
+
+	last_traveler_event_logs[traveler_id] = event_key
+	var event_text := _get_world_event_text(status, log_line)
+
+	if event_text == "":
+		return
+
+	_spawn_floating_text(marker, event_text)
+
+func _get_world_event_text(status: String, log_line: String) -> String:
+	if status == "NightQuesting":
+		return "Night Quest"
+
+	if status == "ReturningLowEnergyAtNight":
+		return "Too Tired - Return"
+
+	if status == "ReturningNightRestricted":
+		return "Night Quests Off"
+
+	if log_line.contains("Won vs Slime"):
+		return "Victory!"
+
+	if log_line.contains("Lost vs Slime"):
+		return "Defeated!"
+
+	if log_line.contains("Day returned"):
+		return "Day Returned"
+
+	if log_line.contains("Night danger"):
+		return "Night Danger"
+
+	return ""
+
+func _spawn_floating_text(anchor: Node2D, text: String) -> void:
+	var floating_text := FLOATING_TEXT_SCENE.instantiate()
+	add_child(floating_text)
+	floating_text.global_position = anchor.global_position + Vector2(0, -42)
+
+	if floating_text.has_method("setup"):
+		floating_text.setup(text)
 
 func _build_traveler_label(traveler: Dictionary) -> String:
 	var inventory: Dictionary = traveler.get("inventory", {})
