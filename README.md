@@ -1,29 +1,31 @@
 # Dungeon Frontier Guild-Town
 
-Version: v0.0.1 - Project Setup
+Version: v0.1.0 - Walking Skeleton
 
 Dungeon Frontier Guild-Town is a Godot 4.x 2D pixel-art management/simulation project about running a frontier guild-town that supports adventurers, grows its economy, and survives escalating world-map threats.
 
-This repository is intentionally small at v0.0.1. It establishes folders, documentation, naming conventions, and script stubs before gameplay systems are implemented.
+## What v0.1.0 Adds
 
-## Current Goal
+- Main scene.
+- Town scene.
+- World Map scene.
+- Debug UI scene.
+- Registered autoloads in `project.godot`.
+- Scene switching between Town and World Map.
+- Accelerated day/night clock.
+- Simple global game state.
+- Placeholder town buildings.
+- Placeholder world-map zone.
+- Placeholder Slime Nest threat marker.
 
-Open the project cleanly in Godot and prepare for v0.1.0, the first playable walking skeleton.
+## How to Run
 
-## Recommended Workflow
+1. Open Godot 4.x.
+2. Open/import the `godot_project/` folder.
+3. Run the project.
+4. The project should start in the Town view.
+5. Use the Debug UI buttons to switch between Town and World Map.
 
-1. Open `godot_project/` in Godot 4.x.
-2. Confirm the project imports without errors.
-3. Initialize Git at the repository root.
-4. Commit this setup as `v0.0.1`.
-5. Continue with v0.1.0: Main scene, scene switching, GameClock, GameState, Debug UI.
+## Current Limitation
 
-## Repository Layout
-
-- `docs/` - design documents, project state, changelog, issue tracking.
-- `godot_project/` - Godot project files.
-- `godot_project/scripts/` - GDScript source files.
-- `godot_project/scenes/` - Godot scenes.
-- `godot_project/resources/` - data-driven Resources.
-- `godot_project/art/` - placeholder and final art.
-- `godot_project/audio/` - music and sound effects.
+This is still not a gameplay prototype. It is the first visible skeleton that proves the project can run, route scenes, display state, and show the basic game spaces.

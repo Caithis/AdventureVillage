@@ -1,0 +1,83 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/town/Town.gd" id="1_town_script"]
+
+[node name="Town" type="Node2D"]
+script = ExtResource("1_town_script")
+
+[node name="Background" type="ColorRect" parent="."]
+offset_right = 1280.0
+offset_bottom = 720.0
+color = Color(0.22, 0.35, 0.22, 1)
+
+[node name="TitleLabel" type="Label" parent="."]
+offset_left = 460.0
+offset_top = 24.0
+offset_right = 820.0
+offset_bottom = 60.0
+text = "Town View - Frontier Guild-Town"
+
+[node name="Buildings" type="Node2D" parent="."]
+
+[node name="GuildHall" type="ColorRect" parent="Buildings"]
+offset_left = 540.0
+offset_top = 160.0
+offset_right = 740.0
+offset_bottom = 260.0
+color = Color(0.36, 0.24, 0.16, 1)
+
+[node name="GuildHallLabel" type="Label" parent="Buildings/GuildHall"]
+offset_left = 48.0
+offset_top = 38.0
+offset_right = 180.0
+offset_bottom = 62.0
+text = "Guild Hall"
+
+[node name="Inn" type="ColorRect" parent="Buildings"]
+offset_left = 275.0
+offset_top = 335.0
+offset_right = 450.0
+offset_bottom = 425.0
+color = Color(0.28, 0.18, 0.38, 1)
+
+[node name="InnLabel" type="Label" parent="Buildings/Inn"]
+offset_left = 72.0
+offset_top = 32.0
+offset_right = 130.0
+offset_bottom = 56.0
+text = "Inn"
+
+[node name="GeneralStore" type="ColorRect" parent="Buildings"]
+offset_left = 800.0
+offset_top = 335.0
+offset_right = 1010.0
+offset_bottom = 425.0
+color = Color(0.42, 0.32, 0.12, 1)
+
+[node name="GeneralStoreLabel" type="Label" parent="Buildings/GeneralStore"]
+offset_left = 52.0
+offset_top = 32.0
+offset_right = 180.0
+offset_bottom = 56.0
+text = "General Store"
+
+[node name="Markers" type="Node2D" parent="."]
+
+[node name="TownEntrance" type="Marker2D" parent="Markers"]
+position = Vector2(80, 610)
+
+[node name="GeneralStorePoint" type="Marker2D" parent="Markers"]
+position = Vector2(905, 460)
+
+[node name="InnPoint" type="Marker2D" parent="Markers"]
+position = Vector2(360, 460)
+
+[node name="ExitToWorldPoint" type="Marker2D" parent="Markers"]
+position = Vector2(1210, 610)
+
+[node name="MarkerHintLabel" type="Label" parent="."]
+offset_left = 395.0
+offset_top = 655.0
+offset_right = 920.0
+offset_bottom = 685.0
+text = "v0.1.0: Buildings are placeholders. Adventurers arrive in v0.1.1."

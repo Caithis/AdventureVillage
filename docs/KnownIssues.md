@@ -1,18 +1,18 @@
 # Known Issues
 
-## v0.0.1
-
-No gameplay exists yet.
+## v0.1.0
 
 Known limitations:
-- No main scene.
-- No registered autoloads.
-- No UI.
-- No town map.
-- No world map.
-- No adventurer simulation.
-- No art assets besides planned placeholder folders.
+- No adventurer spawns yet.
+- The `Spawn Adventurer` button is intentionally disabled behavior for now and displays no entity.
+- Town and World Map use placeholder `ColorRect`/`Label` visuals.
+- No TileMap or real pixel art yet.
+- No combat.
+- No economy simulation.
 - No save/load.
-- No tests.
+- No settings menu.
+- No real game UI beyond Debug UI.
 
-These are intentional for v0.0.1.
+## Possible Godot Import Notes
+
+If Godot reports generated UID differences, that is fine. Godot may rewrite scene/resource UIDs locally.

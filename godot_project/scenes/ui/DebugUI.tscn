@@ -1,0 +1,79 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/DebugUI.gd" id="1_debug_ui_script"]
+
+[node name="DebugUI" type="Control"]
+script = ExtResource("1_debug_ui_script")
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="PanelContainer" type="PanelContainer" parent="."]
+layout_mode = 1
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 310.0
+offset_bottom = 305.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "Dungeon Frontier Debug"
+
+[node name="ViewLabel" type="Label" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "View: Unknown"
+
+[node name="TimeLabel" type="Label" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "Time: Day 1 - Day"
+
+[node name="MoneyLabel" type="Label" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "Money: 0"
+
+[node name="InventoryLabel" type="Label" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "Inventory: -"
+
+[node name="AdventurerLabel" type="Label" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "Adventurers: 0"
+
+[node name="ThreatLabel" type="Label" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "Slime Nest: Dormant"
+
+[node name="Separator1" type="HSeparator" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="TownButton" type="Button" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "Town"
+
+[node name="WorldMapButton" type="Button" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "World Map"
+
+[node name="Separator2" type="HSeparator" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="AddMoneyButton" type="Button" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "Add 25 Money"
+
+[node name="AddSlimeGelButton" type="Button" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "Add Slime Gel"
+
+[node name="GrowSlimeNestButton" type="Button" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "Grow Slime Nest"
+
+[node name="SpawnAdventurerButton" type="Button" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+disabled = true
+text = "Spawn Adventurer - v0.1.1"

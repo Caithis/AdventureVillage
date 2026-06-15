@@ -1,23 +1,29 @@
 # Changelog
 
-## v0.0.1 - Project Setup
+## v0.1.0 - Walking Skeleton
 
 ### Added
-- Initial repository structure.
-- Godot project folder.
-- Documentation folder.
-- Project state document.
-- Known issues document.
-- Art bible.
-- Naming conventions.
-- Patch request template.
-- Git ignore file.
-- Initial script stubs for future systems.
+- Main scene.
+- Town scene.
+- World Map scene.
+- Debug UI scene.
+- GameClock autoload.
+- GameState autoload.
+- SceneRouter autoload.
+- Registered autoloads in `project.godot`.
+- Main scene set in `project.godot`.
+- Debug UI buttons for Town and World Map switching.
+- Debug UI labels for money, inventory, adventurer count, current view, time, and Slime Nest status.
+- Placeholder town layout with Guild Hall, Inn, and General Store.
+- Placeholder world map with Grassland Edge and Slime Nest.
+- Simple debug buttons for adding money, adding Slime Gel, and growing Slime Nest.
+
+### Changed
+- Project moved from setup-only v0.0.1 to first visible running skeleton.
 
 ### Not Yet Added
-- Main scene.
-- Scene switching.
-- Game clock.
-- Game state.
-- Debug UI.
-- Gameplay logic.
+- Adventurer entities.
+- Adventurer AI.
+- Shop purchasing.
+- Combat.
+- Threat clearing.
