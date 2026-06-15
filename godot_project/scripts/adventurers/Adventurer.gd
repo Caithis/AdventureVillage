@@ -2,6 +2,8 @@ extends Node2D
 class_name Adventurer
 
 const SMALL_POTION_ID := "small_potion"
+const SLIME_GEL_ID := "slime_gel"
+
 const SMALL_POTION_PRICE := 15
 
 @onready var name_label: Label = $NameLabel
@@ -17,6 +19,8 @@ var max_health: int = 30
 var inventory: Dictionary = {}
 var current_state: String = "Idle"
 var last_purchase_message: String = ""
+var traveler_id: int = -1
+var is_returned_adventurer: bool = false
 
 var movement_speed: float = 85.0
 var target_position: Vector2 = Vector2.ZERO
@@ -48,6 +52,20 @@ func setup_placeholder(new_display_name: String, new_class_id: String, new_level
 
     _refresh_label()
 
+func setup_from_traveler_data(traveler_data: Dictionary) -> void:
+    traveler_id = int(traveler_data.get("id", -1))
+    display_name = str(traveler_data.get("display_name", "Returned"))
+    class_id = str(traveler_data.get("class_id", "fighter"))
+    level = int(traveler_data.get("level", 1))
+    gold = int(traveler_data.get("gold", 0))
+    inventory = traveler_data.get("inventory", {}).duplicate(true)
+    health = int(traveler_data.get("hp", 1))
+    max_health = int(traveler_data.get("max_hp", 30))
+    is_returned_adventurer = true
+    name = "ReturnedAdventurer_%s_%d" % [display_name, traveler_id]
+    last_purchase_message = str(traveler_data.get("last_combat_log", "Returned to town."))
+    _refresh_label()
+
 func start_town_routine(entrance_position: Vector2, general_store_position: Vector2, exit_position: Vector2) -> void:
     global_position = entrance_position
     target_position = entrance_position
@@ -55,6 +73,14 @@ func start_town_routine(entrance_position: Vector2, general_store_position: Vect
 
     if ai != null and ai.has_method("start_town_routine"):
         ai.start_town_routine(general_store_position, exit_position)
+
+func start_return_to_town_routine(spawn_position: Vector2, general_store_position: Vector2) -> void:
+    global_position = spawn_position
+    target_position = spawn_position
+    has_target = false
+
+    if ai != null and ai.has_method("start_return_to_town_routine"):
+        ai.start_return_to_town_routine(general_store_position)
 
 func set_state(new_state: String) -> void:
     current_state = new_state
@@ -94,7 +120,6 @@ func try_buy_small_potion() -> String:
 
     var removed_from_town := GameState.remove_item(SMALL_POTION_ID, 1)
     if not removed_from_town:
-        # Safety rollback. This should not happen because stock is checked first.
         gold += SMALL_POTION_PRICE
         set_purchase_message("Purchase failed")
         _refresh_label()
@@ -104,6 +129,47 @@ func try_buy_small_potion() -> String:
     GameState.add_money(SMALL_POTION_PRICE)
     set_purchase_message("Bought potion")
     return "bought"
+
+func try_sell_slime_gel() -> String:
+    var slime_gel_amount := get_item_count(SLIME_GEL_ID)
+
+    if slime_gel_amount <= 0:
+        set_purchase_message("No Slime Gel to sell")
+        _update_returned_record("NoLootToSell", "No loot to sell.")
+        return "no_loot"
+
+    var sale_total := slime_gel_amount * GameState.SLIME_GEL_SELL_VALUE
+
+    inventory[SLIME_GEL_ID] = 0
+    gold += sale_total
+    GameState.add_item(SLIME_GEL_ID, slime_gel_amount)
+
+    var sale_message := "Sold %d Slime Gel for %dg" % [slime_gel_amount, sale_total]
+    set_purchase_message(sale_message)
+    _update_returned_record("SoldLoot", sale_message)
+    _refresh_label()
+    return "sold"
+
+func _update_returned_record(new_status: String, sale_message: String) -> void:
+    if traveler_id < 0:
+        return
+
+    var updated_data := {
+        "id": traveler_id,
+        "display_name": display_name,
+        "class_id": class_id,
+        "level": level,
+        "gold": gold,
+        "inventory": inventory.duplicate(true),
+        "status": new_status,
+        "hp": health,
+        "max_hp": max_health,
+        "town_reentry_claimed": true,
+        "sale_message": sale_message,
+        "last_combat_log": sale_message,
+    }
+
+    GameState.update_returned_traveler_record(traveler_id, updated_data)
 
 func enter_world_travel() -> void:
     if has_entered_world_travel:
@@ -160,15 +226,17 @@ func _refresh_label() -> void:
         return
 
     var potion_count := get_item_count(SMALL_POTION_ID)
+    var slime_gel_count := get_item_count(SLIME_GEL_ID)
     var message_line := ""
     if last_purchase_message != "":
         message_line = "\n%s" % last_purchase_message
 
-    name_label.text = "%s Lv.%d\n%s | %dg | Potions: %d%s" % [
+    name_label.text = "%s Lv.%d\n%s | %dg | P:%d G:%d%s" % [
         display_name,
         level,
         current_state,
         gold,
         potion_count,
+        slime_gel_count,
         message_line
     ]

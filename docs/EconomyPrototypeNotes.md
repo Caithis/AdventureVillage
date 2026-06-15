@@ -1,6 +1,6 @@
 # Economy Prototype Notes
 
-## v0.2.2 Prototype Values
+## v0.2.4 Prototype Values
 
 ### Adventurer Purchases
 
@@ -26,11 +26,10 @@ One Slime victory gives:
 Total sale value:
 - 2 Slime Gel x 5 gold = 10 gold
 
-## Current Prototype Shortcut
+## Current Behavior
 
-Returned travelers sell loot automatically when they arrive at the town marker.
-
-Future intended behavior:
-- Returned traveler appears in Town.
-- Walks to General Store.
-- Sells loot through a shop interaction.
+Returned adventurers now sell Slime Gel through a visible Town routine:
+1. Spawn near Town Exit.
+2. Walk to General Store.
+3. Sell Slime Gel.
+4. Show sale result in label.

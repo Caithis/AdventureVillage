@@ -8,6 +8,7 @@ var exit_position: Vector2 = Vector2.ZERO
 var wait_timer: float = 0.0
 var purchase_result_wait_seconds: float = 1.25
 var leaving_town_wait_seconds: float = 0.25
+var sell_result_wait_seconds: float = 1.5
 
 @onready var adventurer: Adventurer = get_parent() as Adventurer
 
@@ -28,6 +29,14 @@ func _process(delta: float) -> void:
             _state_go_to_exit()
         "LeavingTown":
             _state_leaving_town(delta)
+        "ReturnedToTown":
+            _state_returned_to_town()
+        "GoToGeneralStoreToSell":
+            _state_go_to_general_store_to_sell()
+        "SellSlimeGel":
+            _state_sell_slime_gel()
+        "SoldLoot", "NoLootToSell":
+            _state_sell_result(delta)
         _:
             pass
 
@@ -35,6 +44,10 @@ func start_town_routine(new_general_store_position: Vector2, new_exit_position: 
     general_store_position = new_general_store_position
     exit_position = new_exit_position
     set_state("EnterTown")
+
+func start_return_to_town_routine(new_general_store_position: Vector2) -> void:
+    general_store_position = new_general_store_position
+    set_state("ReturnedToTown")
 
 func set_state(new_state: String) -> void:
     current_state = new_state
@@ -60,6 +73,18 @@ func set_state(new_state: String) -> void:
                 adventurer.set_move_target(exit_position)
         "LeavingTown":
             wait_timer = leaving_town_wait_seconds
+            if adventurer != null:
+                adventurer.clear_move_target()
+        "ReturnedToTown":
+            pass
+        "GoToGeneralStoreToSell":
+            if adventurer != null:
+                adventurer.set_move_target(general_store_position)
+        "SellSlimeGel":
+            if adventurer != null:
+                adventurer.clear_move_target()
+        "SoldLoot", "NoLootToSell":
+            wait_timer = sell_result_wait_seconds
             if adventurer != null:
                 adventurer.clear_move_target()
         _:
@@ -115,3 +140,33 @@ func _state_leaving_town(delta: float) -> void:
 
     if wait_timer <= 0.0 and adventurer != null and adventurer.has_method("enter_world_travel"):
         adventurer.enter_world_travel()
+
+func _state_returned_to_town() -> void:
+    set_state("GoToGeneralStoreToSell")
+
+func _state_go_to_general_store_to_sell() -> void:
+    if adventurer == null:
+        return
+
+    if not adventurer.has_target and adventurer.has_reached_target():
+        set_state("SellSlimeGel")
+
+func _state_sell_slime_gel() -> void:
+    if adventurer == null or not adventurer.has_method("try_sell_slime_gel"):
+        set_state("NoLootToSell")
+        return
+
+    var result := adventurer.try_sell_slime_gel()
+
+    match result:
+        "sold":
+            set_state("SoldLoot")
+        _:
+            set_state("NoLootToSell")
+
+func _state_sell_result(delta: float) -> void:
+    wait_timer -= delta
+
+    if wait_timer <= 0.0:
+        # For now, returned adventurers remain visible and idle after selling.
+        pass

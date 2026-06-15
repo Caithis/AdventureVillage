@@ -131,7 +131,7 @@ func add_world_traveler_from_adventurer(adventurer: Node) -> Dictionary:
 		"speed": 1.0,
 		"combat_resolved": false,
 		"has_returned_to_town": false,
-		"has_sold_loot": false,
+		"town_reentry_claimed": false,
 		"sale_message": "",
 		"last_combat_log": "Traveling to Slime Nest.",
 	}
@@ -152,6 +152,29 @@ func get_returned_travelers() -> Array[Dictionary]:
 
 func get_returned_traveler_count() -> int:
 	return returned_travelers.size()
+
+func claim_unclaimed_returned_travelers() -> Array[Dictionary]:
+	var claimed: Array[Dictionary] = []
+
+	for index in returned_travelers.size():
+		var traveler := returned_travelers[index]
+
+		if not bool(traveler.get("town_reentry_claimed", false)):
+			traveler["town_reentry_claimed"] = true
+			returned_travelers[index] = traveler
+			claimed.append(traveler.duplicate(true))
+
+	if not claimed.is_empty():
+		state_changed.emit()
+
+	return claimed
+
+func update_returned_traveler_record(traveler_id: int, updated_data: Dictionary) -> void:
+	for index in returned_travelers.size():
+		if int(returned_travelers[index].get("id", -1)) == traveler_id:
+			returned_travelers[index] = updated_data.duplicate(true)
+			state_changed.emit()
+			return
 
 func get_world_traveler_summary() -> String:
 	if world_travelers.is_empty():
@@ -252,41 +275,17 @@ func _mark_traveler_arrived_at_town(traveler: Dictionary) -> void:
 
 	var previous_status := str(traveler.get("status", ""))
 	if previous_status == "ReturningWithLoot":
-		traveler["status"] = "ArrivedAtTownWithLoot"
-		traveler["last_combat_log"] = "Returned to town with loot."
-		_sell_slime_gel_to_town(traveler)
+		traveler["status"] = "AwaitingTownReentryWithLoot"
+		traveler["last_combat_log"] = "Returned to town with loot. Awaiting re-entry."
 	elif previous_status == "InjuredReturning":
-		traveler["status"] = "ArrivedAtTownInjured"
-		traveler["last_combat_log"] = "Returned to town injured."
+		traveler["status"] = "AwaitingTownReentryInjured"
+		traveler["last_combat_log"] = "Returned to town injured. Awaiting re-entry."
 	else:
-		traveler["status"] = "ArrivedAtTown"
-		traveler["last_combat_log"] = "Returned to town."
+		traveler["status"] = "AwaitingTownReentry"
+		traveler["last_combat_log"] = "Returned to town. Awaiting re-entry."
 
 	returned_travelers.append(traveler.duplicate(true))
 	state_changed.emit()
-
-func _sell_slime_gel_to_town(traveler: Dictionary) -> void:
-	if bool(traveler.get("has_sold_loot", false)):
-		return
-
-	var inventory: Dictionary = traveler.get("inventory", {})
-	var slime_gel_amount := int(inventory.get(SLIME_GEL_ID, 0))
-
-	if slime_gel_amount <= 0:
-		traveler["sale_message"] = "No loot to sell."
-		return
-
-	var sale_total := slime_gel_amount * SLIME_GEL_SELL_VALUE
-
-	town_inventory[SLIME_GEL_ID] = get_item_count(SLIME_GEL_ID) + slime_gel_amount
-	inventory[SLIME_GEL_ID] = 0
-
-	traveler["inventory"] = inventory
-	traveler["gold"] = int(traveler.get("gold", 0)) + sale_total
-	traveler["has_sold_loot"] = true
-	traveler["status"] = "SoldLoot"
-	traveler["sale_message"] = "Sold %d Slime Gel for %dg." % [slime_gel_amount, sale_total]
-	traveler["last_combat_log"] = traveler["sale_message"]
 
 func _move_position_toward(current_position: Vector2, target_position: Vector2, max_distance: float) -> Vector2:
 	var direction := target_position - current_position
@@ -314,8 +313,6 @@ func _resolve_slime_combat(traveler: Dictionary) -> void:
 
 	var inventory: Dictionary = traveler.get("inventory", {})
 	var potion_used := false
-	var combat_log: Array[String] = []
-	combat_log.append("Combat started vs Slime.")
 
 	var rounds := 0
 	while adventurer_hp > 0 and slime_hp > 0 and rounds < 100:
@@ -327,12 +324,10 @@ func _resolve_slime_combat(traveler: Dictionary) -> void:
 			inventory[SMALL_POTION_ID] = int(inventory.get(SMALL_POTION_ID, 0)) - 1
 			adventurer_hp = mini(adventurer_hp + SMALL_POTION_HEAL_AMOUNT, adventurer_max_hp)
 			potion_used = true
-			combat_log.append("Used Small Potion.")
 
 		if adventurer_meter >= 1.0:
 			adventurer_meter = 0.0
-			slime_hp -= adventurer_attack
-			combat_log.append("Hit Slime for %d." % adventurer_attack)
+			slime_hp -= int(traveler.get("attack", 7))
 
 			if slime_hp <= 0:
 				break
@@ -340,7 +335,6 @@ func _resolve_slime_combat(traveler: Dictionary) -> void:
 		if slime_meter >= 1.0:
 			slime_meter = 0.0
 			adventurer_hp -= SLIME_ATTACK
-			combat_log.append("Slime hit for %d." % SLIME_ATTACK)
 
 	traveler["hp"] = maxi(adventurer_hp, 0)
 	traveler["inventory"] = inventory

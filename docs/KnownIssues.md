@@ -1,14 +1,15 @@
 # Known Issues
 
-## v0.2.3
+## v0.2.4
 
 Known limitations:
-- Returned travelers still sell loot automatically instead of visibly entering town.
-- Returned travelers do not respawn as visible Town adventurers yet.
-- Returned travelers remain world traveler markers at the town position.
+- Returned adventurers sell loot and then idle at the General Store.
+- Returned adventurers do not leave again yet.
+- Returned adventurers do not rest at the Inn.
+- Injured adventurers do not have recovery behavior yet.
+- Returned traveler records remain in `GameState.returned_travelers` for summary/debugging.
 - Slime Nest is not cleared or weakened yet.
 - World traveler movement is straight-line movement.
-- Town and World Map are now both loaded, but deeper simulation is still split between scene nodes and GameState dictionaries.
 - Potion price is still hardcoded in `Adventurer.gd`.
 - Slime Gel sell value is hardcoded in `GameState.gd`.
 - Slime combat stats are hardcoded in `GameState.gd`.
@@ -25,6 +26,4 @@ Known limitations:
 
 ## Technical Notes
 
-Godot hidden nodes still process unless their processing is explicitly disabled. This patch relies on that behavior so hidden Town and World Map views can continue running.
-
-If performance ever becomes a problem, we can move more logic into data managers and let scenes become visual-only.
+This patch deliberately moves loot selling into the Town scene so returning adventurers become visible again. This creates a stronger foundation for future routines: rest, shop, contract, leave again, or become residents.
