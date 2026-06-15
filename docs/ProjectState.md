@@ -2,7 +2,7 @@
 
 ## Current Version
 
-v0.1.4 - World Travel Placeholder
+v0.2.0 - First Combat Prototype
 
 ## Godot Version
 
@@ -38,29 +38,32 @@ Target: Godot 4.x stable
 - Adventurers leave the Town scene after reaching the exit.
 - Exiting adventurers become world traveler data in GameState.
 - World Map shows placeholder world traveler markers near the town marker.
+- World travelers move toward the Slime Nest.
+- When a world traveler reaches the Slime Nest, simple combat resolves against one Slime.
+- Adventurers use a Small Potion during combat if HP is low.
+- Winning gives Slime Gel.
+- Losing marks the traveler as InjuredReturning.
 
 ## Current Test Flow
 
 1. Open `godot_project/` in Godot 4.x.
 2. Run the project.
 3. Confirm the game starts in Town view.
-4. Confirm the Debug UI appears in the upper-left.
-5. Confirm money starts at 500.
-6. Confirm Small Potion stock starts at 5.
-7. Confirm World Travelers starts at 0.
-8. Click `Spawn Adventurer`.
-9. Confirm one placeholder adventurer appears near the town entrance.
-10. Watch the adventurer move to the General Store marker.
-11. Confirm the adventurer buys a potion if stock is available.
-12. Confirm money increases by 15 after purchase.
-13. Confirm Small Potion stock decreases by 1 after purchase.
-14. Confirm the adventurer moves to the Town Exit marker.
-15. Confirm the adventurer leaves the Town scene.
-16. Confirm in-town adventurer count decreases.
-17. Confirm World Travelers count increases.
-18. Switch to World Map.
-19. Confirm a placeholder traveler marker appears near the town marker.
-20. Spawn multiple adventurers and confirm multiple world traveler markers appear.
+4. Confirm money starts at 500.
+5. Confirm Small Potion stock starts at 5.
+6. Click `Spawn Adventurer`.
+7. Let the adventurer walk to General Store and buy a potion.
+8. Confirm money increases by 15.
+9. Let the adventurer walk to Town Exit and leave town.
+10. Confirm World Travelers count increases.
+11. Switch to World Map.
+12. Confirm the traveler marker appears near town.
+13. Watch the traveler move toward the Slime Nest.
+14. Confirm the traveler status changes to FightingSlime when it reaches the nest.
+15. Confirm combat resolves.
+16. If the traveler wins, confirm status becomes ReturningWithLoot and Slime Gel count appears in marker label.
+17. If the traveler loses, confirm status becomes InjuredReturning.
+18. Confirm potion count decreases if a potion was used during combat.
 
 ## Current Scope
 
@@ -82,11 +85,19 @@ Included:
 - Adventurer inventory increase
 - World traveler data
 - Placeholder world traveler markers
+- World traveler movement
+- First combat prototype
+- Potion use during combat
+- Slime Gel reward
 
 Not included:
-- World traveler movement
-- Slime Nest targeting
-- Combat
+- Return-to-town movement
+- Loot selling
+- Threat clearing
+- Multiple enemies
+- Multiple threat types
+- Combat animation
+- Combat UI
 - Shop UI
 - Item data Resources used in purchase logic
 - Real building placement
@@ -94,29 +105,14 @@ Not included:
 - Tilemaps
 - Final pixel art
 
-## Future Town-Building Direction
-
-The current fixed building layout is temporary.
-
-Long-term intention:
-- The player starts with an open buildable town area.
-- The player places the Guild Hall.
-- The tutorial then guides the player to place the Inn and General Store.
-- Buildings should be movable after placement.
-- Roads and decorations should be placeable.
-- The town should expand over time through purchasable land plots from the kingdom.
-- The village should feel player-created, not pre-built.
-
-This is intentionally deferred until core functionality is stable.
-
 ## Next Planned Version
 
-v0.2.0 - First Combat Prototype
+v0.2.1 - Return to Town With Loot
 
 Planned additions:
-- World traveler marker moves toward Slime Nest.
-- One Slime enemy is created as combat data.
-- Basic auto-combat resolver.
-- Adventurer uses Small Potion if health is low.
-- Combat result is shown in Debug UI or marker label.
-- Winning gives Slime Gel.
+- ReturningWithLoot travelers move back toward the town marker.
+- InjuredReturning travelers also move back toward town.
+- Returning travelers become town arrivals again or convert into returning adventurer data.
+- Adventurer sells Slime Gel to the General Store.
+- Town Slime Gel stock increases.
+- Adventurer gold increases from selling loot.

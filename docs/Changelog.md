@@ -1,5 +1,46 @@
 # Changelog
 
+## v0.2.0 - First Combat Prototype
+
+### Added
+- World traveler movement toward Slime Nest.
+- World traveler combat stats:
+  - HP
+  - max HP
+  - attack
+  - speed
+- Slime prototype stats:
+  - HP
+  - attack
+  - speed
+- Simple auto-combat resolver.
+- Small Potion usage during combat when adventurer HP is low.
+- Slime Gel reward on victory.
+- `ReturningWithLoot` traveler status.
+- `InjuredReturning` traveler status.
+- Combat log text stored on traveler data.
+- World Map marker label now displays:
+  - traveler name
+  - status
+  - HP
+  - potion count
+  - Slime Gel count
+- Debug UI now includes a short world traveler status summary.
+
+### Changed
+- World traveler data now starts with combat stats.
+- World traveler markers now update continuously while on the World Map.
+- Slime Nest is now an actual prototype target rather than only a static marker.
+
+### Not Yet Added
+- Return-to-town movement.
+- Loot selling.
+- Threat clearing.
+- Combat animation.
+- Combat UI.
+- Multiple enemies.
+- Multiple threat types.
+
 ## v0.1.4 - World Travel Placeholder
 
 ### Added
@@ -9,75 +50,40 @@
 - Placeholder world traveler markers on World Map.
 - `LeavingTown` adventurer AI state.
 - Adventurer cleanup after reaching Town Exit.
-- Controlled General Store queue target offsets.
 
 ### Fixed
 - Successful Small Potion purchases now add 15 gold to the town treasury.
-- Adventurers no longer use large spawn offsets as shop stopping offsets.
-- General Store stopping points should now be more controlled and less likely to appear past the building.
-
-### Not Yet Added
-- World traveler movement.
-- Slime Nest targeting.
-- Combat.
-- Loot return.
-- Save/load.
-- Player building placement.
+- General Store stopping points should now be more controlled.
 
 ## v0.1.3 - Small Potion Purchase
 
 ### Added
 - Small Potion purchase logic.
 - Small Potion test price set to 15 gold.
-- Adventurer purchase states:
-  - `BuySmallPotion`
-  - `BoughtPotion`
-  - `SkipPurchaseNoStock`
-  - `SkipPurchaseNoGold`
-- Adventurer checks town Small Potion stock before buying.
-- Adventurer checks personal gold before buying.
-- Adventurer loses gold after a successful purchase.
-- Town Small Potion stock decreases after a successful purchase.
-- Adventurer inventory gains `small_potion` after a successful purchase.
-- Adventurer label now displays carried potion count.
+- Adventurer purchase states.
+- Adventurer checks town Small Potion stock and personal gold.
+- Adventurer loses gold after successful purchase.
+- Town Small Potion stock decreases after successful purchase.
+- Adventurer inventory gains `small_potion`.
 
 ## v0.1.2 - Adventurer Town Routine
 
 ### Added
 - Marker-based movement for placeholder adventurers.
 - Basic movement speed on `Adventurer.gd`.
-- Adventurer AI state flow:
-  - `EnterTown`
-  - `GoToGeneralStore`
-  - `WaitAtGeneralStore`
-  - `GoToExit`
-  - `IdleAtExit`
+- Adventurer AI state flow.
 
 ## v0.1.1.1 - Autoload Name Conflict Hotfix
 
 ### Fixed
-- Removed `class_name` from `GameClock.gd`.
-- Removed `class_name` from `GameState.gd`.
-- Removed `class_name` from `SceneRouter.gd`.
+- Removed `class_name` from Autoload scripts.
 
 ## v0.1.1 - Placeholder Adventurer Spawn
 
 ### Added
-- `Adventurer.tscn`.
-- `Adventurer.gd`.
-- `AdventurerAI.gd`.
-- Enabled Spawn Adventurer button in Debug UI.
-- Town scene can spawn placeholder adventurers.
-- Adventurers register with GameState.
+- Adventurer scene and basic spawn.
 
 ## v0.1.0 - Walking Skeleton
 
 ### Added
-- Main scene.
-- Town scene.
-- World Map scene.
-- Debug UI scene.
-- GameClock autoload.
-- GameState autoload.
-- SceneRouter autoload.
-- Scene switching.
+- Main scene, Town scene, World Map scene, Debug UI, and Autoload foundation.

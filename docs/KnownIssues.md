@@ -1,18 +1,21 @@
 # Known Issues
 
-## v0.1.4
+## v0.2.0
 
 Known limitations:
-- World travelers are data records and placeholder markers only.
-- World travelers do not move yet.
-- World travelers do not fight yet.
-- Adventurers are removed from the Town scene after exit, so their town node no longer exists.
+- Combat resolves instantly when a traveler reaches the Slime Nest.
+- Travelers do not return to town yet.
+- Travelers do not sell loot yet.
+- Slime Nest is not cleared or weakened yet.
+- World traveler movement is straight-line movement.
+- World traveler movement only happens while the game is running, but it is managed globally by GameState.
+- World Map markers are rebuilt on state updates and updated each frame while World Map is visible.
 - Potion price is still hardcoded in `Adventurer.gd`.
+- Slime combat stats are hardcoded in `GameState.gd`.
 - Purchase logic does not yet use `ItemData` Resources.
 - No shop UI exists.
 - No animation yet.
-- Movement is straight-line movement, not pathfinding.
-- Multiple adventurers may visually overlap.
+- Multiple town adventurers may visually overlap.
 - No collision avoidance.
 - No roads/path preferences.
 - Fixed building layout is temporary.
@@ -22,13 +25,4 @@ Known limitations:
 
 ## Technical Notes
 
-World traveler data currently stores:
-- ID
-- name
-- class
-- level
-- gold
-- inventory
-- status
-
-This will eventually need to become a stronger data model, likely with Resource-backed adventurer data or a dedicated AdventurerRecord structure.
+Combat is intentionally placed in `GameState.gd` for this prototype because world travelers are currently stored as dictionaries. This should eventually be refactored into a dedicated combat resolver or world simulation manager once the loop is proven.
