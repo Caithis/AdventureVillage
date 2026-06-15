@@ -1,13 +1,16 @@
 # Known Issues
 
-## v0.3.1
+## v0.3.2
 
 Known limitations:
-- Floating text is plain Label text.
-- Floating text is not color-coded yet.
-- Floating text can overlap if many events happen at once.
-- Building economy text appears over the adventurer involved, not the building.
-- Combat floating text appears over world traveler markers, not visible enemies.
-- There is no central event bus yet.
-- Floating text uses prototype timing and positioning.
-- Visible wandering monsters are not implemented yet.
+- Slimes are simple ColorRect markers.
+- Slimes do not have polished sprites.
+- Slime wandering uses simple straight-line movement.
+- Combat still resolves instantly.
+- Slimes do not animate attacks.
+- Slimes do not have XP ownership or kill credit yet.
+- Anti-swarm rule is simple: one Slime target per traveler.
+- Slime Nest spawn cap is hardcoded.
+- Slime Nest growth affects max active count and spawn interval but not full ecosystem pressure yet.
+- No full pathfinding.
+- No visible dungeon/nest menu yet.

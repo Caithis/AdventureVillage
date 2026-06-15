@@ -1,60 +1,45 @@
+# Changelog
+
+## v0.3.2 - Visible Slime Spawn Prototype
+
+### Added
+- World Slime data records in GameState.
+- Slime Nest active spawn count.
+- Spawn interval tied to nest growth.
+- Max active Slimes tied to nest growth.
+- Visible Slime markers on World Map.
+- Slime wandering near nest.
+- Adventurers target visible Slimes.
+- Travelers search near Slime Nest if no visible Slimes are active.
+- Slime aggro onto nearby outbound travelers.
+- Anti-swarm rule limiting Slimes targeting one traveler.
+- Visible Slime spawn documentation.
+- Combat fairness notes.
+
+### Changed
+- Slime Nest combat no longer immediately resolves against a fully invisible enemy when traveler reaches the nest.
+- Traveler combat now references a visible Slime when one is available.
+- Victory removes/deactivates the visible Slime involved.
+
+### Not Yet Added
+- Animated combat.
+- Damage floating text.
+- Visible enemy death animation.
+- Full pathfinding.
+- Monster XP and loot ownership.
+- Parties or multi-adventurer combat.
+
 ## v0.3.1.1 - FloatingText Type Inference Hotfix
 
 ### Fixed
-- Fixed `FloatingText.gd` parser error where Godot could not infer the type of `fade_ratio`.
-- Replaced inferred assignment with explicit float typing and `clampf()`.
-
-# Changelog
+- Fixed FloatingText parser error.
 
 ## v0.3.1 - Floating Event Text Prototype
 
 ### Added
-- Reusable `FloatingText` scene.
-- Reusable `FloatingText.gd` script.
-- Floating payment text for Small Potion purchases.
-- Floating Slime Gel sale text.
-- Floating sale blocked text.
-- Floating Inn rest payment text.
-- Floating Night lodging payment text.
-- Floating poor rest / poor sleep text.
-- Floating leaving-town text.
-- Floating world-map victory text.
-- Floating world-map defeat text.
-- Floating NightQuesting text.
-- Floating Night retreat text.
-- Floating Night quest restriction text.
-- Floating Day returned / night danger faded text.
-- Floating event text documentation.
+- Floating in-world event feedback.
 
-### Not Yet Added
-- Color-coded text.
-- Floating text above exact buildings.
-- Floating combat damage numbers.
-- Floating text manager/event bus.
-- Icons and polished visual style.
+## Earlier v0.3.x
 
-## v0.3.0.1 - Debug UI Collapse/Layout Hotfix
-
-### Fixed
-- Debug panel shrinks when collapsed.
-- Scrollable debug list displays correctly.
-
-## v0.3.0 - Basic Building Economy Controls
-
-### Added
-- General Store Slime Gel buying toggle.
-- Clickable General Store.
-- General Store hover highlight.
-- Prototype building menu.
-- Collapsible Debug UI.
-
-## Earlier v0.2.x
-
-- Night danger scaling.
-- Inn income.
-- Night sleep.
-- Energy/rest.
-- Repeat adventurer loop.
-- Returned adventurer re-entry.
-- Persistent Town/World scenes.
-- First combat prototype.
+- Building economy controls.
+- Debug UI collapse fix.

@@ -17,6 +17,7 @@ const COLLAPSED_PANEL_SIZE := Vector2(420, 36)
 @onready var world_traveler_summary_label: Label = $PanelContainer/VBoxRoot/ScrollContainer/VBoxContainer/WorldTravelerSummaryLabel
 @onready var returned_traveler_summary_label: Label = $PanelContainer/VBoxRoot/ScrollContainer/VBoxContainer/ReturnedTravelerSummaryLabel
 @onready var threat_label: Label = $PanelContainer/VBoxRoot/ScrollContainer/VBoxContainer/ThreatLabel
+@onready var slime_spawn_label: Label = $PanelContainer/VBoxRoot/ScrollContainer/VBoxContainer/SlimeSpawnLabel
 @onready var night_policy_label: Label = $PanelContainer/VBoxRoot/ScrollContainer/VBoxContainer/NightPolicyLabel
 @onready var night_danger_label: Label = $PanelContainer/VBoxRoot/ScrollContainer/VBoxContainer/NightDangerLabel
 @onready var general_store_policy_label: Label = $PanelContainer/VBoxRoot/ScrollContainer/VBoxContainer/GeneralStorePolicyLabel
@@ -125,6 +126,7 @@ func _refresh_state_labels() -> void:
 		GameState.slime_nest_status,
 		GameState.slime_nest_growth
 	]
+	slime_spawn_label.text = "Slime Spawns: " + GameState.get_slime_spawn_summary()
 	night_policy_label.text = "Night Quests: " + GameState.get_night_quest_policy_text()
 	night_danger_label.text = "Night Danger: " + GameState.get_night_danger_summary()
 	general_store_policy_label.text = "General Store: " + GameState.get_general_store_buy_policy_text()

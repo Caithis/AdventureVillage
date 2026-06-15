@@ -3,27 +3,34 @@ extends Node2D
 const FLOATING_TEXT_SCENE: PackedScene = preload("res://scenes/ui/FloatingText.tscn")
 
 @onready var world_travelers_container: Node2D = $WorldTravelers
+@onready var slimes_container: Node2D = $Slimes
 
 var traveler_markers: Dictionary = {}
+var slime_markers: Dictionary = {}
 var last_traveler_event_logs: Dictionary = {}
-var floating_text_offsets: Dictionary = {}
+var last_slime_event_logs: Dictionary = {}
 
 func _ready() -> void:
 	print("World Map scene loaded.")
-	GameState.state_changed.connect(_refresh_world_travelers)
-	_refresh_world_travelers()
+	GameState.state_changed.connect(_refresh_world_state)
+	_refresh_world_state()
 
 func _process(_delta: float) -> void:
 	_update_marker_positions_and_labels()
+	_update_slime_positions_and_labels()
 
 func _exit_tree() -> void:
-	if GameState.state_changed.is_connected(_refresh_world_travelers):
-		GameState.state_changed.disconnect(_refresh_world_travelers)
+	if GameState.state_changed.is_connected(_refresh_world_state):
+		GameState.state_changed.disconnect(_refresh_world_state)
+
+func _refresh_world_state() -> void:
+	_refresh_world_travelers()
+	_refresh_slimes()
 
 func _refresh_world_travelers() -> void:
 	var active_ids: Array[int] = []
 
-	for index in GameState.get_world_travelers().size():
+	for index in range(GameState.get_world_travelers().size()):
 		var traveler := GameState.get_world_travelers()[index]
 		var traveler_id := int(traveler.get("id", index))
 		active_ids.append(traveler_id)
@@ -43,13 +50,42 @@ func _refresh_world_travelers() -> void:
 		if is_instance_valid(marker_to_remove):
 			marker_to_remove.queue_free()
 		traveler_markers.erase(traveler_id)
+		last_traveler_event_logs.erase(traveler_id)
 
 	_update_marker_positions_and_labels()
+
+func _refresh_slimes() -> void:
+	var active_ids: Array[int] = []
+
+	for index in range(GameState.get_world_slimes().size()):
+		var slime := GameState.get_world_slimes()[index]
+		var slime_id := int(slime.get("id", index))
+		active_ids.append(slime_id)
+
+		if not slime_markers.has(slime_id):
+			var marker := _create_slime_marker(slime)
+			slimes_container.add_child(marker)
+			slime_markers[slime_id] = marker
+			_spawn_floating_text(marker, "Slime Spawn")
+
+	var ids_to_remove: Array[int] = []
+	for slime_id in slime_markers.keys():
+		if not active_ids.has(int(slime_id)):
+			ids_to_remove.append(int(slime_id))
+
+	for slime_id in ids_to_remove:
+		var marker_to_remove: Node2D = slime_markers[slime_id]
+		if is_instance_valid(marker_to_remove):
+			marker_to_remove.queue_free()
+		slime_markers.erase(slime_id)
+		last_slime_event_logs.erase(slime_id)
+
+	_update_slime_positions_and_labels()
 
 func _update_marker_positions_and_labels() -> void:
 	var travelers := GameState.get_world_travelers()
 
-	for index in travelers.size():
+	for index in range(travelers.size()):
 		var traveler := travelers[index]
 		var traveler_id := int(traveler.get("id", index))
 
@@ -67,6 +103,25 @@ func _update_marker_positions_and_labels() -> void:
 
 		_show_world_event_if_needed(traveler, marker)
 
+func _update_slime_positions_and_labels() -> void:
+	var slimes := GameState.get_world_slimes()
+
+	for index in range(slimes.size()):
+		var slime := slimes[index]
+		var slime_id := int(slime.get("id", index))
+
+		if not slime_markers.has(slime_id):
+			continue
+
+		var marker: Node2D = slime_markers[slime_id]
+		marker.position = slime.get("world_position", Vector2(915, 275))
+
+		var label := marker.get_node_or_null("Label") as Label
+		if label != null:
+			label.text = _build_slime_label(slime)
+
+		_show_slime_event_if_needed(slime, marker)
+
 func _create_traveler_marker(traveler: Dictionary) -> Node2D:
 	var marker := Node2D.new()
 	marker.name = "WorldTraveler_%s" % str(traveler.get("id", 0))
@@ -83,6 +138,26 @@ func _create_traveler_marker(traveler: Dictionary) -> Node2D:
 	label.position = Vector2(-70, -96)
 	label.size = Vector2(270, 110)
 	label.text = _build_traveler_label(traveler)
+	marker.add_child(label)
+
+	return marker
+
+func _create_slime_marker(slime: Dictionary) -> Node2D:
+	var marker := Node2D.new()
+	marker.name = "Slime_%s" % str(slime.get("id", 0))
+
+	var body := ColorRect.new()
+	body.name = "Body"
+	body.size = Vector2(14, 14)
+	body.position = Vector2(-7, -7)
+	body.color = Color(0.35, 0.9, 0.45, 1)
+	marker.add_child(body)
+
+	var label := Label.new()
+	label.name = "Label"
+	label.position = Vector2(-45, 12)
+	label.size = Vector2(130, 48)
+	label.text = _build_slime_label(slime)
 	marker.add_child(label)
 
 	return marker
@@ -107,9 +182,29 @@ func _show_world_event_if_needed(traveler: Dictionary, marker: Node2D) -> void:
 
 	_spawn_floating_text(marker, event_text)
 
+func _show_slime_event_if_needed(slime: Dictionary, marker: Node2D) -> void:
+	var slime_id := int(slime.get("id", -1))
+	if slime_id < 0:
+		return
+
+	var status := str(slime.get("status", ""))
+	var log_line := str(slime.get("last_event_log", ""))
+	var event_key := "%s|%s" % [status, log_line]
+
+	if str(last_slime_event_logs.get(slime_id, "")) == event_key:
+		return
+
+	last_slime_event_logs[slime_id] = event_key
+
+	if status == "AggroTraveler":
+		_spawn_floating_text(marker, "Aggro!")
+
 func _get_world_event_text(status: String, log_line: String) -> String:
 	if status == "NightQuesting":
 		return "Night Quest"
+
+	if status == "SearchingForSlime":
+		return "Searching..."
 
 	if status == "ReturningLowEnergyAtNight":
 		return "Too Tired - Return"
@@ -122,6 +217,9 @@ func _get_world_event_text(status: String, log_line: String) -> String:
 
 	if log_line.contains("Lost vs Slime"):
 		return "Defeated!"
+
+	if log_line.contains("Slime ambush"):
+		return "Ambush!"
 
 	if log_line.contains("Day returned"):
 		return "Day Returned"
@@ -159,4 +257,10 @@ func _build_traveler_label(traveler: Dictionary) -> String:
 		int(traveler.get("trip_count", 0)),
 		int(traveler.get("max_trip_count", 0)),
 		log_line
+	]
+
+func _build_slime_label(slime: Dictionary) -> String:
+	return "%s\n%s" % [
+		str(slime.get("display_name", "Slime")),
+		str(slime.get("status", "Wandering"))
 	]

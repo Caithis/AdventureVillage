@@ -90,6 +90,11 @@ autowrap_mode = 3
 layout_mode = 2
 text = "Slime Nest: Dormant"
 
+[node name="SlimeSpawnLabel" type="Label" parent="PanelContainer/VBoxRoot/ScrollContainer/VBoxContainer"]
+layout_mode = 2
+text = "Slimes: 0/0"
+autowrap_mode = 3
+
 [node name="NightPolicyLabel" type="Label" parent="PanelContainer/VBoxRoot/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 text = "Night Quests: Enabled"

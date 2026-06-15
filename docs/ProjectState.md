@@ -36,3 +36,8 @@ v0.3.0 - Basic Building Economy Controls
 ## v0.3.1 Update Notes
 
 Floating event text now appears for economy and world-map combat/travel events. This is a prototype and should later move to an event bus / floating text manager.
+
+
+## v0.3.2 Update Notes
+
+Visible Slime spawning is now active. Slimes spawn near the Slime Nest, wander, and can aggro nearby outbound travelers. Travelers target visible Slimes instead of only resolving invisible nest combat. An anti-swarm rule limits Slimes targeting one traveler.

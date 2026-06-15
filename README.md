@@ -1,72 +1,69 @@
 # Dungeon Frontier Guild-Town
 
-Version: v0.3.1 - Floating Event Text Prototype
+Version: v0.3.2 - Visible Slime Spawn Prototype
 
-## What v0.3.1 Adds
+## What v0.3.2 Adds
 
-This patch adds the first version of in-world event feedback.
+This patch begins replacing invisible Slime Nest combat with visible world-map monsters.
 
-Instead of relying only on labels and the Debug UI, important events now appear as floating text.
+## Visible Slimes
 
-## Floating Text Events
+The World Map now displays Slime markers near the Slime Nest.
 
-### Town / Adventurer Events
+Slimes:
+- Spawn near the Slime Nest.
+- Wander around the nest.
+- Have visible labels.
+- Can be targeted by adventurers.
+- Can aggro onto nearby adventurers.
 
-Floating text now appears for:
+## Slime Nest Spawn Rules
 
-```text
-Potion purchases
-Slime Gel sales
-Sale blocked by General Store buying policy
-Inn rest payment
-Night lodging payment
-Poor rest / poor sleep
-Adventurer leaving town
-```
-
-### World Map Events
-
-Floating text now appears above world traveler markers for:
+Current prototype rules:
 
 ```text
-Victory
-Defeat
-Night retreat
-Night quest restriction retreat
-NightQuesting status
-Day returned / night danger faded
+Base max active Slimes: 3
+Growth adds more max Slimes
+Hard cap: 6 active Slimes
+Base spawn interval: 5 seconds
+Growth slightly lowers spawn interval
 ```
 
-## Why This Matters
+This means the Slime Nest begins acting like a living threat source instead of only being a single invisible encounter point.
 
-This is the first step toward the kind of game feedback the final version needs:
+## Adventurer Targeting
+
+Adventurers now target visible Slimes.
+
+Flow:
 
 ```text
-+15g above General Store / adventurer
--10g when town buys materials
-+2 Slime Gel when resources are stocked
-Victory! above traveler
-Defeated! above traveler
-Sale Blocked when a store refuses material
+Traveler leaves town
+→ Traveler looks for active Slime
+→ Traveler moves toward visible Slime
+→ Combat resolves when close enough
 ```
 
-For now, most town-side text appears above the adventurer involved in the event. Later, we can route building-related text to the building itself.
+If no Slimes are currently active:
+
+```text
+Traveler moves to Slime Nest
+→ Waits/searches until a visible Slime exists
+```
+
+## Mutual Combat / Aggro
+
+Slimes can also detect and approach nearby adventurers.
+
+Current fairness prototype:
+
+```text
+Slime aggro radius: 95 px
+Max Slimes targeting one traveler: 1
+```
+
+That means Slimes can start danger dynamically, but they should not all swarm the same adventurer yet.
 
 ## Current Limitation
 
-Floating text is functional but not polished. It uses simple labels that rise and fade.
-
-Future improvements:
-- Color-coded positive/negative/resource/combat text
-- Icons
-- Pixel-art font styling
-- Text above buildings, enemies, and world threats
-- Event queue to avoid overlapping text
-
-## Hotfix v0.3.1.1 Notice
-
-This package fixes the launch-blocking `FloatingText.gd` parser error.
-
-Fixed:
-- `Cannot infer the type of "fade_ratio"`
-- `FloatingText.gd` now uses explicit float typing with `clampf()`.
+Combat still resolves instantly when contact happens. Slimes are visible and mobile, but combat is not yet animated or turn-by-turn in the world.
