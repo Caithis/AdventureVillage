@@ -2,7 +2,7 @@
 
 ## Current Version
 
-v0.1.2 - Adventurer Town Routine
+v0.1.3 - Small Potion Purchase
 
 ## Godot Version
 
@@ -24,12 +24,18 @@ Target: Godot 4.x stable
 - Town scene can spawn placeholder adventurers.
 - Spawned adventurers register with GameState.
 - Debug UI adventurer count updates when adventurers spawn.
-- Spawned adventurers now follow a marker-based town routine:
+- Spawned adventurers follow a marker-based town routine:
   - EnterTown
   - GoToGeneralStore
-  - WaitAtGeneralStore
+  - BuySmallPotion
+  - BoughtPotion / SkipPurchaseNoStock / SkipPurchaseNoGold
   - GoToExit
   - IdleAtExit
+- Adventurers can buy one Small Potion from town stock.
+- Adventurer gold decreases after a successful purchase.
+- Town Small Potion stock decreases after a successful purchase.
+- Adventurer inventory gains one Small Potion after a successful purchase.
+- Adventurer label shows potion count.
 
 ## Current Test Flow
 
@@ -37,16 +43,19 @@ Target: Godot 4.x stable
 2. Run the project.
 3. Confirm the game starts in Town view.
 4. Confirm the Debug UI appears in the upper-left.
-5. Click `Spawn Adventurer`.
-6. Confirm one placeholder adventurer appears near the town entrance.
-7. Confirm the adventurer count increases.
+5. Confirm Small Potion stock starts at 5.
+6. Click `Spawn Adventurer`.
+7. Confirm one placeholder adventurer appears near the town entrance.
 8. Watch the adventurer move to the General Store marker.
-9. Confirm the adventurer waits briefly at the General Store.
-10. Confirm the adventurer moves to the Town Exit marker.
-11. Confirm the adventurer stops at the exit with the `IdleAtExit` state.
-12. Spawn multiple adventurers and confirm each follows the routine.
-13. Confirm Town / World Map switching still works.
-14. Confirm Add Money, Add Slime Gel, and Grow Slime Nest still work.
+9. Confirm the adventurer state changes to `BuySmallPotion`.
+10. Confirm the adventurer state changes to `BoughtPotion`.
+11. Confirm the adventurer gold decreases from 50 to 35.
+12. Confirm the adventurer label shows `Potions: 1`.
+13. Confirm Debug UI Small Potion stock decreases from 5 to 4.
+14. Confirm the adventurer moves to the Town Exit marker.
+15. Confirm the adventurer stops at the exit with the `IdleAtExit` state.
+16. Spawn multiple adventurers and confirm potion stock decreases until empty.
+17. Confirm adventurers skip purchase if town potion stock reaches 0.
 
 ## Current Scope
 
@@ -62,10 +71,13 @@ Included:
 - Adventurer registration in GameState
 - Marker-based adventurer movement
 - Basic adventurer AI state routine
+- First shop purchase interaction
+- Town inventory decrease
+- Adventurer inventory increase
 
 Not included:
-- Potion buying
-- Adventurer inventory UI
+- Shop UI
+- Item data Resources used in purchase logic
 - World-map travel marker
 - Combat
 - Real building placement
@@ -90,13 +102,11 @@ This is intentionally deferred until core functionality is stable.
 
 ## Next Planned Version
 
-v0.1.3 - Small Potion Purchase
+v0.1.4 - World Travel Placeholder
 
 Planned additions:
-- Adventurer checks town Small Potion stock.
-- Adventurer checks their own gold.
-- Adventurer buys one Small Potion if affordable and available.
-- Town Small Potion stock decreases.
-- Adventurer gold decreases.
-- Adventurer inventory gains Small Potion.
-- Label/debug text reflects purchase result.
+- Adventurer leaves town after reaching the Town Exit.
+- GameState tracks simple world traveler data.
+- World Map can show a placeholder adventurer marker.
+- Adventurer marker moves toward the Slime Nest or Grassland Edge.
+- Debug UI shows simple traveler count or active world travelers.

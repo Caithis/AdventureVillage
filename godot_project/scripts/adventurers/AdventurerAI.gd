@@ -6,7 +6,7 @@ var current_state: String = "Idle"
 var general_store_position: Vector2 = Vector2.ZERO
 var exit_position: Vector2 = Vector2.ZERO
 var wait_timer: float = 0.0
-var general_store_wait_seconds: float = 1.5
+var purchase_result_wait_seconds: float = 1.25
 
 @onready var adventurer: Adventurer = get_parent() as Adventurer
 
@@ -19,8 +19,10 @@ func _process(delta: float) -> void:
             _state_enter_town()
         "GoToGeneralStore":
             _state_go_to_general_store()
-        "WaitAtGeneralStore":
-            _state_wait_at_general_store(delta)
+        "BuySmallPotion":
+            _state_buy_small_potion()
+        "BoughtPotion", "SkipPurchaseNoStock", "SkipPurchaseNoGold", "SkipPurchaseAlreadyHasPotion", "SkipPurchaseFailed":
+            _state_purchase_result(delta)
         "GoToExit":
             _state_go_to_exit()
         "IdleAtExit":
@@ -45,8 +47,11 @@ func set_state(new_state: String) -> void:
         "GoToGeneralStore":
             if adventurer != null:
                 adventurer.set_move_target(general_store_position)
-        "WaitAtGeneralStore":
-            wait_timer = general_store_wait_seconds
+        "BuySmallPotion":
+            if adventurer != null:
+                adventurer.clear_move_target()
+        "BoughtPotion", "SkipPurchaseNoStock", "SkipPurchaseNoGold", "SkipPurchaseAlreadyHasPotion", "SkipPurchaseFailed":
+            wait_timer = purchase_result_wait_seconds
             if adventurer != null:
                 adventurer.clear_move_target()
         "GoToExit":
@@ -69,9 +74,28 @@ func _state_go_to_general_store() -> void:
         return
 
     if not adventurer.has_target and adventurer.has_reached_target():
-        set_state("WaitAtGeneralStore")
+        set_state("BuySmallPotion")
 
-func _state_wait_at_general_store(delta: float) -> void:
+func _state_buy_small_potion() -> void:
+    if adventurer == null or not adventurer.has_method("try_buy_small_potion"):
+        set_state("SkipPurchaseFailed")
+        return
+
+    var result := adventurer.try_buy_small_potion()
+
+    match result:
+        "bought":
+            set_state("BoughtPotion")
+        "no_stock":
+            set_state("SkipPurchaseNoStock")
+        "no_gold":
+            set_state("SkipPurchaseNoGold")
+        "already_has_potion":
+            set_state("SkipPurchaseAlreadyHasPotion")
+        _:
+            set_state("SkipPurchaseFailed")
+
+func _state_purchase_result(delta: float) -> void:
     wait_timer -= delta
 
     if wait_timer <= 0.0:

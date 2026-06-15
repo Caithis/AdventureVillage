@@ -1,23 +1,14 @@
 ; Engine configuration file.
-; It's best edited using the editor UI and not directly,
-; since the parameters that go here are not all obvious.
-;
-; Format:
-;   [section] ; section goes between []
-;   param=value ; assign values to parameters
+; It is best edited using the Godot editor UI.
 
 config_version=5
-
-[animation]
-
-compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 [application]
 
 config/name="Dungeon Frontier Guild-Town"
 config/description="A 2D pixel-art frontier guild-town management simulation."
 run/main_scene="res://scenes/main/Main.tscn"
-config/features=PackedStringArray("4.6")
+config/features=PackedStringArray("4.x")
 
 [autoload]
 

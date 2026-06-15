@@ -2,12 +2,15 @@ extends Node
 
 signal state_changed
 
+const SMALL_POTION_ID := "small_potion"
+const SLIME_GEL_ID := "slime_gel"
+
 var money: int = 500
 var current_view_name: String = "Unknown"
 
 var town_inventory: Dictionary = {
-	"small_potion": 5,
-	"slime_gel": 0,
+	SMALL_POTION_ID: 5,
+	SLIME_GEL_ID: 0,
 }
 
 var adventurers: Array[Node] = []
@@ -55,6 +58,9 @@ func remove_item(item_id: String, amount: int) -> bool:
 
 func get_item_count(item_id: String) -> int:
 	return int(town_inventory.get(item_id, 0))
+
+func has_item(item_id: String, amount: int = 1) -> bool:
+	return get_item_count(item_id) >= amount
 
 func register_adventurer(adventurer: Node) -> void:
 	if adventurer == null:

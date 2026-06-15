@@ -1,5 +1,35 @@
 # Changelog
 
+## v0.1.3 - Small Potion Purchase
+
+### Added
+- Small Potion purchase logic.
+- Small Potion test price set to 15 gold.
+- Adventurer purchase states:
+  - `BuySmallPotion`
+  - `BoughtPotion`
+  - `SkipPurchaseNoStock`
+  - `SkipPurchaseNoGold`
+- Adventurer checks town Small Potion stock before buying.
+- Adventurer checks personal gold before buying.
+- Adventurer loses gold after a successful purchase.
+- Town Small Potion stock decreases after a successful purchase.
+- Adventurer inventory gains `small_potion` after a successful purchase.
+- Adventurer label now displays carried potion count.
+- Debug UI updates when town potion stock changes.
+
+### Changed
+- Adventurer AI now attempts a purchase at the General Store before going to the Town Exit.
+- Adventurer wait-at-shop behavior now displays the purchase result state.
+
+### Not Yet Added
+- Shop UI.
+- Item Resource-driven prices.
+- World-map travel after exit.
+- Combat.
+- Threat clearing.
+- Player building placement.
+
 ## v0.1.2 - Adventurer Town Routine
 
 ### Added
@@ -14,18 +44,6 @@
 - Adventurer labels now update as the AI state changes.
 - Town scene now passes marker positions into the adventurer routine.
 - Future town-building design note added to project documentation.
-
-### Changed
-- `Town.gd` now starts the adventurer town routine after spawn.
-- `AdventurerAI.gd` now controls routine state transitions.
-- `Adventurer.gd` now supports target movement and arrival checks.
-
-### Not Yet Added
-- Potion buying.
-- Shop inventory transfer.
-- Adventurer world travel.
-- Combat.
-- Player building placement.
 
 ## v0.1.1.1 - Autoload Name Conflict Hotfix
 
@@ -42,12 +60,8 @@
 - `Adventurer.gd`.
 - `AdventurerAI.gd`.
 - Enabled Spawn Adventurer button in Debug UI.
-- Debug UI can request adventurer spawn through SceneRouter.
-- SceneRouter can forward spawn requests to the active Town scene.
 - Town scene can spawn placeholder adventurers.
-- Placeholder adventurers appear as 16x16 ColorRect bodies.
 - Adventurers register with GameState.
-- Debug UI adventurer count updates when adventurers spawn.
 
 ## v0.1.0 - Walking Skeleton
 
