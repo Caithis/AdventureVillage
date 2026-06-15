@@ -7,6 +7,8 @@ const ADVENTURER_SCENE: PackedScene = preload("res://scenes/adventurers/Adventur
 @onready var general_store_point: Marker2D = $Markers/GeneralStorePoint
 @onready var inn_point: Marker2D = $Markers/InnPoint
 @onready var exit_to_world_point: Marker2D = $Markers/ExitToWorldPoint
+@onready var building_menu: Control = $BuildingMenu
+@onready var general_store_building: Node = $Buildings/GeneralStore
 
 var spawn_count: int = 0
 var return_spawn_count: int = 0
@@ -15,6 +17,8 @@ var is_checking_returned_travelers: bool = false
 func _ready() -> void:
 	print("Town scene loaded.")
 	GameState.state_changed.connect(_on_game_state_changed)
+	if general_store_building.has_signal("building_clicked"):
+		general_store_building.building_clicked.connect(_on_building_clicked)
 	_check_for_returned_travelers()
 
 func _exit_tree() -> void:
@@ -102,3 +106,8 @@ func _generate_adventurer_name() -> String:
 	]
 
 	return names[spawn_count % names.size()]
+
+
+func _on_building_clicked(building_id: String) -> void:
+	if building_menu != null and building_menu.has_method("open_for_building"):
+		building_menu.open_for_building(building_id)

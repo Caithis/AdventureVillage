@@ -1,15 +1,15 @@
 # Known Issues
 
-## v0.2.9
+## v0.3.0
 
 Known limitations:
-- Night danger only affects Slime combat resolution.
-- There are no visible wandering monsters yet.
-- Night Quest policy is currently a debug toggle, not a Guild Hall UI.
-- Low-energy Night retreat is simple and does not consider distance, supplies, personality, class, or party strength.
-- Floating numbers/event text are documented but not implemented yet.
-- Debug UI is scrollable, but not yet paged or collapsible.
-- Slime Nest growth does not yet control visible monster spawns.
-- Combat is still instant resolution.
-- No save/load.
-- Fixed building layout is temporary.
+- Only the General Store is clickable.
+- Only Slime Gel has a material buying toggle.
+- The building menu is a prototype and not styled.
+- The hover highlight is a simple rectangle, not a polished outline shader.
+- Building menu does not yet support sliders.
+- Building settings are not saved/loaded.
+- Debug UI collapse is simple show/hide behavior.
+- Floating event text is not implemented yet.
+- Visible wandering monsters are not implemented yet.
+- Fixed building layout is still temporary.

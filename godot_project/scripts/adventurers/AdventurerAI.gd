@@ -47,6 +47,8 @@ func _process(delta: float) -> void:
             _state_sell_slime_gel()
         "SoldLoot":
             _state_sold_loot(delta)
+        "SaleBlockedMaterialBuyingOff":
+            _state_sale_blocked(delta)
         "NoLootToSell":
             _state_no_loot_to_sell(delta)
         "CheckRecoveryNeed":
@@ -117,7 +119,7 @@ func set_state(new_state: String) -> void:
         "SellSlimeGel":
             if adventurer != null:
                 adventurer.clear_move_target()
-        "SoldLoot", "NoLootToSell":
+        "SoldLoot", "NoLootToSell", "SaleBlockedMaterialBuyingOff":
             wait_timer = sell_result_wait_seconds
             if adventurer != null:
                 adventurer.clear_move_target()
@@ -240,6 +242,8 @@ func _state_sell_slime_gel() -> void:
     match result:
         "sold":
             set_state("SoldLoot")
+        "buying_disabled":
+            set_state("SaleBlockedMaterialBuyingOff")
         _:
             set_state("NoLootToSell")
 
@@ -249,6 +253,11 @@ func _state_sold_loot(delta: float) -> void:
         set_state("CheckRecoveryNeed")
 
 func _state_no_loot_to_sell(delta: float) -> void:
+    wait_timer -= delta
+    if wait_timer <= 0.0:
+        set_state("CheckRecoveryNeed")
+
+func _state_sale_blocked(delta: float) -> void:
     wait_timer -= delta
     if wait_timer <= 0.0:
         set_state("CheckRecoveryNeed")

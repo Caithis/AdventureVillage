@@ -1,61 +1,79 @@
 # Dungeon Frontier Guild-Town
 
-Version: v0.2.9 - Night Danger Scaling
+Version: v0.3.0 - Basic Building Economy Controls
 
-## What v0.2.9 Adds
+## What v0.3.0 Adds
 
-Night now matters on the world map.
+This patch starts the foundation for building-level economy controls.
 
-### Night danger
+## General Store Material Buying
 
-At Night, Slimes become temporarily stronger during combat:
-
-```text
-Night Slime HP multiplier: 1.5x
-Night Slime attack multiplier: 1.5x
-```
-
-This modifier is temporary. It is calculated at combat time and does not permanently mutate a spawned enemy.
-
-### Night questing status
-
-World travelers heading toward the Slime Nest during Night now show:
+The General Store now has a buying policy for Slime Gel:
 
 ```text
-NightQuesting
+Buy Slime Gel: Enabled / Disabled
 ```
 
-When Day returns, they return to normal travel status if they are still outbound.
-
-### Low-energy retreat
-
-Low-energy travelers may return to town instead of continuing toward danger at Night.
+If enabled:
 
 ```text
-Night retreat energy threshold: 40
+Returned adventurer can sell Slime Gel.
+Village funds decrease.
+Town Slime Gel stock increases.
+Adventurer gold increases.
 ```
 
-### Night quest policy toggle
-
-A debug toggle has been added:
+If disabled:
 
 ```text
-Toggle Night Quests
+Returned adventurer cannot sell Slime Gel.
+Adventurer keeps their Slime Gel.
+Village funds do not decrease.
+Adventurer label shows that the store is not buying Slime Gel.
 ```
 
-If Night Quests are disabled, outbound world travelers return to town at Night instead of continuing toward the Slime Nest.
+## Building Interaction
 
-This is a prototype stand-in for a future Guild Hall policy.
+The General Store can now be clicked.
 
-### Debug UI improvement
+When clicked:
 
-The Debug UI is now scrollable so it does not block as much of the game view as more labels and buttons are added.
+```text
+General Store menu opens.
+Menu shows whether Slime Gel buying is enabled.
+Menu has a toggle button for buying Slime Gel.
+```
 
-## Future Systems Noted
+The General Store also highlights when the cursor hovers over it.
 
-This version also adds documentation for:
-- Floating event text.
-- Debug UI pages/collapsible sections.
-- Visible wandering monsters around nests/dungeons.
-- Monster spawn caps tied to nest growth.
-- Future Guild Hall night quest policy controls.
+This is a prototype interaction system. Later, this should expand into a real building menu system for all buildings.
+
+## Debug UI Improvement
+
+The Debug UI is now collapsible.
+
+```text
+Hide Debug
+Show Debug
+```
+
+The scrollable debug controls remain available, but the panel can now be minimized so you can watch the simulation more clearly.
+
+## Future Direction
+
+This is the beginning of:
+- Building click menus
+- Hover highlights
+- Material buy toggles
+- Material stock controls
+- Building budget controls
+- Future sliders for buying limits
+
+## Hotfix v0.3.0.1 Notice
+
+This package fixes the Debug UI collapse/layout bug.
+
+Fixed:
+- Hide Debug now shrinks the panel instead of leaving the large empty shadow box.
+- Show Debug restores the full debug list.
+- ScrollContainer has a stable height so the list displays properly.

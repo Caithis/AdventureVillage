@@ -211,6 +211,11 @@ func try_sell_slime_gel() -> String:
         _update_returned_record("NoLootToSell", "No loot to sell.")
         return "no_loot"
 
+    if not GameState.can_general_store_buy_item(SLIME_GEL_ID):
+        set_purchase_message("General Store not buying Slime Gel")
+        _update_returned_record("SaleBlocked", "Store not buying Slime Gel.")
+        return "buying_disabled"
+
     var sale_total := slime_gel_amount * GameState.SLIME_GEL_SELL_VALUE
 
     inventory[SLIME_GEL_ID] = 0

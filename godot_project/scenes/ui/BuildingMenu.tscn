@@ -1,0 +1,43 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/BuildingMenu.gd" id="1_building_menu_script"]
+
+[node name="BuildingMenu" type="Control"]
+script = ExtResource("1_building_menu_script")
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="PanelContainer" type="PanelContainer" parent="."]
+layout_mode = 1
+offset_left = 850.0
+offset_top = 80.0
+offset_right = 1240.0
+offset_bottom = 330.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "Building"
+
+[node name="DescriptionLabel" type="Label" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "Building controls appear here."
+autowrap_mode = 3
+
+[node name="PolicyLabel" type="Label" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "Policy: -"
+
+[node name="ToggleSlimeGelButton" type="Button" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "Toggle Slime Gel Buying"
+
+[node name="CloseButton" type="Button" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "Close"

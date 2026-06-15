@@ -32,6 +32,7 @@ var money: int = 500
 var current_view_name: String = "Unknown"
 
 var allow_night_quests: bool = true
+var general_store_buys_slime_gel: bool = true
 
 var town_inventory: Dictionary = {
 	SMALL_POTION_ID: 5,
@@ -111,6 +112,26 @@ func get_night_danger_summary() -> String:
 		NIGHT_SLIME_ATTACK_MULTIPLIER,
 		NIGHT_RETREAT_ENERGY_THRESHOLD
 	]
+
+
+func toggle_general_store_buys_slime_gel() -> void:
+	general_store_buys_slime_gel = not general_store_buys_slime_gel
+	state_changed.emit()
+
+func set_general_store_buys_slime_gel(enabled: bool) -> void:
+	general_store_buys_slime_gel = enabled
+	state_changed.emit()
+
+func can_general_store_buy_item(item_id: String) -> bool:
+	if item_id == SLIME_GEL_ID:
+		return general_store_buys_slime_gel
+
+	return true
+
+func get_general_store_buy_policy_text() -> String:
+	if general_store_buys_slime_gel:
+		return "Buying Slime Gel"
+	return "Not Buying Slime Gel"
 
 func register_adventurer(adventurer: Node) -> void:
 	if adventurer == null:
