@@ -13,84 +13,113 @@ anchor_bottom = 1.0
 layout_mode = 1
 offset_left = 10.0
 offset_top = 10.0
-offset_right = 410.0
-offset_bottom = 410.0
+offset_right = 430.0
+offset_bottom = 640.0
 
-[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer"]
+[node name="ScrollContainer" type="ScrollContainer" parent="PanelContainer"]
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/ScrollContainer"]
 layout_mode = 2
 
-[node name="TitleLabel" type="Label" parent="PanelContainer/VBoxContainer"]
+[node name="TitleLabel" type="Label" parent="PanelContainer/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 text = "Dungeon Frontier Debug"
 
-[node name="ViewLabel" type="Label" parent="PanelContainer/VBoxContainer"]
+[node name="StateHeaderLabel" type="Label" parent="PanelContainer/ScrollContainer/VBoxContainer"]
+layout_mode = 2
+text = "-- State --"
+
+[node name="ViewLabel" type="Label" parent="PanelContainer/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 text = "View: Unknown"
 
-[node name="TimeLabel" type="Label" parent="PanelContainer/VBoxContainer"]
+[node name="TimeLabel" type="Label" parent="PanelContainer/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 text = "Time: Day 1 - Day"
 
-[node name="MoneyLabel" type="Label" parent="PanelContainer/VBoxContainer"]
+[node name="MoneyLabel" type="Label" parent="PanelContainer/ScrollContainer/VBoxContainer"]
 layout_mode = 2
-text = "Money: 0"
+text = "Village Funds: 0"
 
-[node name="InventoryLabel" type="Label" parent="PanelContainer/VBoxContainer"]
+[node name="InventoryLabel" type="Label" parent="PanelContainer/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 text = "Inventory: -"
 
-[node name="AdventurerLabel" type="Label" parent="PanelContainer/VBoxContainer"]
+[node name="AdventurerLabel" type="Label" parent="PanelContainer/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 text = "In-Town Adventurers: 0"
 
-[node name="WorldTravelerLabel" type="Label" parent="PanelContainer/VBoxContainer"]
+[node name="WorldTravelerLabel" type="Label" parent="PanelContainer/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 text = "World Travelers: 0"
 
-[node name="ReturnedTravelerLabel" type="Label" parent="PanelContainer/VBoxContainer"]
+[node name="ReturnedTravelerLabel" type="Label" parent="PanelContainer/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 text = "Returned Travelers: 0"
 
-[node name="WorldTravelerSummaryLabel" type="Label" parent="PanelContainer/VBoxContainer"]
+[node name="WorldTravelerSummaryLabel" type="Label" parent="PanelContainer/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 text = "Traveler Status: None"
 autowrap_mode = 3
 
-[node name="ReturnedTravelerSummaryLabel" type="Label" parent="PanelContainer/VBoxContainer"]
+[node name="ReturnedTravelerSummaryLabel" type="Label" parent="PanelContainer/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 text = "Returned: None"
 autowrap_mode = 3
 
-[node name="ThreatLabel" type="Label" parent="PanelContainer/VBoxContainer"]
+[node name="ThreatLabel" type="Label" parent="PanelContainer/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 text = "Slime Nest: Dormant"
 
-[node name="Separator1" type="HSeparator" parent="PanelContainer/VBoxContainer"]
+[node name="NightPolicyLabel" type="Label" parent="PanelContainer/ScrollContainer/VBoxContainer"]
+layout_mode = 2
+text = "Night Quests: Enabled"
+
+[node name="NightDangerLabel" type="Label" parent="PanelContainer/ScrollContainer/VBoxContainer"]
+layout_mode = 2
+text = "Night Danger: -"
+autowrap_mode = 3
+
+[node name="Separator1" type="HSeparator" parent="PanelContainer/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="TownButton" type="Button" parent="PanelContainer/VBoxContainer"]
+[node name="ViewHeaderLabel" type="Label" parent="PanelContainer/ScrollContainer/VBoxContainer"]
+layout_mode = 2
+text = "-- View --"
+
+[node name="TownButton" type="Button" parent="PanelContainer/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 text = "Town"
 
-[node name="WorldMapButton" type="Button" parent="PanelContainer/VBoxContainer"]
+[node name="WorldMapButton" type="Button" parent="PanelContainer/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 text = "World Map"
 
-[node name="Separator2" type="HSeparator" parent="PanelContainer/VBoxContainer"]
+[node name="Separator2" type="HSeparator" parent="PanelContainer/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="AddMoneyButton" type="Button" parent="PanelContainer/VBoxContainer"]
+[node name="ActionsHeaderLabel" type="Label" parent="PanelContainer/ScrollContainer/VBoxContainer"]
+layout_mode = 2
+text = "-- Debug Actions --"
+
+[node name="SpawnAdventurerButton" type="Button" parent="PanelContainer/ScrollContainer/VBoxContainer"]
+layout_mode = 2
+text = "Spawn Adventurer"
+
+[node name="AddMoneyButton" type="Button" parent="PanelContainer/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 text = "Add 25 Money"
 
-[node name="AddSlimeGelButton" type="Button" parent="PanelContainer/VBoxContainer"]
+[node name="AddSlimeGelButton" type="Button" parent="PanelContainer/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 text = "Add Slime Gel"
 
-[node name="GrowSlimeNestButton" type="Button" parent="PanelContainer/VBoxContainer"]
+[node name="GrowSlimeNestButton" type="Button" parent="PanelContainer/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 text = "Grow Slime Nest"
 
-[node name="SpawnAdventurerButton" type="Button" parent="PanelContainer/VBoxContainer"]
+[node name="ToggleNightQuestsButton" type="Button" parent="PanelContainer/ScrollContainer/VBoxContainer"]
 layout_mode = 2
-text = "Spawn Adventurer"
+text = "Toggle Night Quests"

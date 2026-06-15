@@ -1,127 +1,44 @@
+# Changelog
+
+## v0.2.9 - Night Danger Scaling
+
+### Added
+- Temporary Night Slime HP multiplier.
+- Temporary Night Slime attack multiplier.
+- `NightQuesting` world traveler status.
+- Low-energy Night retreat behavior.
+- Debug Night Quest toggle.
+- Night Quest policy summary in Debug UI.
+- Scrollable Debug UI.
+- Future debug/feedback design notes.
+- Future world monster spawning design notes.
+- Future night danger design notes.
+
+### Changed
+- Outbound world traveler behavior now checks Night phase.
+- World traveler labels and summaries can show NightQuesting or Night retreat behavior.
+- Debug UI structure now uses a ScrollContainer.
+
+### Not Yet Added
+- Visible wandering monsters.
+- Floating event text.
+- Real Guild Hall policy UI.
+- Monster spawn caps.
+- Night raid pressure.
+
 ## v0.2.8 - Inn Income Prototype
 
 ### Added
 - Inn rest fee.
 - Night lodging fee.
-- Adventurer payment for Inn rest.
-- Adventurer payment for Night sleep.
-- Town money increase from paid Inn use.
-- Poor rest if adventurer cannot afford normal Inn rest.
-- Poor sleep if adventurer cannot afford Night lodging.
-- Labels show lodging result.
-- Future debt/loss condition notes.
-- Future building purchase control notes.
+- Adventurer payment for Inn rest and Night lodging.
+- Slime Gel sale now decreases village funds.
 
-### Changed
-- Slime Gel selling now reduces town money.
-- General Store material purchase is now treated as an expense for the town.
-- Inn rest and Night sleep now have economy effects.
+## Earlier v0.2.x
 
-### Not Yet Added
-- Paid Inn capacity.
-- Building click menus.
-- Purchase toggles/sliders.
-- Bankruptcy timer.
-- Game over state.
-
-## v0.2.7 - Night Sleep Behavior
-
-### Added
-- GameClock phase checks in adventurer AI.
-- Night sleep behavior for free/preparing adventurers.
-- `GoToInnForNight` state.
-- `SleepAtInn` state.
-- `SleptAtInn` state.
-- Adventurers can wait at the Inn until Day.
-- Adventurer night sleep tracking to prevent repeated sleep loops during the same night.
-- `docs/NightBehaviorDesignNotes.md`.
-
-### Changed
-- Regular Inn recovery threshold now uses stricter prototype values:
-  - HP at or below 50%.
-  - Energy at or below 40%.
-- Night sleep is separate from normal injury/energy recovery.
-- Adventurers no longer rest at the Inn after every moderate-energy trip.
-- Returned/preparing adventurers check for Night before leaving again.
-
-# Changelog
-
-## v0.2.6 - Inn Rest / Energy Prototype
-
-### Added
-- Adventurer energy value.
-- Adventurer max energy value.
-- World trip energy cost.
-- Low-energy threshold.
-- Energy display in adventurer labels.
-- HP display in adventurer labels.
-- Returned adventurer recovery check.
-- `CheckRecoveryNeed` state.
-- `GoToInn` state.
-- `RestAtInn` state.
-- `RestedAtInn` state.
-- `SkipInnRest` state.
-- Low-energy adventurers walk to Inn before leaving again.
-- Injured adventurers prioritize Inn recovery.
-- Inn rest restores HP and energy.
-- Inn marker is passed into returned adventurer routines.
-- Documentation for future night/Inn behavior.
-
-### Changed
-- Returned adventurers now evaluate recovery needs before the next trip.
-- World traveler data now stores energy and max energy.
-- Combat/return flow now applies world trip fatigue.
-
-### Not Yet Added
-- Paid Inn stays.
 - Night sleep behavior.
-- Inn capacity.
-- Injury severity.
-- Detailed rest duration.
-
-## v0.2.5.1 - Returned Traveler Array Crash Hotfix
-
-### Fixed
-- Fixed crash when a world traveler returned to town.
-- Prevented Town from removing a world traveler while `GameState._update_world_travelers()` is still looping over `world_travelers`.
-- Fixed integer division warnings in `Town.gd`.
-
-## v0.2.5 - Basic Adventurer Loop Repeat
-
-### Added
-- Repeat adventure loop after `SoldLoot`.
-- Returned adventurers wait briefly after selling.
-- Returned adventurers buy another Small Potion if needed and possible.
-- Prototype trip count tracking.
-- Prototype max trip count.
-
-## v0.2.4 - Returned Adventurer Re-entry
-
-### Added
-- Returned travelers convert back into visible `Adventurer` nodes.
-- Returned adventurers sell Slime Gel through a visible town routine.
-
-## v0.2.3 - Persistent Town/World Scene Refactor
-
-### Added
-- Town and World Map stay loaded at the same time.
-
-## v0.2.2 - Sell Slime Gel to General Store
-
-### Added
-- Slime Gel sell value.
-
-## v0.2.1 - Return to Town With Loot
-
-### Added
-- Return movement for world travelers.
-
-## v0.2.0 - First Combat Prototype
-
-### Added
-- World traveler movement and simple combat.
-
-## v0.1.x
-
-### Added
-- Walking skeleton, adventurer spawning, town routine, potion purchase, and world travel placeholder.
+- Inn rest and energy.
+- Repeat adventurer loop.
+- Returned adventurer re-entry.
+- Persistent Town/World scenes.
+- First combat prototype.

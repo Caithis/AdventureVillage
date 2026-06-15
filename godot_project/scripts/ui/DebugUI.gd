@@ -1,22 +1,25 @@
 extends Control
 
-@onready var view_label: Label = $PanelContainer/VBoxContainer/ViewLabel
-@onready var time_label: Label = $PanelContainer/VBoxContainer/TimeLabel
-@onready var money_label: Label = $PanelContainer/VBoxContainer/MoneyLabel
-@onready var inventory_label: Label = $PanelContainer/VBoxContainer/InventoryLabel
-@onready var adventurer_label: Label = $PanelContainer/VBoxContainer/AdventurerLabel
-@onready var world_traveler_label: Label = $PanelContainer/VBoxContainer/WorldTravelerLabel
-@onready var returned_traveler_label: Label = $PanelContainer/VBoxContainer/ReturnedTravelerLabel
-@onready var world_traveler_summary_label: Label = $PanelContainer/VBoxContainer/WorldTravelerSummaryLabel
-@onready var returned_traveler_summary_label: Label = $PanelContainer/VBoxContainer/ReturnedTravelerSummaryLabel
-@onready var threat_label: Label = $PanelContainer/VBoxContainer/ThreatLabel
+@onready var view_label: Label = $PanelContainer/ScrollContainer/VBoxContainer/ViewLabel
+@onready var time_label: Label = $PanelContainer/ScrollContainer/VBoxContainer/TimeLabel
+@onready var money_label: Label = $PanelContainer/ScrollContainer/VBoxContainer/MoneyLabel
+@onready var inventory_label: Label = $PanelContainer/ScrollContainer/VBoxContainer/InventoryLabel
+@onready var adventurer_label: Label = $PanelContainer/ScrollContainer/VBoxContainer/AdventurerLabel
+@onready var world_traveler_label: Label = $PanelContainer/ScrollContainer/VBoxContainer/WorldTravelerLabel
+@onready var returned_traveler_label: Label = $PanelContainer/ScrollContainer/VBoxContainer/ReturnedTravelerLabel
+@onready var world_traveler_summary_label: Label = $PanelContainer/ScrollContainer/VBoxContainer/WorldTravelerSummaryLabel
+@onready var returned_traveler_summary_label: Label = $PanelContainer/ScrollContainer/VBoxContainer/ReturnedTravelerSummaryLabel
+@onready var threat_label: Label = $PanelContainer/ScrollContainer/VBoxContainer/ThreatLabel
+@onready var night_policy_label: Label = $PanelContainer/ScrollContainer/VBoxContainer/NightPolicyLabel
+@onready var night_danger_label: Label = $PanelContainer/ScrollContainer/VBoxContainer/NightDangerLabel
 
-@onready var town_button: Button = $PanelContainer/VBoxContainer/TownButton
-@onready var world_map_button: Button = $PanelContainer/VBoxContainer/WorldMapButton
-@onready var add_money_button: Button = $PanelContainer/VBoxContainer/AddMoneyButton
-@onready var add_slime_gel_button: Button = $PanelContainer/VBoxContainer/AddSlimeGelButton
-@onready var grow_slime_nest_button: Button = $PanelContainer/VBoxContainer/GrowSlimeNestButton
-@onready var spawn_adventurer_button: Button = $PanelContainer/VBoxContainer/SpawnAdventurerButton
+@onready var town_button: Button = $PanelContainer/ScrollContainer/VBoxContainer/TownButton
+@onready var world_map_button: Button = $PanelContainer/ScrollContainer/VBoxContainer/WorldMapButton
+@onready var add_money_button: Button = $PanelContainer/ScrollContainer/VBoxContainer/AddMoneyButton
+@onready var add_slime_gel_button: Button = $PanelContainer/ScrollContainer/VBoxContainer/AddSlimeGelButton
+@onready var grow_slime_nest_button: Button = $PanelContainer/ScrollContainer/VBoxContainer/GrowSlimeNestButton
+@onready var spawn_adventurer_button: Button = $PanelContainer/ScrollContainer/VBoxContainer/SpawnAdventurerButton
+@onready var toggle_night_quests_button: Button = $PanelContainer/ScrollContainer/VBoxContainer/ToggleNightQuestsButton
 
 var cached_day_number: int = 1
 var cached_phase_name: String = "Day"
@@ -29,6 +32,7 @@ func _ready() -> void:
 	add_slime_gel_button.pressed.connect(_on_add_slime_gel_button_pressed)
 	grow_slime_nest_button.pressed.connect(_on_grow_slime_nest_button_pressed)
 	spawn_adventurer_button.pressed.connect(_on_spawn_adventurer_button_pressed)
+	toggle_night_quests_button.pressed.connect(_on_toggle_night_quests_button_pressed)
 
 	GameState.state_changed.connect(_refresh_state_labels)
 	GameClock.time_updated.connect(_on_time_updated)
@@ -52,6 +56,9 @@ func _on_grow_slime_nest_button_pressed() -> void:
 
 func _on_spawn_adventurer_button_pressed() -> void:
 	SceneRouter.request_spawn_adventurer()
+
+func _on_toggle_night_quests_button_pressed() -> void:
+	GameState.toggle_night_quests()
 
 func _on_time_updated(day_number: int, phase_name: String, time_remaining: float, _phase_progress: float) -> void:
 	cached_day_number = day_number
@@ -82,4 +89,7 @@ func _refresh_state_labels() -> void:
 		GameState.slime_nest_status,
 		GameState.slime_nest_growth
 	]
+	night_policy_label.text = "Night Quests: " + GameState.get_night_quest_policy_text()
+	night_danger_label.text = "Night Danger: " + GameState.get_night_danger_summary()
+	toggle_night_quests_button.text = "Toggle Night Quests (%s)" % GameState.get_night_quest_policy_text()
 	_refresh_time_label()

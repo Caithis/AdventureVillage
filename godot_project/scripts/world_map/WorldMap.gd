@@ -74,8 +74,8 @@ func _create_traveler_marker(traveler: Dictionary) -> Node2D:
 
 	var label := Label.new()
 	label.name = "Label"
-	label.position = Vector2(-65, -88)
-	label.size = Vector2(245, 100)
+	label.position = Vector2(-70, -96)
+	label.size = Vector2(270, 110)
 	label.text = _build_traveler_label(traveler)
 	marker.add_child(label)
 

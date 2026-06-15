@@ -18,6 +18,10 @@ const SLIME_SPEED := 0.85
 const SLIME_GEL_REWARD := 2
 const SLIME_GEL_SELL_VALUE := 5
 
+const NIGHT_SLIME_HP_MULTIPLIER := 1.5
+const NIGHT_SLIME_ATTACK_MULTIPLIER := 1.5
+const NIGHT_RETREAT_ENERGY_THRESHOLD := 40
+
 const SMALL_POTION_HEAL_AMOUNT := 15
 const POTION_USE_HP_RATIO := 0.40
 
@@ -26,6 +30,8 @@ const WORLD_TRIP_ENERGY_COST := 45
 
 var money: int = 500
 var current_view_name: String = "Unknown"
+
+var allow_night_quests: bool = true
 
 var town_inventory: Dictionary = {
 	SMALL_POTION_ID: 5,
@@ -89,6 +95,22 @@ func get_item_count(item_id: String) -> int:
 
 func has_item(item_id: String, amount: int = 1) -> bool:
 	return get_item_count(item_id) >= amount
+
+func toggle_night_quests() -> void:
+	allow_night_quests = not allow_night_quests
+	state_changed.emit()
+
+func get_night_quest_policy_text() -> String:
+	if allow_night_quests:
+		return "Enabled"
+	return "Disabled"
+
+func get_night_danger_summary() -> String:
+	return "Night Slime HP x%.1f | ATK x%.1f | Retreat E<=%d" % [
+		NIGHT_SLIME_HP_MULTIPLIER,
+		NIGHT_SLIME_ATTACK_MULTIPLIER,
+		NIGHT_RETREAT_ENERGY_THRESHOLD
+	]
 
 func register_adventurer(adventurer: Node) -> void:
 	if adventurer == null:
@@ -256,18 +278,24 @@ func _update_world_travelers(delta: float) -> void:
 		var traveler := world_travelers[index]
 		var status := str(traveler.get("status", ""))
 
-		if status == "TravelingToSlimeNest":
-			changed = _move_traveler_toward_target(traveler, SLIME_NEST_WORLD_POSITION, WORLD_TRAVELER_SPEED, delta)
-
-			if _traveler_reached_position(traveler, SLIME_NEST_WORLD_POSITION):
-				traveler["world_position"] = SLIME_NEST_WORLD_POSITION
-				traveler["status"] = "FightingSlime"
-				traveler["last_combat_log"] = "Encountered Slime."
-				_resolve_slime_combat(traveler)
+		if status == "TravelingToSlimeNest" or status == "NightQuesting":
+			if _should_return_from_night_risk(traveler):
 				changed = true
+			else:
+				changed = _apply_night_questing_status(traveler) or changed
+				var moved := _move_traveler_toward_target(traveler, SLIME_NEST_WORLD_POSITION, WORLD_TRAVELER_SPEED, delta)
+				changed = moved or changed
 
-		elif status == "ReturningWithLoot" or status == "InjuredReturning":
-			changed = _move_traveler_toward_target(traveler, TOWN_WORLD_POSITION, WORLD_RETURN_SPEED, delta)
+				if _traveler_reached_position(traveler, SLIME_NEST_WORLD_POSITION):
+					traveler["world_position"] = SLIME_NEST_WORLD_POSITION
+					traveler["status"] = "FightingSlime"
+					traveler["last_combat_log"] = "Encountered Slime."
+					_resolve_slime_combat(traveler)
+					changed = true
+
+		elif _is_returning_status(status):
+			var moved_back := _move_traveler_toward_target(traveler, TOWN_WORLD_POSITION, WORLD_RETURN_SPEED, delta)
+			changed = moved_back or changed
 
 			if _traveler_reached_position(traveler, TOWN_WORLD_POSITION):
 				traveler["world_position"] = TOWN_WORLD_POSITION
@@ -280,6 +308,51 @@ func _update_world_travelers(delta: float) -> void:
 	if changed and _world_simulation_emit_timer >= _world_simulation_emit_interval:
 		_world_simulation_emit_timer = 0.0
 		state_changed.emit()
+
+func _is_night() -> bool:
+	return GameClock.get_phase_name() == "Night"
+
+func _should_return_from_night_risk(traveler: Dictionary) -> bool:
+	if not _is_night():
+		return false
+
+	if not allow_night_quests:
+		traveler["status"] = "ReturningNightRestricted"
+		traveler["target_position"] = TOWN_WORLD_POSITION
+		traveler["last_combat_log"] = "Night quests disabled. Returning to town."
+		return true
+
+	var energy := int(traveler.get("energy", DEFAULT_MAX_ENERGY))
+	if energy <= NIGHT_RETREAT_ENERGY_THRESHOLD:
+		traveler["status"] = "ReturningLowEnergyAtNight"
+		traveler["target_position"] = TOWN_WORLD_POSITION
+		traveler["last_combat_log"] = "Too tired for Night quest. Returning."
+		return true
+
+	return false
+
+func _apply_night_questing_status(traveler: Dictionary) -> bool:
+	var status := str(traveler.get("status", ""))
+	if _is_night():
+		if status != "NightQuesting":
+			traveler["status"] = "NightQuesting"
+			traveler["last_combat_log"] = "Continuing quest at Night. Danger increased."
+			return true
+	else:
+		if status == "NightQuesting":
+			traveler["status"] = "TravelingToSlimeNest"
+			traveler["last_combat_log"] = "Day returned. Night danger faded."
+			return true
+
+	return false
+
+func _is_returning_status(status: String) -> bool:
+	return status in [
+		"ReturningWithLoot",
+		"InjuredReturning",
+		"ReturningLowEnergyAtNight",
+        "ReturningNightRestricted"
+	]
 
 func _move_traveler_toward_target(traveler: Dictionary, target_position: Vector2, speed: float, delta: float) -> bool:
 	var current_position: Vector2 = traveler.get("world_position", TOWN_WORLD_POSITION)
@@ -305,6 +378,12 @@ func _mark_traveler_arrived_at_town(traveler: Dictionary) -> void:
 	elif previous_status == "InjuredReturning":
 		traveler["status"] = "AwaitingTownReentryInjured"
 		traveler["last_combat_log"] = "Returned to town injured. Awaiting re-entry."
+	elif previous_status == "ReturningLowEnergyAtNight":
+		traveler["status"] = "AwaitingTownReentryTired"
+		traveler["last_combat_log"] = "Returned from Night due to low energy."
+	elif previous_status == "ReturningNightRestricted":
+		traveler["status"] = "AwaitingTownReentryNightRestricted"
+		traveler["last_combat_log"] = "Returned because Night quests are disabled."
 	else:
 		traveler["status"] = "AwaitingTownReentry"
 		traveler["last_combat_log"] = "Returned to town. Awaiting re-entry."
@@ -334,7 +413,14 @@ func _resolve_slime_combat(traveler: Dictionary) -> void:
 	var adventurer_meter := 0.0
 
 	var slime_hp := SLIME_MAX_HP
+	var slime_attack := SLIME_ATTACK
 	var slime_meter := 0.0
+	var night_combat := _is_night()
+
+	if night_combat:
+		slime_hp = ceili(float(SLIME_MAX_HP) * NIGHT_SLIME_HP_MULTIPLIER)
+		slime_attack = ceili(float(SLIME_ATTACK) * NIGHT_SLIME_ATTACK_MULTIPLIER)
+		traveler["last_combat_log"] = "Night combat: Slime empowered."
 
 	var inventory: Dictionary = traveler.get("inventory", {})
 	var potion_used := false
@@ -359,30 +445,32 @@ func _resolve_slime_combat(traveler: Dictionary) -> void:
 
 		if slime_meter >= 1.0:
 			slime_meter = 0.0
-			adventurer_hp -= SLIME_ATTACK
+			adventurer_hp -= slime_attack
 
 	traveler["hp"] = maxi(adventurer_hp, 0)
 	traveler["inventory"] = inventory
+
+	var night_note := ""
+	if night_combat:
+		night_note = " Night danger applied."
 
 	if slime_hp <= 0:
 		inventory[SLIME_GEL_ID] = int(inventory.get(SLIME_GEL_ID, 0)) + SLIME_GEL_REWARD
 		traveler["inventory"] = inventory
 		traveler["status"] = "ReturningWithLoot"
 		traveler["target_position"] = TOWN_WORLD_POSITION
-		traveler["last_combat_log"] = "Won vs Slime. Returning with %d Slime Gel." % SLIME_GEL_REWARD
+		traveler["last_combat_log"] = "Won vs Slime. Returning with %d Slime Gel.%s" % [SLIME_GEL_REWARD, night_note]
 	elif adventurer_hp <= 0:
 		traveler["status"] = "InjuredReturning"
 		traveler["target_position"] = TOWN_WORLD_POSITION
-		traveler["last_combat_log"] = "Lost vs Slime. Returning injured."
+		traveler["last_combat_log"] = "Lost vs Slime. Returning injured.%s" % night_note
 	else:
 		traveler["status"] = "InjuredReturning"
 		traveler["target_position"] = TOWN_WORLD_POSITION
-		traveler["last_combat_log"] = "Combat timed out. Retreating."
+		traveler["last_combat_log"] = "Combat timed out. Retreating.%s" % night_note
 
 	if potion_used:
 		traveler["last_combat_log"] += " Potion used."
-
-	state_changed.emit()
 
 func _safe_get_property(object: Object, property_name: String, fallback: Variant) -> Variant:
 	if object == null:

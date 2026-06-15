@@ -1,64 +1,61 @@
 # Dungeon Frontier Guild-Town
 
-Version: v0.2.8 - Inn Income Prototype
+Version: v0.2.9 - Night Danger Scaling
 
-## What v0.2.8 Adds
+## What v0.2.9 Adds
 
-This patch makes the first real two-sided town economy loop.
+Night now matters on the world map.
 
-### Money In
+### Night danger
 
-Adventurers now pay the Inn when resting or sleeping.
-
-```text
-Inn rest fee: 8 gold
-Night lodging fee: 5 gold
-```
-
-If the adventurer can afford the fee:
+At Night, Slimes become temporarily stronger during combat:
 
 ```text
-Adventurer gold decreases
-Town money increases
-Adventurer receives full rest
+Night Slime HP multiplier: 1.5x
+Night Slime attack multiplier: 1.5x
 ```
 
-If the adventurer cannot afford the fee:
+This modifier is temporary. It is calculated at combat time and does not permanently mutate a spawned enemy.
+
+### Night questing status
+
+World travelers heading toward the Slime Nest during Night now show:
 
 ```text
-Adventurer receives poor rest
-Town money does not increase
-Poor rest only partially restores HP and energy
+NightQuesting
 ```
 
-### Money Out
+When Day returns, they return to normal travel status if they are still outbound.
 
-When adventurers sell Slime Gel to the General Store, the town now pays for those materials.
+### Low-energy retreat
+
+Low-energy travelers may return to town instead of continuing toward danger at Night.
 
 ```text
-Slime Gel value: 5 gold each
-2 Slime Gel sale: town money -10, adventurer gold +10
+Night retreat energy threshold: 40
 ```
 
-This fixes the earlier prototype issue where the adventurer gained gold but the village funds did not decrease.
+### Night quest policy toggle
 
-## Current Economy Loop
+A debug toggle has been added:
 
 ```text
-Adventurer buys Small Potion
-→ Town money increases
-→ Adventurer leaves town
-→ Adventurer wins Slime Gel
-→ Adventurer sells Slime Gel
-→ Town money decreases
-→ Town Slime Gel stock increases
-→ Adventurer rests/sleeps at Inn
-→ Town money increases
+Toggle Night Quests
 ```
 
-## Future Economy Goals Noted
+If Night Quests are disabled, outbound world travelers return to town at Night instead of continuing toward the Slime Nest.
 
-Later production goals:
-- Debt/loss condition if the town cannot recover from negative funds within a time limit.
-- Building-level controls to disable or limit buying specific materials.
-- Building menus with sliders/toggles for material purchasing behavior.
+This is a prototype stand-in for a future Guild Hall policy.
+
+### Debug UI improvement
+
+The Debug UI is now scrollable so it does not block as much of the game view as more labels and buttons are added.
+
+## Future Systems Noted
+
+This version also adds documentation for:
+- Floating event text.
+- Debug UI pages/collapsible sections.
+- Visible wandering monsters around nests/dungeons.
+- Monster spawn caps tied to nest growth.
+- Future Guild Hall night quest policy controls.
