@@ -87,3 +87,27 @@ Full intended game: about 6-8%
 ```
 
 This patch improves survival/readability inside the prototype loop. It does not mean combat is final or polished. Major town-building and progression systems are still ahead.
+
+
+## v0.4.0 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 15%
+Full intended game: about 7-9%
+```
+
+This is the first real step into the town-building pillar. It is still disconnected from costs, build time, save/load, and adventurer destination logic.
+
+
+## v0.4.1 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 16%
+Full intended game: about 8-10%
+```
+
+The building pillar now has basic placement, selection, move, and demolish behavior, but it is still not connected to costs, save/load, or simulation routing.

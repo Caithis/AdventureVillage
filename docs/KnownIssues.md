@@ -1,13 +1,12 @@
 # Known Issues
 
-## v0.3.5
+## v0.4.1
 
 Known limitations:
-- Fleeing uses direct movement, not pathfinding.
-- Slime chase fairness is still hardcoded.
-- Retreat threshold is hardcoded at 50% HP.
-- Slimes do not visually leash back to the nest beyond simple target release.
-- Town safety radius is invisible.
-- There is no road speed bonus yet.
-- There is no party rescue system yet.
-- This is prototype tuning, not final combat polish.
+- Placed buildings are not saved.
+- Placed buildings do not cost money.
+- Demolish has no confirmation prompt.
+- Demolish gives no refund.
+- Placed buildings still do not replace fixed simulation buildings.
+- Fixed fallback buildings are protected intentionally.
+- Building movement is direct repositioning, not construction labor.

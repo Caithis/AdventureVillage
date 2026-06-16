@@ -1,40 +1,34 @@
 # Changelog
 
-## v0.3.5 - Adventurer Retreat and Flee Prototype
+## v0.4.1 - Building Move / Demolish Prototype
 
 ### Added
-- `FleeingToTown` world traveler status.
-- Low-HP outbound travelers clear Slime targets and flee toward town.
-- Faster flee return speed.
-- Flee grace timer after retreat begins.
-- Reduced Slime aggro radius against retreating travelers.
-- One-retreat-chase-per-trip rule.
-- Town safety radius where Slimes stop chasing fleeing travelers.
-- Floating/status feedback for fleeing and retreating.
-- Retreat and flee design notes.
+- Select placed building.
+- Clearer selected-building feedback.
+- Move Selected button.
+- Demolish Selected button.
+- Move mode for placed buildings.
+- Move cancel behavior.
+- Fixed fallback building protection.
+- Building move/demolish documentation.
 
 ### Changed
-- Low-HP victorious travelers now flee instead of simply returning normally.
-- Injured/low-energy returners get a short grace window before Slimes can re-engage.
-- Slime chase behavior against returning travelers is more conservative.
+- Clickable buildings now emit both building id and building node.
+- Placement validation ignores the building currently being moved.
 
 ### Not Yet Added
-- Pathfinding around monsters.
-- Road-based escape bonuses.
-- Adventurer flee animation.
-- True disengage mini-game.
-- Party rescue behavior.
-- Guild Hall safety policy UI.
+- Building costs.
+- Demolition refunds.
+- Save/load placed buildings.
+- Confirmation prompt before demolish.
+- Placed buildings becoming adventurer destinations.
 
-## v0.3.4 - Slime Nest Growth Pressure
+## v0.4.0.3 - Missing UI Helper Hotfix
 
-### Added
-- Slime Nest growth pressure scaling.
-- Raid pressure foundation.
+### Fixed
+- Fixed launch-blocking `_is_mouse_over_ui()` error.
 
-## Earlier v0.3.x
+## Earlier v0.4.0
 
-- Visible Slime combat.
-- Visible Slime spawning.
-- Floating event text.
-- Building economy controls.
+- Building placement foundation.
+- Entrance and exit markers.

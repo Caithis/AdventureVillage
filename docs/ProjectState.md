@@ -56,3 +56,13 @@ Slime Nest growth now meaningfully affects spawn pressure, monster stats, detect
 ## v0.3.5 Update Notes
 
 Adventurers now have clearer flee behavior. Low-HP travelers stop hunting Slimes, clear their target, and flee toward town. Slimes can still chase weakened returners, but only with stricter fairness rules: reduced aggro radius, one chase per retreat, a flee grace timer, and a town safety radius.
+
+
+## v0.4.0 Update Notes
+
+The first town-building layer is now active. Town view has a Build Mode panel, a placement ghost, valid/invalid placement checks, basic grid snapping, and buttons for Guild Hall, Inn, and General Store placement. Fixed buildings remain as fallback and still drive the existing adventurer loop. Town Entrance and World Exit are now clearly marked.
+
+
+## v0.4.1 Update Notes
+
+Placed buildings can now be selected, moved, and demolished. Fixed fallback buildings remain protected so the existing adventurer loop is not broken while building placement becomes stable.

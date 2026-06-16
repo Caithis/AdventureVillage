@@ -37,6 +37,8 @@ var cached_time_remaining: float = 0.0
 var debug_collapsed: bool = false
 
 func _ready() -> void:
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel_container.mouse_filter = Control.MOUSE_FILTER_STOP
 	collapse_button.pressed.connect(_on_collapse_button_pressed)
 	town_button.pressed.connect(_on_town_button_pressed)
 	world_map_button.pressed.connect(_on_world_map_button_pressed)

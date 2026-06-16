@@ -1,69 +1,53 @@
 # Dungeon Frontier Guild-Town
 
-Version: v0.3.5 - Adventurer Retreat and Flee Prototype
+Version: v0.4.1 - Building Move / Demolish Prototype
 
-## What v0.3.5 Adds
+## What v0.4.1 Adds
 
-This patch improves how weakened world travelers retreat.
+This patch adds the first editable-building controls for placed buildings.
 
-## Flee Behavior
+## Select Placed Buildings
 
-Low-HP travelers now actively avoid further Slime targets.
+Click a placed building to select it.
 
-Current retreat rule:
+Selected buildings receive a clearer blue selection outline.
 
-```text
-If traveler HP <= 50%:
-    Stop hunting Slimes
-    Clear Slime target
-    Flee directly toward town
-```
+## Move Selected Building
 
-The traveler status can now show:
+Use:
 
 ```text
-FleeingToTown
+Move Selected
 ```
 
-## Faster Return
+Rules:
+- Only placed buildings can be moved.
+- Fixed fallback buildings are protected.
+- Moving uses the same valid/invalid placement ghost as normal building placement.
+- Left-click confirms the new valid location.
+- Right-click cancels the move and restores the building.
 
-Fleeing or injured travelers move faster when returning to town.
+## Demolish Selected Building
 
-Current prototype values:
+Use:
 
 ```text
-Normal return speed: existing return speed
-Flee return speed: 82
+Demolish Selected
 ```
 
-This helps retreat feel more deliberate and gives weakened adventurers a better chance to survive.
+Rules:
+- Only placed buildings can be demolished.
+- Fixed fallback buildings are protected.
+- No refund yet. Building costs/refunds are planned for a later economy patch.
 
-## Stricter Slime Chase Rules
+## Fixed Fallback Protection
 
-Slimes can still chase weakened retreating adventurers, but the rules are stricter now:
+The original fixed Guild Hall, Inn, and General Store remain protected.
 
-```text
-Only weakened returning travelers can be chased
-Only 1 Slime may target a traveler
-Only 1 retreat chase is allowed per trip
-Slimes use a reduced aggro radius against retreating travelers
-Travelers get a short grace period after deciding to flee
-Slimes stop chasing near the town safety radius
-```
+Reason:
+- They still support the current adventurer loop.
+- We should not delete or move them until placed buildings become simulation destinations.
 
-This keeps retreat dangerous without making it feel like an automatic death sentence.
+## Current Limitation
 
-## Retreat Feedback
-
-Added clearer floating/status feedback:
-
-```text
-Flee!
-Fleeing!
-Retreat!
-Returning
-```
-
-## Important Design Note
-
-This is still prototype safety tuning, not final combat polish. The goal is to make the basic loop more fair and readable before adding more content.
+Placed buildings are still not saved and still do not replace the fixed simulation buildings yet.
