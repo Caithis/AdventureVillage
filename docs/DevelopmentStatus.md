@@ -219,3 +219,15 @@ Full intended game: about 16-18%
 ```
 
 The building system has crossed into a basic throughput model: buildings now have capacity, queues, routing, service time, and placeholder workers. The next major step is either real worker hiring or building upgrades.
+
+
+## v0.5.1 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 26%
+Full intended game: about 17-19%
+```
+
+The building system now supports investment through upgrades. Service buildings can improve capacity and service speed, and those improvements persist through save/load.

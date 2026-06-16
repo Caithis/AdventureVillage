@@ -116,3 +116,8 @@ Queue visuals are now attached to individual General Store and Inn buildings. Ea
 ## v0.5.0 Update Notes
 
 General Store and Inn now have service time and worker placeholder counts. Worker placeholders affect service speed, labels show service time/worker count, and the building menu can adjust placeholder workers. Placed building worker counts are saved.
+
+
+## v0.5.1 Update Notes
+
+Placed buildings now have upgrade levels. General Store and Inn upgrades increase capacity and service speed. Upgrade levels save/load, and the building menu shows upgrade controls. Building instance IDs are intentionally unique and non-recycled; the save file stores only current buildings and the next ID counter.

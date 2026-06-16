@@ -35,6 +35,18 @@ const WORKER_SPEED_BONUS_PER_WORKER := 0.20
 const MAX_WORKER_PLACEHOLDER_COUNT := 3
 const MIN_SERVICE_SECONDS := 0.50
 
+const MAX_BUILDING_UPGRADE_LEVEL := 3
+const UPGRADE_CAPACITY_BONUS_PER_LEVEL := {
+	"general_store": 1,
+	"inn": 1,
+}
+const UPGRADE_SERVICE_SPEED_BONUS_PER_LEVEL := 0.10
+const BUILDING_UPGRADE_BASE_COSTS := {
+	"guild_hall": 200,
+	"general_store": 125,
+	"inn": 150,
+}
+
 const BUILDING_CAPACITY := {
 	"general_store": 2,
 	"inn": 5,
@@ -258,6 +270,9 @@ func _mark_fixed_fallback_buildings() -> void:
 		building.set_meta("is_fixed_fallback", true)
 
 		var building_id := str(building.get("building_id"))
+		if not building.has_meta("upgrade_level"):
+			building.set_meta("upgrade_level", 0)
+
 		if _is_queue_capable_building_type(building_id) and not building.has_meta("worker_count"):
 			building.set_meta("worker_count", _get_default_worker_count(building_id))
 
@@ -530,6 +545,7 @@ func _place_building(building_type: String, placement_rect: Rect2) -> ColorRect:
 	building.set_meta("is_placed_building", true)
 	building.set_meta("original_cost", get_building_cost(building_type))
 	building.set_meta("worker_count", _get_default_worker_count(building_type))
+	building.set_meta("upgrade_level", 0)
 	var instance_id := _assign_new_building_instance_id(building, building_type)
 
 	buildings_container.add_child(building)
@@ -763,7 +779,8 @@ func save_placed_buildings_to_file(show_feedback: bool = true) -> void:
 			"size_x": building_control.size.x,
 			"size_y": building_control.size.y,
 			"original_cost": int(building_control.get_meta("original_cost", get_building_cost(str(building_control.get("building_id"))))),
-			"worker_count": get_worker_count_for_building(building_control)
+			"worker_count": get_worker_count_for_building(building_control),
+			"upgrade_level": get_upgrade_level_for_building(building_control)
 		})
 
 	var save_data: Dictionary = {
@@ -871,6 +888,7 @@ func _recreate_placed_building_from_save(building_data: Dictionary) -> void:
 
 		building.set_meta("original_cost", int(building_data.get("original_cost", get_building_cost(building_type))))
 		building.set_meta("worker_count", int(building_data.get("worker_count", _get_default_worker_count(building_type))))
+		building.set_meta("upgrade_level", int(building_data.get("upgrade_level", 0)))
 		_update_local_building_visuals(building)
 
 
@@ -896,7 +914,7 @@ func request_building_capacity(building_type: String, adventurer: Node) -> bool:
 		adventurer.set_meta(_get_capacity_meta_key(building_type), instance_id)
 		return true
 
-	if occupants.size() >= get_building_capacity(building_type):
+	if occupants.size() >= get_building_capacity_for_instance(building_type, instance_id):
 		request_building_queue_slot(building_type, adventurer)
 		_update_active_route_visuals()
 		return false
@@ -1006,6 +1024,22 @@ func get_queue_slot_position(building_type: String, adventurer: Node) -> Vector2
 func get_building_capacity(building_type: String) -> int:
 	return int(BUILDING_CAPACITY.get(building_type, 1))
 
+func get_building_capacity_for_building(building: ColorRect) -> int:
+	if building == null:
+		return 1
+
+	var building_type := str(building.get("building_id"))
+	return get_building_capacity_for_level(building_type, get_upgrade_level_for_building(building))
+
+func get_building_capacity_for_instance(building_type: String, instance_id: String) -> int:
+	return get_building_capacity_for_level(building_type, get_upgrade_level_for_instance(building_type, instance_id))
+
+func get_building_capacity_for_level(building_type: String, upgrade_level: int) -> int:
+	var base_capacity: int = get_building_capacity(building_type)
+	var upgrade_capacity_bonus: int = int(UPGRADE_CAPACITY_BONUS_PER_LEVEL.get(building_type, 0))
+	var capacity_bonus: int = upgrade_capacity_bonus * maxi(upgrade_level, 0)
+	return base_capacity + capacity_bonus
+
 func get_building_occupancy_count(building_type: String) -> int:
 	var instance_id := _get_active_building_instance_id(building_type)
 	_cleanup_building_occupants(instance_id)
@@ -1022,7 +1056,7 @@ func get_building_capacity_summary(building_type: String) -> String:
 	if _count_placed_buildings_of_type(building_type) <= 0:
 		return "%d/%d occupied | Q:%d" % [
 			get_building_occupancy_count(building_type),
-			get_building_capacity(building_type),
+			get_building_capacity_for_instance(building_type, _get_active_building_instance_id(building_type)),
 			get_building_queue_count(building_type)
 		]
 
@@ -1110,7 +1144,7 @@ func _get_route_meta_key(building_type: String) -> String:
 func _is_instance_full(building_type: String, instance_id: String) -> bool:
 	_cleanup_building_occupants(instance_id)
 	var occupants: Array = building_occupants.get(instance_id, [])
-	return occupants.size() >= get_building_capacity(building_type)
+	return occupants.size() >= get_building_capacity_for_instance(building_type, instance_id)
 
 func _has_available_placed_building(building_type: String) -> bool:
 	for building in _get_placed_buildings_of_type(building_type):
@@ -1125,7 +1159,10 @@ func _get_total_capacity_for_type(building_type: String) -> int:
 	if placed_count <= 0:
 		return get_building_capacity(building_type)
 
-	return placed_count * get_building_capacity(building_type)
+	var total_capacity: int = 0
+	for instance_id in _get_routable_instance_ids_for_type(building_type):
+		total_capacity += get_building_capacity_for_instance(building_type, instance_id)
+	return total_capacity
 
 func _get_total_open_slots_for_type(building_type: String) -> int:
 	var instance_ids := _get_routable_instance_ids_for_type(building_type)
@@ -1134,7 +1171,7 @@ func _get_total_open_slots_for_type(building_type: String) -> int:
 	for instance_id in instance_ids:
 		_cleanup_building_occupants(instance_id)
 		var occupants: Array = building_occupants.get(instance_id, [])
-		open_slots += maxi(get_building_capacity(building_type) - occupants.size(), 0)
+		open_slots += maxi(get_building_capacity_for_instance(building_type, instance_id) - occupants.size(), 0)
 
 	return open_slots
 
@@ -1368,7 +1405,7 @@ func _select_best_building_instance_for_position(building_type: String, from_pos
 		var distance := from_position.distance_to(route_position)
 		var occupants: Array = building_occupants.get(instance_id, [])
 		var queue: Array = building_waiting_queues.get(instance_id, [])
-		var has_open_capacity := occupants.size() < get_building_capacity(building_type)
+		var has_open_capacity := occupants.size() < get_building_capacity_for_instance(building_type, instance_id)
 
 		if has_open_capacity and distance < best_available_distance:
 			best_available_distance = distance
@@ -1586,15 +1623,19 @@ func get_service_seconds_for_building(building: ColorRect) -> float:
 
 	var building_type := str(building.get("building_id"))
 	var worker_count := get_worker_count_for_building(building)
-	return _calculate_service_seconds(building_type, worker_count)
+	var upgrade_level := get_upgrade_level_for_building(building)
+	return _calculate_service_seconds(building_type, worker_count, upgrade_level)
 
 func get_service_seconds_for_instance(building_type: String, instance_id: String) -> float:
 	var worker_count := get_worker_count_for_instance(building_type, instance_id)
-	return _calculate_service_seconds(building_type, worker_count)
+	var upgrade_level := get_upgrade_level_for_instance(building_type, instance_id)
+	return _calculate_service_seconds(building_type, worker_count, upgrade_level)
 
-func _calculate_service_seconds(building_type: String, worker_count: int) -> float:
-	var base_seconds := float(BUILDING_BASE_SERVICE_SECONDS.get(building_type, 1.5))
-	var speed_multiplier := get_service_speed_multiplier_for_worker_count(worker_count)
+func _calculate_service_seconds(building_type: String, worker_count: int, upgrade_level: int = 0) -> float:
+	var base_seconds: float = float(BUILDING_BASE_SERVICE_SECONDS.get(building_type, 1.5))
+	var worker_speed_multiplier: float = get_service_speed_multiplier_for_worker_count(worker_count)
+	var upgrade_speed_bonus: float = float(maxi(upgrade_level, 0)) * UPGRADE_SERVICE_SPEED_BONUS_PER_LEVEL
+	var speed_multiplier: float = worker_speed_multiplier + upgrade_speed_bonus
 	return maxf(MIN_SERVICE_SECONDS, base_seconds / speed_multiplier)
 
 func get_service_speed_multiplier_for_worker_count(worker_count: int) -> float:
@@ -1633,12 +1674,133 @@ func get_building_service_summary(building_node: Node) -> String:
 	var worker_count := get_worker_count_for_building(building)
 	var service_seconds := get_service_seconds_for_building(building)
 	var speed_multiplier := get_service_speed_multiplier_for_worker_count(worker_count)
-	return "Service: %.1fs | Workers: %d/%d | Speed: x%.2f" % [
+	var upgrade_level := get_upgrade_level_for_building(building)
+	var upgrade_bonus: float = float(maxi(upgrade_level, 0)) * UPGRADE_SERVICE_SPEED_BONUS_PER_LEVEL
+	var total_speed_multiplier: float = speed_multiplier + upgrade_bonus
+	return "Service: %.1fs | Workers: %d/%d | Lv:%d | Speed: x%.2f" % [
 		service_seconds,
 		worker_count,
 		MAX_WORKER_PLACEHOLDER_COUNT,
-		speed_multiplier
+		upgrade_level,
+		total_speed_multiplier
 	]
+
+
+func get_upgrade_level_for_building(building: ColorRect) -> int:
+	if building == null:
+		return 0
+
+	return int(building.get_meta("upgrade_level", 0))
+
+func get_upgrade_level_for_instance(building_type: String, instance_id: String) -> int:
+	if instance_id.begins_with("fallback_"):
+		return 0
+
+	var building := _get_building_by_instance_id(instance_id)
+	if building == null:
+		return 0
+
+	return get_upgrade_level_for_building(building)
+
+func get_next_upgrade_cost_for_building(building: ColorRect) -> int:
+	if building == null:
+		return 0
+
+	var building_type := str(building.get("building_id"))
+	var current_level := get_upgrade_level_for_building(building)
+
+	if current_level >= MAX_BUILDING_UPGRADE_LEVEL:
+		return 0
+
+	var base_cost := int(BUILDING_UPGRADE_BASE_COSTS.get(building_type, get_building_cost(building_type)))
+	return base_cost * (current_level + 1)
+
+func can_upgrade_building(building_node: Node) -> bool:
+	if not building_node is ColorRect:
+		return false
+
+	var building := building_node as ColorRect
+
+	if bool(building.get_meta("is_fixed_fallback", false)):
+		return false
+
+	if not bool(building.get_meta("is_placed_building", false)):
+		return false
+
+	return get_upgrade_level_for_building(building) < MAX_BUILDING_UPGRADE_LEVEL
+
+func get_building_upgrade_summary(building_node: Node) -> String:
+	if not building_node is ColorRect:
+		return "Upgrade: -"
+
+	var building := building_node as ColorRect
+	var building_type := str(building.get("building_id"))
+	var level := get_upgrade_level_for_building(building)
+
+	if bool(building.get_meta("is_fixed_fallback", false)):
+		return "Upgrade: fallback building cannot upgrade."
+
+	if level >= MAX_BUILDING_UPGRADE_LEVEL:
+		return "Upgrade: Lv %d/%d MAX" % [level, MAX_BUILDING_UPGRADE_LEVEL]
+
+	var cost := get_next_upgrade_cost_for_building(building)
+	var next_level := level + 1
+	var capacity_now := get_building_capacity_for_building(building)
+	var capacity_next := get_building_capacity_for_level(building_type, next_level)
+	var service_now := get_service_seconds_for_building(building)
+	var service_next := _calculate_service_seconds(building_type, get_worker_count_for_building(building), next_level)
+
+	if _is_queue_capable_building_type(building_type):
+		return "Upgrade: Lv %d/%d → %d | Cost %dg | Cap %d→%d | Svc %.1fs→%.1fs" % [
+			level,
+			MAX_BUILDING_UPGRADE_LEVEL,
+			next_level,
+			cost,
+			capacity_now,
+			capacity_next,
+			service_now,
+			service_next
+		]
+
+	return "Upgrade: Lv %d/%d → %d | Cost %dg | future effect placeholder" % [
+		level,
+		MAX_BUILDING_UPGRADE_LEVEL,
+		next_level,
+		cost
+	]
+
+func upgrade_building(building_node: Node) -> void:
+	if not can_upgrade_building(building_node):
+		_update_build_status("This building cannot be upgraded.")
+		return
+
+	var building := building_node as ColorRect
+	var building_type := str(building.get("building_id"))
+	var cost := get_next_upgrade_cost_for_building(building)
+
+	if not GameState.spend_money(cost):
+		_update_build_status("Not enough funds to upgrade %s. Need %dg, have %dg." % [
+			_get_building_display_name(building_type),
+			cost,
+			GameState.money
+		])
+		show_town_floating_text("Need %dg" % cost, building.global_position + building.size * 0.5)
+		return
+
+	var new_level := get_upgrade_level_for_building(building) + 1
+	building.set_meta("upgrade_level", new_level)
+
+	_update_local_building_visuals(building)
+	_update_active_route_visuals()
+	save_placed_buildings_to_file(false)
+
+	show_town_floating_text("Upgrade Lv %d" % new_level, building.global_position + building.size * 0.5)
+	_update_build_status("Upgraded %s to Lv %d for %dg. Funds %dg." % [
+		_get_building_display_name(building_type),
+		new_level,
+		cost,
+		GameState.money
+	])
 
 func can_adjust_building_workers(building_node: Node) -> bool:
 	if not building_node is ColorRect:
@@ -1678,10 +1840,11 @@ func _get_capacity_summary_for_building(building: ColorRect) -> String:
 		return ""
 
 	var instance_id := _get_building_instance_id_for_visuals(building)
-	return "%d/%d Q:%d\nSvc:%.1fs W:%d" % [
+	return "%d/%d Q:%d\nLv:%d Svc:%.1fs W:%d" % [
 		_get_occupancy_count_for_instance(instance_id),
-		get_building_capacity(building_type),
+		get_building_capacity_for_building(building),
 		_get_queue_count_for_instance(instance_id),
+		get_upgrade_level_for_building(building),
 		get_service_seconds_for_building(building),
 		get_worker_count_for_building(building)
 	]

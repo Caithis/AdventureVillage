@@ -13,6 +13,8 @@ var current_town_node: Node = null
 var service_label: Label = null
 var add_worker_button: Button = null
 var remove_worker_button: Button = null
+var upgrade_label: Label = null
+var upgrade_button: Button = null
 
 func _ready() -> void:
 	toggle_slime_gel_button.pressed.connect(_on_toggle_slime_gel_pressed)
@@ -45,6 +47,21 @@ func _create_service_controls() -> void:
 	remove_worker_button.pressed.connect(_on_remove_worker_pressed)
 	vbox.add_child(remove_worker_button)
 	vbox.move_child(remove_worker_button, close_button.get_index())
+
+	upgrade_label = Label.new()
+	upgrade_label.name = "UpgradeLabel"
+	upgrade_label.text = "Upgrade: -"
+	upgrade_label.visible = false
+	vbox.add_child(upgrade_label)
+	vbox.move_child(upgrade_label, close_button.get_index())
+
+	upgrade_button = Button.new()
+	upgrade_button.name = "UpgradeButton"
+	upgrade_button.text = "Upgrade Building"
+	upgrade_button.visible = false
+	upgrade_button.pressed.connect(_on_upgrade_pressed)
+	vbox.add_child(upgrade_button)
+	vbox.move_child(upgrade_button, close_button.get_index())
 
 func open_for_building(building_id: String, building_node: Node = null, town_node: Node = null) -> void:
 	current_building_id = building_id
@@ -99,6 +116,16 @@ func _refresh() -> void:
 	if remove_worker_button != null:
 		remove_worker_button.visible = can_adjust_workers
 
+	var can_show_upgrade: bool = has_town and has_valid_building and current_town_node.has_method("get_building_upgrade_summary")
+	if upgrade_label != null:
+		upgrade_label.visible = can_show_upgrade
+		if can_show_upgrade:
+			upgrade_label.text = current_town_node.get_building_upgrade_summary(current_building_node)
+
+	var can_upgrade: bool = has_town and has_valid_building and current_town_node.has_method("can_upgrade_building") and bool(current_town_node.can_upgrade_building(current_building_node))
+	if upgrade_button != null:
+		upgrade_button.visible = can_upgrade
+
 func _on_toggle_slime_gel_pressed() -> void:
 	if current_building_id == "general_store":
 		GameState.toggle_general_store_buys_slime_gel()
@@ -112,6 +139,11 @@ func _on_add_worker_pressed() -> void:
 func _on_remove_worker_pressed() -> void:
 	if current_town_node != null and is_instance_valid(current_town_node) and current_town_node.has_method("adjust_building_worker_count"):
 		current_town_node.adjust_building_worker_count(current_building_node, -1)
+		_refresh()
+
+func _on_upgrade_pressed() -> void:
+	if current_town_node != null and is_instance_valid(current_town_node) and current_town_node.has_method("upgrade_building"):
+		current_town_node.upgrade_building(current_building_node)
 		_refresh()
 
 func _on_close_pressed() -> void:

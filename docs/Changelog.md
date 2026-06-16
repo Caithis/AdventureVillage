@@ -1,48 +1,51 @@
+## v0.5.1.1 - Upgrade Type Inference Hotfix
+
+### Fixed
+- Fixed launch-blocking `Town.gd` parser error caused by inferred typing on `capacity_bonus`.
+- Hardened upgrade capacity calculations with explicit `int` types.
+- Hardened service-speed calculations with explicit `float` types.
+
+# Changelog
+
+## v0.5.1 - Building Upgrade Foundation
+
+### Added
+- Upgrade level per placed building.
+- Upgrade cost formula.
+- Upgrade Building button in building menu.
+- Upgrade summary in building menu.
+- Upgrade levels saved/loaded.
+- General Store upgrade increases capacity and service speed.
+- Inn upgrade increases capacity and service speed.
+- Building labels show upgrade level.
+- Building instance ID documentation.
+
+### Changed
+- Building capacity can now be affected by upgrade level.
+- Service speed can now be affected by upgrade level.
+- Placed building save data now includes `upgrade_level`.
+
+### Not Yet Added
+- Upgrade construction time.
+- Upgrade material requirements.
+- Upgrade visual changes.
+- Upgrade confirmation prompt.
+- Full Guild Hall upgrade effects.
+
 ## v0.5.0.1 - BuildingMenu Type Inference Hotfix
 
 ### Fixed
-- Fixed launch-blocking `BuildingMenu.gd` parser error caused by Godot being unable to infer the type of `can_adjust_workers`.
-- Added explicit bool typing for worker/service menu visibility checks.
-
-# Changelog
+- Building menu worker-control launch error.
 
 ## v0.5.0 - Building Service Speed / Workers Foundation
 
 ### Added
-- Base service time per service building type.
-- General Store service duration.
-- Inn rest service duration.
-- Worker placeholder count per building.
-- Worker speed bonus effect.
-- Building labels show service time and worker count.
-- Building menu shows service summary.
-- Add Worker Placeholder button.
-- Remove Worker Placeholder button.
-- Placed building worker counts save/load.
-- Service speed / worker documentation.
-
-### Changed
-- General Store purchase/sale service wait now uses building service speed.
-- Inn rest wait now uses building service speed.
-- Store and Inn labels now show more local service information.
-
-### Not Yet Added
-- Real worker NPCs.
-- Hiring/wages.
-- Worker schedules.
-- Worker skill/quality.
-- Service speed upgrades.
-- Worker assignment by job category.
-
-## v0.4.9 - Per-Building Queue Visuals
-
-### Added
-- Per-building local queue visuals.
+- Service speed and worker placeholders.
 
 ## Earlier v0.4.x
 
+- Per-building queues.
 - Multi-building routing.
-- Per-building instance IDs.
 - Capacity.
 - Save/load.
 - Building placement/move/demolish/costs.

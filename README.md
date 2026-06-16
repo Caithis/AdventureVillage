@@ -1,91 +1,83 @@
 # Dungeon Frontier Guild-Town
 
-Version: v0.5.0 - Building Service Speed / Workers Foundation
+Version: v0.5.1 - Building Upgrade Foundation
 
-## What v0.5.0 Adds
+## What v0.5.1 Adds
 
-This patch makes service buildings differ beyond location and capacity.
+This patch lets placed buildings improve through investment.
 
-## Building Service Time
+## Upgrade Levels
 
-Current base service times:
+Placed buildings now have upgrade levels:
 
 ```text
-General Store: 1.75 seconds
-Inn Rest: 3.0 seconds
+Lv 0 to Lv 3
 ```
 
-These values are placeholders for testing.
+Fixed fallback buildings cannot be upgraded.
 
-## Worker Placeholder Effect
+## Upgrade Costs
 
-General Stores and Inns now have worker placeholder counts.
-
-Current rule:
+Current prototype upgrade costs:
 
 ```text
-Each worker adds +20% service speed.
-Worker placeholders are capped at 3.
+General Store base upgrade cost: 125g
+Inn base upgrade cost: 150g
+Guild Hall base upgrade cost: 200g
 ```
 
-Example:
+Cost scales by next level:
 
 ```text
-0 workers: x1.00 speed
-1 worker: x1.20 speed
-2 workers: x1.40 speed
-3 workers: x1.60 speed
+Lv 0 → Lv 1: base cost
+Lv 1 → Lv 2: base cost × 2
+Lv 2 → Lv 3: base cost × 3
 ```
 
-Service time is calculated as:
+## Upgrade Effects
+
+For General Store and Inn:
 
 ```text
-base service time / speed multiplier
++1 capacity per upgrade level
++10% service speed per upgrade level
 ```
 
-## Building Labels Show Service Speed
+This means upgrades improve throughput beyond workers.
 
-Store and Inn labels now show:
+## Save / Load
+
+Placed building upgrade levels are saved and loaded.
+
+Saved building data now includes:
 
 ```text
-capacity / queue
-service time
+building type
+building instance ID
+position
+size
+original cost
 worker count
+upgrade level
 ```
 
-Example:
+## Building Menu Upgrade Controls
 
-```text
-General Store
-general_store_001
-1/2 Q:0
-Svc:1.5s W:1
-```
+The building menu now shows upgrade information and an upgrade button when a placed building can upgrade.
 
-## Building Menu Worker Controls
+## Instance ID Note
 
-Click a General Store or Inn to open the building menu.
+Building IDs such as `general_store_001` are unique IDs, not a list of historical saves.
 
-The menu now shows service information and has placeholder worker controls:
+The save file stores only currently placed buildings plus the next ID counter. Demolished buildings are removed from the placed building list.
 
-```text
-Add Worker Placeholder
-Remove Worker Placeholder
-```
+The `%03d` formatting means at least three digits, not a hard cap. After `_999`, the ID would become `_1000`.
 
-For placed buildings, worker count is saved and loaded.
+## Hotfix v0.5.1.1 Notice
 
-## Current Limitation
-
-This is not a real worker hiring system yet.
-
-Workers are placeholder values attached to buildings. There is no worker population, wages, schedule, skill, happiness, or staffing simulation yet.
-
-## Hotfix v0.5.0.1 Notice
-
-This package fixes the launch-blocking `BuildingMenu.gd` parser error from v0.5.0.
+This package fixes the launch-blocking `Town.gd` parser error from v0.5.1.
 
 Fixed:
-- Explicitly typed `can_show_service` as `bool`.
-- Explicitly typed `can_adjust_workers` as `bool`.
-- Wrapped the dynamic worker-adjustment method result with `bool(...)`.
+- Explicitly typed upgrade capacity calculation values.
+- Explicitly typed service-speed calculation values.
+- Removed Godot's need to infer types from Dictionary `.get(...)` upgrade values.
