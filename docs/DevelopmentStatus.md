@@ -147,3 +147,15 @@ Full intended game: about 10-12%
 ```
 
 The building pillar now has a first save/load foundation. This is a key step, but the project still needs a full SaveManager for money, time, adventurers, world state, upgrades, and progression.
+
+
+## v0.4.5 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 20%
+Full intended game: about 11-13%
+```
+
+The building pillar now has placement, movement, demolition, costs, save/load, routing, and first-pass capacity. It still needs per-building data, workers, upgrades, queues, and deeper UI.

@@ -81,3 +81,13 @@ Placed General Stores and Inns can now become active adventurer destinations. Dy
 ## v0.4.4 Update Notes
 
 Placed buildings now save to `user://placed_buildings.json` and load when the Town scene starts. The system preserves building type, position, size, and original cost. Active route markers rebuild after load so placed General Stores and Inns can remain active destinations.
+
+
+## v0.4.5 Update Notes
+
+General Store and Inn now have prototype capacity. Adventurers request capacity before buying/selling/resting/sleeping and wait if the building is full. Active route labels show capacity usage. This patch also fixes the v0.4.4 issue where demolishing a loaded building did not always persist after reopening.
+
+
+## v0.4.5.1 Hotfix Notes
+
+General Store capacity now releases after the visible purchase/sale result wait instead of immediately. This makes occupancy visible and allows store-full waiting behavior to be observed. Inn base capacity increased from 2 to 5.

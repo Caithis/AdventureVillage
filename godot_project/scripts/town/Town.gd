@@ -19,6 +19,11 @@ const DEMOLISH_REFUND_RATIO := 0.50
 const BUILDING_SAVE_PATH := "user://placed_buildings.json"
 const BUILDING_SAVE_VERSION := 1
 
+const BUILDING_CAPACITY := {
+	"general_store": 2,
+	"inn": 5,
+}
+
 @onready var buildings_container: Node2D = $Buildings
 @onready var adventurers_container: Node2D = $Adventurers
 @onready var town_entrance: Marker2D = $Markers/TownEntrance
@@ -50,6 +55,11 @@ var fallback_general_store_position: Vector2 = Vector2.ZERO
 var fallback_inn_position: Vector2 = Vector2.ZERO
 var active_store_route_visual: Node2D = null
 var active_inn_route_visual: Node2D = null
+
+var building_occupants: Dictionary = {
+	"general_store": [],
+	"inn": [],
+}
 
 func _ready() -> void:
 	print("Town scene loaded.")
@@ -574,8 +584,11 @@ func _on_demolish_selected_button_pressed() -> void:
 	var building_to_remove := selected_building
 
 	clear_selected_building()
+
+	if building_to_remove.get_parent() != null:
+		building_to_remove.get_parent().remove_child(building_to_remove)
+
 	building_to_remove.queue_free()
-	await get_tree().process_frame
 	_refresh_dynamic_route_markers()
 	save_placed_buildings_to_file(false)
 
@@ -744,6 +757,7 @@ func load_placed_buildings_from_file(show_feedback: bool = true) -> void:
 	var placed_buildings_data: Array = save_data.get("placed_buildings", [])
 
 	clear_selected_building()
+	_reset_building_capacity()
 	_remove_all_placed_buildings()
 
 	for building_data in placed_buildings_data:
@@ -788,6 +802,70 @@ func _recreate_placed_building_from_save(building_data: Dictionary) -> void:
 	var building := _place_building(building_type, placement_rect)
 	if building != null:
 		building.set_meta("original_cost", int(building_data.get("original_cost", get_building_cost(building_type))))
+
+
+func request_building_capacity(building_type: String, adventurer: Node) -> bool:
+	if adventurer == null:
+		return false
+
+	_cleanup_building_occupants(building_type)
+
+	var occupants: Array = building_occupants.get(building_type, [])
+
+	if occupants.has(adventurer):
+		return true
+
+	if occupants.size() >= get_building_capacity(building_type):
+		_update_active_route_visuals()
+		return false
+
+	occupants.append(adventurer)
+	building_occupants[building_type] = occupants
+	_update_active_route_visuals()
+	return true
+
+func release_building_capacity(building_type: String, adventurer: Node) -> void:
+	if adventurer == null:
+		return
+
+	var occupants: Array = building_occupants.get(building_type, [])
+	if occupants.has(adventurer):
+		occupants.erase(adventurer)
+		building_occupants[building_type] = occupants
+		_update_active_route_visuals()
+
+func release_all_building_capacity_for_adventurer(adventurer: Node) -> void:
+	release_building_capacity("general_store", adventurer)
+	release_building_capacity("inn", adventurer)
+
+func get_building_capacity(building_type: String) -> int:
+	return int(BUILDING_CAPACITY.get(building_type, 1))
+
+func get_building_occupancy_count(building_type: String) -> int:
+	_cleanup_building_occupants(building_type)
+	var occupants: Array = building_occupants.get(building_type, [])
+	return occupants.size()
+
+func get_building_capacity_summary(building_type: String) -> String:
+	return "%d/%d occupied" % [
+		get_building_occupancy_count(building_type),
+		get_building_capacity(building_type)
+	]
+
+func _cleanup_building_occupants(building_type: String) -> void:
+	var occupants: Array = building_occupants.get(building_type, [])
+	var valid_occupants: Array = []
+
+	for occupant in occupants:
+		if is_instance_valid(occupant):
+			valid_occupants.append(occupant)
+
+	building_occupants[building_type] = valid_occupants
+
+func _reset_building_capacity() -> void:
+	building_occupants["general_store"] = []
+	building_occupants["inn"] = []
+	_update_active_route_visuals()
 
 func _get_primary_placed_building(building_type: String) -> ColorRect:
 	var chosen_building: ColorRect = null
@@ -844,8 +922,8 @@ func _create_route_visual(node_name: String, label_text: String, marker_color: C
 	var label := Label.new()
 	label.name = "RouteLabel"
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	label.position = Vector2(-95, -48)
-	label.size = Vector2(190, 42)
+	label.position = Vector2(-95, -60)
+	label.size = Vector2(190, 58)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.text = label_text
 	route_root.add_child(label)
@@ -858,14 +936,14 @@ func _update_active_route_visuals() -> void:
 		var store_label := active_store_route_visual.get_node_or_null("RouteLabel") as Label
 		if store_label != null:
 			var source_text := "PLACED" if _is_route_using_placed_building("general_store") else "FALLBACK"
-			store_label.text = "ACTIVE STORE\n%s" % source_text
+			store_label.text = "ACTIVE STORE\n%s\n%s" % [source_text, get_building_capacity_summary("general_store")]
 
 	if active_inn_route_visual != null:
 		active_inn_route_visual.global_position = inn_point.global_position
 		var inn_label := active_inn_route_visual.get_node_or_null("RouteLabel") as Label
 		if inn_label != null:
 			var source_text := "PLACED" if _is_route_using_placed_building("inn") else "FALLBACK"
-			inn_label.text = "ACTIVE INN\n%s" % source_text
+			inn_label.text = "ACTIVE INN\n%s\n%s" % [source_text, get_building_capacity_summary("inn")]
 
 func _get_building_size(building_type: String) -> Vector2:
 	match building_type:

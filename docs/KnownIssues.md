@@ -1,12 +1,13 @@
 # Known Issues
 
-## v0.4.4
+## v0.4.5
 
 Known limitations:
-- Only placed buildings are saved.
-- Money is not saved yet.
-- Adventurers are not saved yet.
-- World Map simulation is not saved yet.
-- Save file uses direct JSON with no migration system beyond a version field.
-- Manual load removes current placed buildings and recreates them from file.
-- If a building is placed somewhere valid now but future rules change, old save data may still load it.
+- Capacity is tracked by building type, not individual building instance.
+- Multiple General Stores still share one active General Store capacity.
+- Multiple Inns still share one active Inn capacity.
+- Waiting adventurers do not stand in a formal visible line yet.
+- No service-speed stat yet.
+- No worker staffing yet.
+- Building click menu does not show capacity details yet.
+- Save/load still only covers placed buildings.

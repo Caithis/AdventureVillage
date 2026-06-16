@@ -1,69 +1,73 @@
 # Dungeon Frontier Guild-Town
 
-Version: v0.4.4 - Building Save / Load Foundation
+Version: v0.4.5 - Building Capacity Foundation
 
-## What v0.4.4 Adds
+## What v0.4.5 Adds
 
-This patch starts preserving placed buildings between runs.
+This patch makes placed buildings more than route targets.
 
-## Save File
+## Building Capacity
 
-Placed building data is saved to Godot user storage:
-
-```text
-user://placed_buildings.json
-```
-
-## Auto Save
-
-Placed buildings are automatically saved after:
+Current prototype capacities:
 
 ```text
-placing a building
-moving a building
-demolishing a building
+General Store: 2 customers
+Inn: 2 beds/rest slots
 ```
 
-## Auto Load
+## Adventurers Wait If Full
 
-When the Town scene starts, it attempts to load placed buildings from:
+When an adventurer reaches a building:
 
 ```text
-user://placed_buildings.json
+If capacity is available:
+    Adventurer uses the building.
+
+If capacity is full:
+    Adventurer waits and retries.
 ```
 
-If no save exists yet, the game continues normally.
-
-## Manual Save / Load Buttons
-
-The Build Mode panel now includes:
+New waiting messages include:
 
 ```text
-Save Buildings
-Load Buildings
+General Store full. Waiting.
+Store full. Waiting to sell.
+Inn full. Waiting.
+Inn full. Waiting for bed.
 ```
 
-These are mainly for testing and debugging the save/load system.
+## Route Labels Show Capacity
 
-## Preserved Data
-
-Each placed building saves:
+Active route labels now show occupancy:
 
 ```text
-building type
-position
-size
-original cost
+ACTIVE STORE
+PLACED / FALLBACK
+0/2 occupied
+
+ACTIVE INN
+PLACED / FALLBACK
+0/2 occupied
 ```
 
-## Route Rebuild
+## Demolish Auto-Save Fix
 
-After loading buildings, the active route markers rebuild.
+This patch also fixes the v0.4.4 issue where demolishing a loaded building did not always save correctly.
 
-That means placed General Stores and Inns should still become the active adventurer destinations after loading.
+The fix removes the demolished building from the scene tree before saving the building list.
 
 ## Important Limitation
 
-This is not a full game save system yet.
+Capacity is currently tracked by building type, not by individual building instance.
 
-It only saves placed buildings. Money, adventurers, world slimes, time, inventory, and other systems are not fully saved yet.
+That means if multiple General Stores exist, the current active General Store uses the shared General Store capacity. Later versions should support per-building capacity.
+
+## Hotfix v0.4.5.1 Notice
+
+This package fixes General Store capacity releasing too quickly.
+
+Fixed:
+- Store capacity should now visibly increase while adventurers are buying/selling.
+- Store capacity releases after the result wait state instead of immediately.
+- Waiting behavior should now be easier to trigger when many adventurers reach the store.
+- Inn base capacity increased from 2 to 5.

@@ -15,6 +15,7 @@ var restock_result_wait_seconds: float = 1.25
 var inn_rest_seconds: float = 2.0
 var inn_result_wait_seconds: float = 1.0
 var night_sleep_seconds: float = 2.0
+var capacity_retry_wait_seconds: float = 0.75
 
 @onready var adventurer: Adventurer = get_parent() as Adventurer
 
@@ -31,6 +32,8 @@ func _process(delta: float) -> void:
             _state_enter_town()
         "GoToGeneralStore":
             _state_go_to_general_store()
+        "WaitForGeneralStoreCapacity":
+            _state_wait_for_general_store_capacity(delta)
         "BuySmallPotion":
             _state_buy_small_potion()
         "BoughtPotion", "SkipPurchaseNoStock", "SkipPurchaseNoGold", "SkipPurchaseAlreadyHasPotion", "SkipPurchaseFailed":
@@ -43,6 +46,8 @@ func _process(delta: float) -> void:
             _state_returned_to_town()
         "GoToGeneralStoreToSell":
             _state_go_to_general_store_to_sell()
+        "WaitForGeneralStoreSellCapacity":
+            _state_wait_for_general_store_sell_capacity(delta)
         "SellSlimeGel":
             _state_sell_slime_gel()
         "SoldLoot":
@@ -55,12 +60,16 @@ func _process(delta: float) -> void:
             _state_check_recovery_need()
         "GoToInn":
             _state_go_to_inn()
+        "WaitForInnCapacity":
+            _state_wait_for_inn_capacity(delta)
         "RestAtInn":
             _state_rest_at_inn(delta)
         "RestedAtInn", "SkipInnRest":
             _state_inn_result(delta)
         "GoToInnForNight":
             _state_go_to_inn_for_night()
+        "WaitForNightInnCapacity":
+            _state_wait_for_night_inn_capacity(delta)
         "SleepAtInn":
             _state_sleep_at_inn(delta)
         "SleptAtInn":
@@ -99,6 +108,11 @@ func set_state(new_state: String) -> void:
         "GoToGeneralStore":
             if adventurer != null:
                 adventurer.set_move_target(general_store_position)
+        "WaitForGeneralStoreCapacity":
+            wait_timer = capacity_retry_wait_seconds
+            if adventurer != null:
+                adventurer.clear_move_target()
+                adventurer.set_purchase_message("General Store full. Waiting.")
         "BuySmallPotion":
             if adventurer != null:
                 adventurer.clear_move_target()
@@ -116,6 +130,11 @@ func set_state(new_state: String) -> void:
         "GoToGeneralStoreToSell":
             if adventurer != null:
                 adventurer.set_move_target(general_store_position)
+        "WaitForGeneralStoreSellCapacity":
+            wait_timer = capacity_retry_wait_seconds
+            if adventurer != null:
+                adventurer.clear_move_target()
+                adventurer.set_purchase_message("Store full. Waiting to sell.")
         "SellSlimeGel":
             if adventurer != null:
                 adventurer.clear_move_target()
@@ -129,6 +148,11 @@ func set_state(new_state: String) -> void:
         "GoToInn":
             if adventurer != null:
                 adventurer.set_move_target(inn_position)
+        "WaitForInnCapacity":
+            wait_timer = capacity_retry_wait_seconds
+            if adventurer != null:
+                adventurer.clear_move_target()
+                adventurer.set_purchase_message("Inn full. Waiting.")
         "RestAtInn":
             wait_timer = inn_rest_seconds
             if adventurer != null:
@@ -141,6 +165,11 @@ func set_state(new_state: String) -> void:
             if adventurer != null:
                 adventurer.set_purchase_message("Night. Going to Inn.")
                 adventurer.set_move_target(inn_position)
+        "WaitForNightInnCapacity":
+            wait_timer = capacity_retry_wait_seconds
+            if adventurer != null:
+                adventurer.clear_move_target()
+                adventurer.set_purchase_message("Inn full. Waiting for bed.")
         "SleepAtInn":
             wait_timer = night_sleep_seconds
             if adventurer != null:
@@ -173,6 +202,31 @@ func set_state(new_state: String) -> void:
 func get_state() -> String:
     return current_state
 
+
+func _get_town_node() -> Node:
+    if adventurer == null:
+        return null
+
+    var container := adventurer.get_parent()
+    if container == null:
+        return null
+
+    return container.get_parent()
+
+func _request_building_capacity(building_type: String) -> bool:
+    var town_node := _get_town_node()
+    if town_node == null or not town_node.has_method("request_building_capacity"):
+        return true
+
+    return town_node.request_building_capacity(building_type, adventurer)
+
+func _release_building_capacity(building_type: String) -> void:
+    var town_node := _get_town_node()
+    if town_node == null or not town_node.has_method("release_building_capacity"):
+        return
+
+    town_node.release_building_capacity(building_type, adventurer)
+
 func _should_interrupt_for_night_sleep() -> bool:
     if adventurer == null:
         return false
@@ -194,7 +248,20 @@ func _state_enter_town() -> void:
 
 func _state_go_to_general_store() -> void:
     if adventurer != null and not adventurer.has_target and adventurer.has_reached_target():
+        if _request_building_capacity("general_store"):
+            set_state("BuySmallPotion")
+        else:
+            set_state("WaitForGeneralStoreCapacity")
+
+func _state_wait_for_general_store_capacity(delta: float) -> void:
+    wait_timer -= delta
+    if wait_timer > 0.0:
+        return
+
+    if _request_building_capacity("general_store"):
         set_state("BuySmallPotion")
+    else:
+        set_state("WaitForGeneralStoreCapacity")
 
 func _state_buy_small_potion() -> void:
     if adventurer == null or not adventurer.has_method("try_buy_small_potion"):
@@ -216,6 +283,7 @@ func _state_buy_small_potion() -> void:
 func _state_purchase_result(delta: float) -> void:
     wait_timer -= delta
     if wait_timer <= 0.0:
+        _release_building_capacity("general_store")
         set_state("GoToExit")
 
 func _state_go_to_exit() -> void:
@@ -232,7 +300,20 @@ func _state_returned_to_town() -> void:
 
 func _state_go_to_general_store_to_sell() -> void:
     if adventurer != null and not adventurer.has_target and adventurer.has_reached_target():
+        if _request_building_capacity("general_store"):
+            set_state("SellSlimeGel")
+        else:
+            set_state("WaitForGeneralStoreSellCapacity")
+
+func _state_wait_for_general_store_sell_capacity(delta: float) -> void:
+    wait_timer -= delta
+    if wait_timer > 0.0:
+        return
+
+    if _request_building_capacity("general_store"):
         set_state("SellSlimeGel")
+    else:
+        set_state("WaitForGeneralStoreSellCapacity")
 
 func _state_sell_slime_gel() -> void:
     if adventurer == null or not adventurer.has_method("try_sell_slime_gel"):
@@ -250,16 +331,19 @@ func _state_sell_slime_gel() -> void:
 func _state_sold_loot(delta: float) -> void:
     wait_timer -= delta
     if wait_timer <= 0.0:
+        _release_building_capacity("general_store")
         set_state("CheckRecoveryNeed")
 
 func _state_no_loot_to_sell(delta: float) -> void:
     wait_timer -= delta
     if wait_timer <= 0.0:
+        _release_building_capacity("general_store")
         set_state("CheckRecoveryNeed")
 
 func _state_sale_blocked(delta: float) -> void:
     wait_timer -= delta
     if wait_timer <= 0.0:
+        _release_building_capacity("general_store")
         set_state("CheckRecoveryNeed")
 
 func _state_check_recovery_need() -> void:
@@ -280,13 +364,27 @@ func _state_check_recovery_need() -> void:
 
 func _state_go_to_inn() -> void:
     if adventurer != null and not adventurer.has_target and adventurer.has_reached_target():
+        if _request_building_capacity("inn"):
+            set_state("RestAtInn")
+        else:
+            set_state("WaitForInnCapacity")
+
+func _state_wait_for_inn_capacity(delta: float) -> void:
+    wait_timer -= delta
+    if wait_timer > 0.0:
+        return
+
+    if _request_building_capacity("inn"):
         set_state("RestAtInn")
+    else:
+        set_state("WaitForInnCapacity")
 
 func _state_rest_at_inn(delta: float) -> void:
     wait_timer -= delta
     if wait_timer <= 0.0:
         if adventurer != null and adventurer.has_method("rest_at_inn"):
             adventurer.rest_at_inn()
+        _release_building_capacity("inn")
         set_state("RestedAtInn")
 
 func _state_inn_result(delta: float) -> void:
@@ -296,7 +394,20 @@ func _state_inn_result(delta: float) -> void:
 
 func _state_go_to_inn_for_night() -> void:
     if adventurer != null and not adventurer.has_target and adventurer.has_reached_target():
+        if _request_building_capacity("inn"):
+            set_state("SleepAtInn")
+        else:
+            set_state("WaitForNightInnCapacity")
+
+func _state_wait_for_night_inn_capacity(delta: float) -> void:
+    wait_timer -= delta
+    if wait_timer > 0.0:
+        return
+
+    if _request_building_capacity("inn"):
         set_state("SleepAtInn")
+    else:
+        set_state("WaitForNightInnCapacity")
 
 func _state_sleep_at_inn(delta: float) -> void:
     wait_timer -= delta
@@ -313,6 +424,7 @@ func _state_slept_at_inn(delta: float) -> void:
         if adventurer != null and adventurer.has_method("set_purchase_message"):
             adventurer.set_purchase_message("Sleeping until Day")
         return
+    _release_building_capacity("inn")
     set_state("PrepareNextTrip")
 
 func _state_prepare_next_trip(delta: float) -> void:

@@ -51,7 +51,18 @@ func _exit_tree() -> void:
     if Engine.is_editor_hint():
         return
 
+    var town_node := _get_town_node()
+    if town_node != null and town_node.has_method("release_all_building_capacity_for_adventurer"):
+        town_node.release_all_building_capacity_for_adventurer(self)
+
     GameState.unregister_adventurer(self)
+
+func _get_town_node() -> Node:
+    var container := get_parent()
+    if container == null:
+        return null
+
+    return container.get_parent()
 
 func setup_placeholder(new_display_name: String, new_class_id: String, new_level: int) -> void:
     display_name = new_display_name
