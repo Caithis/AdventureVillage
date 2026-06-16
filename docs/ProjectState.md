@@ -66,3 +66,8 @@ The first town-building layer is now active. Town view has a Build Mode panel, a
 ## v0.4.1 Update Notes
 
 Placed buildings can now be selected, moved, and demolished. Fixed fallback buildings remain protected so the existing adventurer loop is not broken while building placement becomes stable.
+
+
+## v0.4.2 Update Notes
+
+Building placement now affects village funds. Guild Hall, Inn, and General Store have placeholder costs. Placement is blocked if funds are too low. Demolishing placed buildings refunds 50% of original cost. Moving remains free for now.

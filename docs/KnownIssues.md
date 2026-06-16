@@ -1,12 +1,13 @@
 # Known Issues
 
-## v0.4.1
+## v0.4.2
 
 Known limitations:
+- Costs are placeholder values.
+- Demolish refund is hardcoded at 50%.
+- There is no confirmation prompt before demolish.
+- Moving buildings is free.
+- Building placement has no construction time.
+- No material requirements yet.
 - Placed buildings are not saved.
-- Placed buildings do not cost money.
-- Demolish has no confirmation prompt.
-- Demolish gives no refund.
 - Placed buildings still do not replace fixed simulation buildings.
-- Fixed fallback buildings are protected intentionally.
-- Building movement is direct repositioning, not construction labor.

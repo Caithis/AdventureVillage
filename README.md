@@ -1,53 +1,62 @@
 # Dungeon Frontier Guild-Town
 
-Version: v0.4.1 - Building Move / Demolish Prototype
+Version: v0.4.2 - Building Costs and Construction Rules
 
-## What v0.4.1 Adds
+## What v0.4.2 Adds
 
-This patch adds the first editable-building controls for placed buildings.
+This patch connects building placement to the economy.
 
-## Select Placed Buildings
+## Building Costs
 
-Click a placed building to select it.
-
-Selected buildings receive a clearer blue selection outline.
-
-## Move Selected Building
-
-Use:
+Current prototype costs:
 
 ```text
-Move Selected
+Guild Hall: 250g
+Inn: 150g
+General Store: 175g
 ```
 
-Rules:
-- Only placed buildings can be moved.
-- Fixed fallback buildings are protected.
-- Moving uses the same valid/invalid placement ghost as normal building placement.
-- Left-click confirms the new valid location.
-- Right-click cancels the move and restores the building.
-
-## Demolish Selected Building
-
-Use:
+When placing a new building:
 
 ```text
-Demolish Selected
+Village funds are checked.
+If funds are too low, placement is blocked.
+If funds are enough, funds are spent.
+Floating -gold text appears.
 ```
 
-Rules:
-- Only placed buildings can be demolished.
-- Fixed fallback buildings are protected.
-- No refund yet. Building costs/refunds are planned for a later economy patch.
+## Demolish Refunds
 
-## Fixed Fallback Protection
+Placed buildings now refund part of their cost when demolished.
 
-The original fixed Guild Hall, Inn, and General Store remain protected.
+Current prototype rule:
 
-Reason:
-- They still support the current adventurer loop.
-- We should not delete or move them until placed buildings become simulation destinations.
+```text
+Demolish refund: 50% of original cost
+```
 
-## Current Limitation
+Fixed fallback buildings are still protected and cannot be demolished.
 
-Placed buildings are still not saved and still do not replace the fixed simulation buildings yet.
+## Build Panel Feedback
+
+The Build Mode panel now shows costs directly on the buttons:
+
+```text
+Build Guild Hall (250g)
+Build Inn (150g)
+Build General Store (175g)
+```
+
+The placement ghost also shows cost/validity feedback.
+
+## Important Limitation
+
+This is not a full construction system yet.
+
+Still missing:
+- build time
+- workers/builders
+- material costs
+- confirmation prompts
+- save/load
+- placed buildings becoming adventurer destinations

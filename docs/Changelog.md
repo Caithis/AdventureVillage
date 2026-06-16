@@ -1,34 +1,37 @@
 # Changelog
 
+## v0.4.2 - Building Costs and Construction Rules
+
+### Added
+- Building costs for Guild Hall, Inn, and General Store.
+- Placement funds check.
+- Placement blocked when funds are too low.
+- Floating -gold text when placing buildings.
+- Floating not-enough-funds text.
+- Demolish refund based on original cost.
+- Floating refund text.
+- Build panel button labels show costs.
+- Placement ghost shows cost.
+- Building cost documentation.
+
+### Changed
+- Moving placed buildings remains free for now.
+- Demolishing placed buildings now affects village funds.
+
+### Not Yet Added
+- Build time.
+- Construction workers.
+- Material requirements.
+- Save/load for placed buildings.
+- Confirmation prompt before demolish.
+- Placed buildings as adventurer destinations.
+
 ## v0.4.1 - Building Move / Demolish Prototype
 
 ### Added
-- Select placed building.
-- Clearer selected-building feedback.
-- Move Selected button.
-- Demolish Selected button.
-- Move mode for placed buildings.
-- Move cancel behavior.
-- Fixed fallback building protection.
-- Building move/demolish documentation.
+- Select, move, and demolish placed buildings.
 
-### Changed
-- Clickable buildings now emit both building id and building node.
-- Placement validation ignores the building currently being moved.
-
-### Not Yet Added
-- Building costs.
-- Demolition refunds.
-- Save/load placed buildings.
-- Confirmation prompt before demolish.
-- Placed buildings becoming adventurer destinations.
-
-## v0.4.0.3 - Missing UI Helper Hotfix
-
-### Fixed
-- Fixed launch-blocking `_is_mouse_over_ui()` error.
-
-## Earlier v0.4.0
+## Earlier v0.4.x
 
 - Building placement foundation.
 - Entrance and exit markers.

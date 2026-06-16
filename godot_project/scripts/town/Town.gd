@@ -2,11 +2,20 @@ extends Node2D
 
 const ADVENTURER_SCENE: PackedScene = preload("res://scenes/adventurers/Adventurer.tscn")
 const CLICKABLE_BUILDING_SCRIPT: Script = preload("res://scripts/buildings/ClickableBuilding.gd")
+const FLOATING_TEXT_SCENE: PackedScene = preload("res://scenes/ui/FloatingText.tscn")
 
 const GRID_SIZE := 16.0
 const BUILDABLE_RECT := Rect2(Vector2(140, 90), Vector2(1000, 490))
 const PLACEMENT_PADDING := 10.0
 const ENTRANCE_EXIT_CLEARANCE_SIZE := Vector2(150, 100)
+
+const BUILDING_COSTS := {
+	"guild_hall": 250,
+	"inn": 150,
+	"general_store": 175,
+}
+
+const DEMOLISH_REFUND_RATIO := 0.50
 
 @onready var buildings_container: Node2D = $Buildings
 @onready var adventurers_container: Node2D = $Adventurers
@@ -220,24 +229,24 @@ func _create_build_panel() -> void:
 	vbox.add_child(title_label)
 
 	var note_label := Label.new()
-	note_label.text = "Select a building, move ghost, left-click to place, right-click to cancel."
+	note_label.text = "Select a building, move ghost, left-click to place, right-click to cancel. Costs apply to new placement."
 	note_label.autowrap_mode = 3
 	vbox.add_child(note_label)
 
 	var guild_button := Button.new()
-	guild_button.text = "Build Guild Hall"
+	guild_button.text = "Build Guild Hall (%dg)" % get_building_cost("guild_hall")
 	guild_button.focus_mode = Control.FOCUS_NONE
 	guild_button.pressed.connect(_on_build_button_pressed.bind("guild_hall"))
 	vbox.add_child(guild_button)
 
 	var inn_button := Button.new()
-	inn_button.text = "Build Inn"
+	inn_button.text = "Build Inn (%dg)" % get_building_cost("inn")
 	inn_button.focus_mode = Control.FOCUS_NONE
 	inn_button.pressed.connect(_on_build_button_pressed.bind("inn"))
 	vbox.add_child(inn_button)
 
 	var store_button := Button.new()
-	store_button.text = "Build General Store"
+	store_button.text = "Build General Store (%dg)" % get_building_cost("general_store")
 	store_button.focus_mode = Control.FOCUS_NONE
 	store_button.pressed.connect(_on_build_button_pressed.bind("general_store"))
 	vbox.add_child(store_button)
@@ -277,7 +286,7 @@ func start_build_mode(building_type: String) -> void:
 	_ensure_buildable_area_overlay()
 	build_ghost.visible = true
 	buildable_area_overlay.visible = true
-	_update_build_status("Placing %s" % _get_building_display_name(active_building_type))
+	_update_build_status("Placing %s | Cost %dg | Funds %dg" % [_get_building_display_name(active_building_type), get_building_cost(active_building_type), GameState.money])
 	_update_build_ghost()
 
 func cancel_build_mode() -> void:
@@ -342,7 +351,10 @@ func _update_build_ghost() -> void:
 
 	if bool(validation.get("is_valid", false)):
 		build_ghost.color = Color(0.2, 0.9, 0.35, 0.42)
-		build_ghost_label.text = "%s\nValid" % _get_building_display_name(active_building_type)
+		if build_action == "move":
+			build_ghost_label.text = "%s\nMove Valid" % _get_building_display_name(active_building_type)
+		else:
+			build_ghost_label.text = "%s\nValid\nCost: %dg" % [_get_building_display_name(active_building_type), get_building_cost(active_building_type)]
 	else:
 		build_ghost.color = Color(1.0, 0.2, 0.2, 0.42)
 		build_ghost_label.text = "%s\n%s" % [
@@ -370,8 +382,15 @@ func _try_place_active_building() -> void:
 	if build_action == "move":
 		_complete_move_selected_building(placement_rect)
 	else:
+		var building_cost := get_building_cost(active_building_type)
+		if not GameState.spend_money(building_cost):
+			_update_build_status("Not enough funds for %s. Need %dg, have %dg." % [_get_building_display_name(active_building_type), building_cost, GameState.money])
+			show_town_floating_text("Need %dg" % building_cost, placement_rect.position + placement_rect.size * 0.5)
+			return
+
 		_place_building(active_building_type, placement_rect)
-		_update_build_status("Placed %s." % _get_building_display_name(active_building_type))
+		show_town_floating_text("-%dg %s" % [building_cost, _get_building_display_name(active_building_type)], placement_rect.position + placement_rect.size * 0.5)
+		_update_build_status("Placed %s for %dg. Funds %dg." % [_get_building_display_name(active_building_type), building_cost, GameState.money])
 	cancel_build_mode()
 
 func _place_building(building_type: String, placement_rect: Rect2) -> void:
@@ -388,6 +407,7 @@ func _place_building(building_type: String, placement_rect: Rect2) -> void:
 	building.color = _get_building_color(building_type)
 	building.set_meta("is_fixed_fallback", false)
 	building.set_meta("is_placed_building", true)
+	building.set_meta("original_cost", get_building_cost(building_type))
 
 	buildings_container.add_child(building)
 
@@ -410,7 +430,7 @@ func select_building(building: ColorRect) -> void:
 	if bool(building.get_meta("is_fixed_fallback", false)):
 		_update_build_status("Selected %s. Fixed fallback is protected." % _get_building_display_name(str(building.get("building_id"))))
 	else:
-		_update_build_status("Selected %s. You can move or demolish it." % _get_building_display_name(str(building.get("building_id"))))
+		_update_build_status("Selected %s. Move or demolish. Refund: %dg." % [_get_building_display_name(str(building.get("building_id"))), get_demolish_refund(building)])
 
 func clear_selected_building() -> void:
 	selected_building = null
@@ -460,7 +480,7 @@ func start_move_selected_building() -> void:
 	build_ghost.visible = true
 	buildable_area_overlay.visible = true
 	moving_building.visible = false
-	_update_build_status("Moving %s. Left-click valid area to confirm, right-click to cancel." % _get_building_display_name(active_building_type))
+	_update_build_status("Moving %s. No cost. Left-click valid area to confirm, right-click to cancel." % _get_building_display_name(active_building_type))
 	_update_build_ghost()
 
 func _complete_move_selected_building(placement_rect: Rect2) -> void:
@@ -484,11 +504,21 @@ func _on_demolish_selected_button_pressed() -> void:
 		_update_build_status("Fixed fallback buildings are protected for now.")
 		return
 
-	var demolished_name := _get_building_display_name(str(selected_building.get("building_id")))
+	var building_id := str(selected_building.get("building_id"))
+	var demolished_name := _get_building_display_name(building_id)
+	var refund_amount := get_demolish_refund(selected_building)
+	var floating_position := selected_building.global_position + selected_building.size * 0.5
 	var building_to_remove := selected_building
+
 	clear_selected_building()
 	building_to_remove.queue_free()
-	_update_build_status("Demolished %s." % demolished_name)
+
+	if refund_amount > 0:
+		GameState.add_money(refund_amount)
+		show_town_floating_text("+%dg refund" % refund_amount, floating_position)
+		_update_build_status("Demolished %s. Refunded %dg. Funds %dg." % [demolished_name, refund_amount, GameState.money])
+	else:
+		_update_build_status("Demolished %s. No refund." % demolished_name)
 
 func _get_current_placement_rect() -> Rect2:
 	var building_size := _get_building_size(active_building_type)
@@ -508,6 +538,9 @@ func _get_placement_validation(building_type: String, placement_rect: Rect2) -> 
 
 	if not BUILDABLE_RECT.encloses(placement_rect):
 		return {"is_valid": false, "reason": "Outside build area"}
+
+	if build_action != "move" and GameState.money < get_building_cost(building_type):
+		return {"is_valid": false, "reason": "Need %dg" % get_building_cost(building_type)}
 
 	if _overlaps_existing_building(placement_rect):
 		return {"is_valid": false, "reason": "Overlaps building"}
@@ -545,6 +578,25 @@ func _overlaps_entrance_or_exit_clearance(placement_rect: Rect2) -> bool:
 	)
 
 	return placement_rect.intersects(entrance_rect) or placement_rect.intersects(exit_rect)
+
+
+func get_building_cost(building_type: String) -> int:
+	return int(BUILDING_COSTS.get(building_type, 100))
+
+func get_demolish_refund(building: ColorRect) -> int:
+	if building == null:
+		return 0
+
+	var original_cost := int(building.get_meta("original_cost", get_building_cost(str(building.get("building_id")))))
+	return floori(float(original_cost) * DEMOLISH_REFUND_RATIO)
+
+func show_town_floating_text(text: String, world_position: Vector2) -> void:
+	var floating_text := FLOATING_TEXT_SCENE.instantiate()
+	add_child(floating_text)
+	floating_text.global_position = world_position + Vector2(0, -36)
+
+	if floating_text.has_method("setup"):
+		floating_text.setup(text)
 
 func _get_building_size(building_type: String) -> Vector2:
 	match building_type:
