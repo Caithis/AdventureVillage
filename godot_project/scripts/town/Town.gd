@@ -38,16 +38,28 @@ var selected_outline: ColorRect = null
 var build_ghost: ColorRect = null
 var build_ghost_label: Label = null
 var build_panel: PanelContainer = null
+var build_panel_root_container: VBoxContainer = null
+var build_panel_collapse_button: Button = null
+var build_panel_collapsed: bool = false
 var build_status_label: Label = null
 var buildable_area_overlay: ColorRect = null
 
+var fallback_general_store_position: Vector2 = Vector2.ZERO
+var fallback_inn_position: Vector2 = Vector2.ZERO
+var active_store_route_visual: Node2D = null
+var active_inn_route_visual: Node2D = null
+
 func _ready() -> void:
 	print("Town scene loaded.")
+	fallback_general_store_position = general_store_point.global_position
+	fallback_inn_position = inn_point.global_position
 	GameState.state_changed.connect(_on_game_state_changed)
 	_register_existing_buildings()
 	_mark_fixed_fallback_buildings()
 	_create_build_panel()
 	_create_entrance_exit_visuals()
+	_create_active_route_visuals()
+	_refresh_dynamic_route_markers()
 	_check_for_returned_travelers()
 
 func _process(_delta: float) -> void:
@@ -99,6 +111,7 @@ func _exit_tree() -> void:
 		GameState.state_changed.disconnect(_on_game_state_changed)
 
 func spawn_placeholder_adventurer() -> void:
+	_refresh_dynamic_route_markers()
 	var adventurer := ADVENTURER_SCENE.instantiate()
 	adventurers_container.add_child(adventurer)
 
@@ -142,6 +155,7 @@ func _check_for_returned_travelers() -> void:
 	is_checking_returned_travelers = false
 
 func _spawn_returned_adventurer(traveler_data: Dictionary) -> void:
+	_refresh_dynamic_route_markers()
 	var adventurer := ADVENTURER_SCENE.instantiate()
 	adventurers_container.add_child(adventurer)
 
@@ -223,6 +237,13 @@ func _create_build_panel() -> void:
 	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	build_panel.add_child(vbox)
+	build_panel_root_container = vbox
+
+	build_panel_collapse_button = Button.new()
+	build_panel_collapse_button.text = "Hide Build Menu"
+	build_panel_collapse_button.focus_mode = Control.FOCUS_NONE
+	build_panel_collapse_button.pressed.connect(_on_toggle_build_panel_collapsed)
+	vbox.add_child(build_panel_collapse_button)
 
 	var title_label := Label.new()
 	title_label.text = "Build Mode"
@@ -273,6 +294,27 @@ func _create_build_panel() -> void:
 	build_status_label.text = "Build status: inactive"
 	build_status_label.autowrap_mode = 3
 	vbox.add_child(build_status_label)
+
+func _on_toggle_build_panel_collapsed() -> void:
+	build_panel_collapsed = not build_panel_collapsed
+
+	if build_panel_root_container == null:
+		return
+
+	for child in build_panel_root_container.get_children():
+		if child == build_panel_collapse_button:
+			continue
+
+		child.visible = not build_panel_collapsed
+
+	if build_panel_collapsed:
+		build_panel_collapse_button.text = "Show Build Menu"
+		build_panel.custom_minimum_size = Vector2(290, 40)
+		build_panel.size = Vector2(290, 40)
+	else:
+		build_panel_collapse_button.text = "Hide Build Menu"
+		build_panel.custom_minimum_size = Vector2(290, 230)
+		build_panel.size = Vector2(290, 230)
 
 func _on_build_button_pressed(building_type: String) -> void:
 	print("Build button pressed: ", building_type)
@@ -389,6 +431,7 @@ func _try_place_active_building() -> void:
 			return
 
 		_place_building(active_building_type, placement_rect)
+		_refresh_dynamic_route_markers()
 		show_town_floating_text("-%dg %s" % [building_cost, _get_building_display_name(active_building_type)], placement_rect.position + placement_rect.size * 0.5)
 		_update_build_status("Placed %s for %dg. Funds %dg." % [_get_building_display_name(active_building_type), building_cost, GameState.money])
 	cancel_build_mode()
@@ -493,7 +536,8 @@ func _complete_move_selected_building(placement_rect: Rect2) -> void:
 	selected_building = moving_building
 	moving_building = null
 	_update_selected_outline()
-	_update_build_status("Moved %s." % _get_building_display_name(active_building_type))
+	_refresh_dynamic_route_markers()
+	_update_build_status("Moved %s. Routes updated." % _get_building_display_name(active_building_type))
 
 func _on_demolish_selected_button_pressed() -> void:
 	if selected_building == null:
@@ -512,6 +556,8 @@ func _on_demolish_selected_button_pressed() -> void:
 
 	clear_selected_building()
 	building_to_remove.queue_free()
+	await get_tree().process_frame
+	_refresh_dynamic_route_markers()
 
 	if refund_amount > 0:
 		GameState.add_money(refund_amount)
@@ -597,6 +643,85 @@ func show_town_floating_text(text: String, world_position: Vector2) -> void:
 
 	if floating_text.has_method("setup"):
 		floating_text.setup(text)
+
+
+func _get_primary_placed_building(building_type: String) -> ColorRect:
+	var chosen_building: ColorRect = null
+
+	for building in buildings_container.get_children():
+		if not building is ColorRect:
+			continue
+
+		var building_control := building as ColorRect
+		if bool(building_control.get_meta("is_fixed_fallback", false)):
+			continue
+
+		if str(building_control.get("building_id")) != building_type:
+			continue
+
+		chosen_building = building_control
+
+	return chosen_building
+
+func _get_building_route_position(building_type: String, fallback_position: Vector2) -> Vector2:
+	var placed_building := _get_primary_placed_building(building_type)
+
+	if placed_building == null:
+		return fallback_position
+
+	return placed_building.global_position + placed_building.size * 0.5
+
+func _is_route_using_placed_building(building_type: String) -> bool:
+	return _get_primary_placed_building(building_type) != null
+
+func _refresh_dynamic_route_markers() -> void:
+	general_store_point.global_position = _get_building_route_position("general_store", fallback_general_store_position)
+	inn_point.global_position = _get_building_route_position("inn", fallback_inn_position)
+	_update_active_route_visuals()
+
+func _create_active_route_visuals() -> void:
+	active_store_route_visual = _create_route_visual("ActiveStoreRoute", "ACTIVE STORE ROUTE", Color(0.95, 0.85, 0.25, 0.60))
+	active_inn_route_visual = _create_route_visual("ActiveInnRoute", "ACTIVE INN ROUTE", Color(0.55, 0.40, 1.0, 0.55))
+
+func _create_route_visual(node_name: String, label_text: String, marker_color: Color) -> Node2D:
+	var route_root := Node2D.new()
+	route_root.name = node_name
+	route_root.z_index = 9
+	add_child(route_root)
+
+	var body := ColorRect.new()
+	body.name = "RouteBody"
+	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	body.position = Vector2(-45, -14)
+	body.size = Vector2(90, 28)
+	body.color = marker_color
+	route_root.add_child(body)
+
+	var label := Label.new()
+	label.name = "RouteLabel"
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.position = Vector2(-95, -48)
+	label.size = Vector2(190, 42)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.text = label_text
+	route_root.add_child(label)
+
+	return route_root
+
+func _update_active_route_visuals() -> void:
+	if active_store_route_visual != null:
+		active_store_route_visual.global_position = general_store_point.global_position
+		var store_label := active_store_route_visual.get_node_or_null("RouteLabel") as Label
+		if store_label != null:
+			var source_text := "PLACED" if _is_route_using_placed_building("general_store") else "FALLBACK"
+			store_label.text = "ACTIVE STORE\n%s" % source_text
+
+	if active_inn_route_visual != null:
+		active_inn_route_visual.global_position = inn_point.global_position
+		var inn_label := active_inn_route_visual.get_node_or_null("RouteLabel") as Label
+		if inn_label != null:
+			var source_text := "PLACED" if _is_route_using_placed_building("inn") else "FALLBACK"
+			inn_label.text = "ACTIVE INN\n%s" % source_text
 
 func _get_building_size(building_type: String) -> Vector2:
 	match building_type:

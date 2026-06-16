@@ -123,3 +123,15 @@ Full intended game: about 8-10%
 ```
 
 The building pillar now has placement, movement, demolition, and basic money costs. It still needs construction time, save/load, material costs, and connection to adventurer routing.
+
+
+## v0.4.3 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 18%
+Full intended game: about 9-11%
+```
+
+The building pillar now affects adventurer routing for store and inn destinations. Still missing: capacity, save/load, building workers, upgrades, roads/pathfinding, and player selection of active buildings.

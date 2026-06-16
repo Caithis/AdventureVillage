@@ -71,3 +71,8 @@ Placed buildings can now be selected, moved, and demolished. Fixed fallback buil
 ## v0.4.2 Update Notes
 
 Building placement now affects village funds. Guild Hall, Inn, and General Store have placeholder costs. Placement is blocked if funds are too low. Demolishing placed buildings refunds 50% of original cost. Moving remains free for now.
+
+
+## v0.4.3 Update Notes
+
+Placed General Stores and Inns can now become active adventurer destinations. Dynamic route markers update after placement, movement, and demolition. Fixed fallback buildings are used only when no placed version exists. Build Mode panel is now collapsible to reduce screen clutter.

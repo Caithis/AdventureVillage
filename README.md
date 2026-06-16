@@ -1,62 +1,69 @@
 # Dungeon Frontier Guild-Town
 
-Version: v0.4.2 - Building Costs and Construction Rules
+Version: v0.4.3 - Placed Building Destination Routing
 
-## What v0.4.2 Adds
+## What v0.4.3 Adds
 
-This patch connects building placement to the economy.
+This patch starts connecting placed buildings to actual gameplay.
 
-## Building Costs
+## Placed General Store Routing
 
-Current prototype costs:
-
-```text
-Guild Hall: 250g
-Inn: 150g
-General Store: 175g
-```
-
-When placing a new building:
+If at least one placed General Store exists:
 
 ```text
-Village funds are checked.
-If funds are too low, placement is blocked.
-If funds are enough, funds are spent.
-Floating -gold text appears.
+Adventurers use the placed General Store as their shopping/selling destination.
 ```
 
-## Demolish Refunds
-
-Placed buildings now refund part of their cost when demolished.
-
-Current prototype rule:
+If no placed General Store exists:
 
 ```text
-Demolish refund: 50% of original cost
+Adventurers use the fixed fallback General Store.
 ```
 
-Fixed fallback buildings are still protected and cannot be demolished.
+## Placed Inn Routing
 
-## Build Panel Feedback
-
-The Build Mode panel now shows costs directly on the buttons:
+If at least one placed Inn exists:
 
 ```text
-Build Guild Hall (250g)
-Build Inn (150g)
-Build General Store (175g)
+Returned or resting adventurers use the placed Inn as their rest/sleep destination.
 ```
 
-The placement ghost also shows cost/validity feedback.
+If no placed Inn exists:
 
-## Important Limitation
+```text
+Adventurers use the fixed fallback Inn.
+```
 
-This is not a full construction system yet.
+## Dynamic Route Markers
 
-Still missing:
-- build time
-- workers/builders
-- material costs
-- confirmation prompts
-- save/load
-- placed buildings becoming adventurer destinations
+The active route markers now update when buildings are:
+
+```text
+Placed
+Moved
+Demolished
+```
+
+The Town view now shows:
+
+```text
+ACTIVE STORE - PLACED / FALLBACK
+ACTIVE INN - PLACED / FALLBACK
+```
+
+## Fixed Fallback Buildings
+
+Fixed fallback buildings remain protected.
+
+They are only used when no placed version of that building exists.
+
+## Build Menu Collapsing
+
+The Build Mode panel now has:
+
+```text
+Hide Build Menu
+Show Build Menu
+```
+
+This is the first step toward keeping the build menu from cluttering the screen. A scrollable build menu is still planned once the construction list gets larger.
