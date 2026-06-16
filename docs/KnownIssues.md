@@ -1,13 +1,10 @@
 # Known Issues
 
-## v0.4.5
+## v0.4.7
 
 Known limitations:
-- Capacity is tracked by building type, not individual building instance.
-- Multiple General Stores still share one active General Store capacity.
-- Multiple Inns still share one active Inn capacity.
-- Waiting adventurers do not stand in a formal visible line yet.
-- No service-speed stat yet.
-- No worker staffing yet.
-- Building click menu does not show capacity details yet.
-- Save/load still only covers placed buildings.
+- The newest placed building of a type is still the active route.
+- Multiple stores/inns do not yet split customers.
+- Per-building state exists, but routing does not yet distribute across all instances.
+- Adventurers already in a service state may finish before using the updated route.
+- Save/load covers placed building instance IDs, but not full game state.

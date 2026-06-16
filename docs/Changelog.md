@@ -1,50 +1,37 @@
-## v0.4.5.1 - Store Capacity Timing Hotfix
-
-### Fixed
-- General Store capacity no longer releases immediately after purchase/sale logic.
-- Store occupancy should now visibly increase while adventurers are in the store result state.
-- Store waiting behavior should now be easier to observe.
-
-### Changed
-- Inn base capacity increased from 2 to 5.
-
 # Changelog
 
-## v0.4.5 - Building Capacity Foundation
+## v0.4.7 - Per-Building Instance Data Foundation
 
 ### Added
-- General Store customer capacity.
-- Inn bed/rest capacity.
-- Adventurers wait if General Store is full.
-- Adventurers wait if Inn is full.
-- Capacity retry behavior.
-- Capacity occupancy tracking.
-- Active route labels show occupancy/capacity.
-- Capacity documentation.
+- Unique placed building instance IDs.
+- Instance IDs shown on placed building labels.
+- Route labels identify active building ID.
+- Capacity state keyed by active building instance ID.
+- Queue state keyed by active building instance ID.
+- Fallback building instance IDs.
+- Save/load preserves building instance IDs.
+- First-pass dynamic route retargeting for adventurers in travel/queue states.
+- Per-building instance data documentation.
 
 ### Fixed
-- Demolishing a loaded building now saves correctly.
-- Demolished building is removed from the scene tree before the save list is collected.
-
-### Changed
-- Adventurer AI now requests/release building capacity before using stores and inns.
-- Adventurer exit cleanup releases any held building capacity.
+- Queue markers now return to fallback store/inn after placed building demolition.
+- Queue markers no longer fall back to `Vector2.ZERO` when no placed building exists.
 
 ### Not Yet Added
-- Per-building-instance capacity.
-- Building upgrades affecting capacity.
-- Worker/service-speed effects.
-- Visible queue lines.
-- Building menu capacity details.
+- True multi-building routing.
+- Per-building worker assignments.
+- Per-building upgrades.
+- Player-selected active building.
+- Capacity distribution across multiple buildings.
 
-## v0.4.4 - Building Save / Load Foundation
+## v0.4.6 - Building Queue Positions
 
 ### Added
-- Save/load for placed buildings.
+- Store and Inn queue positions.
 
 ## Earlier v0.4.x
 
-- Placed building routing.
-- Building costs.
-- Building movement/demolition.
-- Building placement foundation.
+- Capacity foundation.
+- Save/load foundation.
+- Routing foundation.
+- Building placement/move/demolish/costs.

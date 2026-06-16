@@ -111,8 +111,8 @@ func set_state(new_state: String) -> void:
         "WaitForGeneralStoreCapacity":
             wait_timer = capacity_retry_wait_seconds
             if adventurer != null:
-                adventurer.clear_move_target()
-                adventurer.set_purchase_message("General Store full. Waiting.")
+                _move_to_queue_slot("general_store")
+                adventurer.set_purchase_message("General Store full. Queueing.")
         "BuySmallPotion":
             if adventurer != null:
                 adventurer.clear_move_target()
@@ -133,8 +133,8 @@ func set_state(new_state: String) -> void:
         "WaitForGeneralStoreSellCapacity":
             wait_timer = capacity_retry_wait_seconds
             if adventurer != null:
-                adventurer.clear_move_target()
-                adventurer.set_purchase_message("Store full. Waiting to sell.")
+                _move_to_queue_slot("general_store")
+                adventurer.set_purchase_message("Store full. Queueing to sell.")
         "SellSlimeGel":
             if adventurer != null:
                 adventurer.clear_move_target()
@@ -151,8 +151,8 @@ func set_state(new_state: String) -> void:
         "WaitForInnCapacity":
             wait_timer = capacity_retry_wait_seconds
             if adventurer != null:
-                adventurer.clear_move_target()
-                adventurer.set_purchase_message("Inn full. Waiting.")
+                _move_to_queue_slot("inn")
+                adventurer.set_purchase_message("Inn full. Queueing.")
         "RestAtInn":
             wait_timer = inn_rest_seconds
             if adventurer != null:
@@ -168,8 +168,8 @@ func set_state(new_state: String) -> void:
         "WaitForNightInnCapacity":
             wait_timer = capacity_retry_wait_seconds
             if adventurer != null:
-                adventurer.clear_move_target()
-                adventurer.set_purchase_message("Inn full. Waiting for bed.")
+                _move_to_queue_slot("inn")
+                adventurer.set_purchase_message("Inn full. Queueing for bed.")
         "SleepAtInn":
             wait_timer = night_sleep_seconds
             if adventurer != null:
@@ -203,6 +203,29 @@ func get_state() -> String:
     return current_state
 
 
+func update_town_route_positions(new_general_store_position: Vector2, new_inn_position: Vector2, new_exit_position: Vector2) -> void:
+    general_store_position = new_general_store_position
+    inn_position = new_inn_position
+    exit_position = new_exit_position
+
+    if adventurer == null:
+        return
+
+    match current_state:
+        "GoToGeneralStore", "GoToGeneralStoreToSell":
+            adventurer.set_move_target(general_store_position)
+        "WaitForGeneralStoreCapacity", "WaitForGeneralStoreSellCapacity":
+            _move_to_queue_slot("general_store")
+        "GoToInn", "GoToInnForNight":
+            adventurer.set_move_target(inn_position)
+        "WaitForInnCapacity", "WaitForNightInnCapacity":
+            _move_to_queue_slot("inn")
+        "GoToExit", "GoToExitForNextTrip":
+            adventurer.set_move_target(exit_position)
+        _:
+            pass
+
+
 func _get_town_node() -> Node:
     if adventurer == null:
         return null
@@ -212,6 +235,19 @@ func _get_town_node() -> Node:
         return null
 
     return container.get_parent()
+
+
+func _move_to_queue_slot(building_type: String) -> void:
+    if adventurer == null:
+        return
+
+    var town_node := _get_town_node()
+    if town_node == null or not town_node.has_method("request_building_queue_slot"):
+        adventurer.clear_move_target()
+        return
+
+    var queue_position: Vector2 = town_node.request_building_queue_slot(building_type, adventurer)
+    adventurer.set_move_target(queue_position)
 
 func _request_building_capacity(building_type: String) -> bool:
     var town_node := _get_town_node()
@@ -255,6 +291,9 @@ func _state_go_to_general_store() -> void:
 
 func _state_wait_for_general_store_capacity(delta: float) -> void:
     wait_timer -= delta
+    if adventurer != null and adventurer.has_target and not adventurer.has_reached_target():
+        return
+
     if wait_timer > 0.0:
         return
 
@@ -307,6 +346,9 @@ func _state_go_to_general_store_to_sell() -> void:
 
 func _state_wait_for_general_store_sell_capacity(delta: float) -> void:
     wait_timer -= delta
+    if adventurer != null and adventurer.has_target and not adventurer.has_reached_target():
+        return
+
     if wait_timer > 0.0:
         return
 
@@ -371,6 +413,9 @@ func _state_go_to_inn() -> void:
 
 func _state_wait_for_inn_capacity(delta: float) -> void:
     wait_timer -= delta
+    if adventurer != null and adventurer.has_target and not adventurer.has_reached_target():
+        return
+
     if wait_timer > 0.0:
         return
 
@@ -401,6 +446,9 @@ func _state_go_to_inn_for_night() -> void:
 
 func _state_wait_for_night_inn_capacity(delta: float) -> void:
     wait_timer -= delta
+    if adventurer != null and adventurer.has_target and not adventurer.has_reached_target():
+        return
+
     if wait_timer > 0.0:
         return
 

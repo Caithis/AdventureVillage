@@ -1,73 +1,58 @@
 # Dungeon Frontier Guild-Town
 
-Version: v0.4.5 - Building Capacity Foundation
+Version: v0.4.7 - Per-Building Instance Data Foundation
 
-## What v0.4.5 Adds
+## What v0.4.7 Adds
 
-This patch makes placed buildings more than route targets.
+This patch starts moving the building system away from shared building-type state and toward individual building instances.
 
-## Building Capacity
+## Unique Placed Building IDs
 
-Current prototype capacities:
-
-```text
-General Store: 2 customers
-Inn: 2 beds/rest slots
-```
-
-## Adventurers Wait If Full
-
-When an adventurer reaches a building:
+Placed buildings now receive unique instance IDs such as:
 
 ```text
-If capacity is available:
-    Adventurer uses the building.
-
-If capacity is full:
-    Adventurer waits and retries.
+general_store_001
+inn_002
+guild_hall_003
 ```
 
-New waiting messages include:
+These IDs are shown on placed building labels and route labels.
+
+## Per-Building Capacity State
+
+Capacity and queue state now use the active building instance ID instead of only the building type.
+
+Examples:
 
 ```text
-General Store full. Waiting.
-Store full. Waiting to sell.
-Inn full. Waiting.
-Inn full. Waiting for bed.
+general_store_001 has its own occupants and queue.
+inn_002 has its own occupants and queue.
+fallback_general_store has fallback state.
+fallback_inn has fallback state.
 ```
 
-## Route Labels Show Capacity
+This is still an active-building prototype, but it is now built on instance IDs instead of one shared type bucket.
 
-Active route labels now show occupancy:
+## Route Labels Identify Active Building ID
+
+Route labels now show:
 
 ```text
 ACTIVE STORE
-PLACED / FALLBACK
-0/2 occupied
+PLACED general_store_001
+2/2 occupied | Q:1
 
 ACTIVE INN
-PLACED / FALLBACK
-0/2 occupied
+FALLBACK fallback_inn
+0/5 occupied | Q:0
 ```
 
-## Demolish Auto-Save Fix
+## Queue Fallback Bug Fixed
 
-This patch also fixes the v0.4.4 issue where demolishing a loaded building did not always save correctly.
+If you demolish a placed General Store or Inn, the queue markers should now return to the fallback building instead of jumping off-screen toward the map origin.
 
-The fix removes the demolished building from the scene tree before saving the building list.
+## First Dynamic Retargeting Fix
 
-## Important Limitation
+When a placed General Store or Inn is moved or demolished, adventurers currently traveling to that building should update their target if they are in a travel or queue state.
 
-Capacity is currently tracked by building type, not by individual building instance.
-
-That means if multiple General Stores exist, the current active General Store uses the shared General Store capacity. Later versions should support per-building capacity.
-
-## Hotfix v0.4.5.1 Notice
-
-This package fixes General Store capacity releasing too quickly.
-
-Fixed:
-- Store capacity should now visibly increase while adventurers are buying/selling.
-- Store capacity releases after the result wait state instead of immediately.
-- Waiting behavior should now be easier to trigger when many adventurers reach the store.
-- Inn base capacity increased from 2 to 5.
+This is a first-pass fix. Adventurers already inside service states may still finish their current service before using the new route.

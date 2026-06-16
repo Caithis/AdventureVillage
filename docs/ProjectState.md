@@ -91,3 +91,13 @@ General Store and Inn now have prototype capacity. Adventurers request capacity 
 ## v0.4.5.1 Hotfix Notes
 
 General Store capacity now releases after the visible purchase/sale result wait instead of immediately. This makes occupancy visible and allows store-full waiting behavior to be observed. Inn base capacity increased from 2 to 5.
+
+
+## v0.4.6 Update Notes
+
+Building capacity now has visible queue slots. Waiting adventurers move to Store or Inn queue positions, route labels show queue counts, and occupied queue markers change color. Queueing is still type-level, not per-building-instance.
+
+
+## v0.4.7 Update Notes
+
+Placed buildings now receive unique instance IDs. Capacity and queue state now key off active building instance IDs instead of only building type. Route labels identify active building IDs. Queue fallback after demolition is fixed, and adventurers in travel/queue states retarget when route positions change.

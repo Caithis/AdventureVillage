@@ -159,3 +159,27 @@ Full intended game: about 11-13%
 ```
 
 The building pillar now has placement, movement, demolition, costs, save/load, routing, and first-pass capacity. It still needs per-building data, workers, upgrades, queues, and deeper UI.
+
+
+## v0.4.6 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 21%
+Full intended game: about 12-14%
+```
+
+The building pillar now has visible capacity pressure through queues. Next work should either deepen building instances or start adding workers/service speed.
+
+
+## v0.4.7 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 22%
+Full intended game: about 13-15%
+```
+
+The building system now has the beginning of per-instance data. The next major need is true multi-building routing so multiple stores/inns can serve different adventurers instead of only one active route target.
