@@ -117,7 +117,7 @@ func set_state(new_state: String) -> void:
             if adventurer != null:
                 adventurer.clear_move_target()
         "BoughtPotion", "SkipPurchaseNoStock", "SkipPurchaseNoGold", "SkipPurchaseAlreadyHasPotion", "SkipPurchaseFailed":
-            wait_timer = purchase_result_wait_seconds
+            wait_timer = _get_building_service_time("general_store", purchase_result_wait_seconds)
             if adventurer != null:
                 adventurer.clear_move_target()
         "GoToExit":
@@ -139,7 +139,7 @@ func set_state(new_state: String) -> void:
             if adventurer != null:
                 adventurer.clear_move_target()
         "SoldLoot", "NoLootToSell", "SaleBlockedMaterialBuyingOff":
-            wait_timer = sell_result_wait_seconds
+            wait_timer = _get_building_service_time("general_store", sell_result_wait_seconds)
             if adventurer != null:
                 adventurer.clear_move_target()
         "CheckRecoveryNeed":
@@ -154,7 +154,7 @@ func set_state(new_state: String) -> void:
                 _move_to_queue_slot("inn")
                 adventurer.set_purchase_message("Inn full. Queueing.")
         "RestAtInn":
-            wait_timer = inn_rest_seconds
+            wait_timer = _get_building_service_time("inn", inn_rest_seconds)
             if adventurer != null:
                 adventurer.clear_move_target()
         "RestedAtInn", "SkipInnRest":
@@ -236,6 +236,14 @@ func _get_town_node() -> Node:
 
     return container.get_parent()
 
+
+
+func _get_building_service_time(building_type: String, fallback_seconds: float) -> float:
+    var town_node := _get_town_node()
+    if town_node == null or not town_node.has_method("get_service_seconds_for_adventurer"):
+        return fallback_seconds
+
+    return town_node.get_service_seconds_for_adventurer(building_type, adventurer, fallback_seconds)
 
 func _move_to_queue_slot(building_type: String) -> void:
     if adventurer == null:

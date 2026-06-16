@@ -183,3 +183,39 @@ Full intended game: about 13-15%
 ```
 
 The building system now has the beginning of per-instance data. The next major need is true multi-building routing so multiple stores/inns can serve different adventurers instead of only one active route target.
+
+
+## v0.4.8 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 23%
+Full intended game: about 14-16%
+```
+
+The building system now has first-pass multi-building routing. Next work should make per-building queues visible or add service speed/workers so different buildings feel meaningfully distinct.
+
+
+## v0.4.9 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 24%
+Full intended game: about 15-17%
+```
+
+The building system now has local queue visuals for individual service buildings. This makes multi-building routing easier to read and prepares the UI for building details, workers, and service speed.
+
+
+## v0.5.0 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 25%
+Full intended game: about 16-18%
+```
+
+The building system has crossed into a basic throughput model: buildings now have capacity, queues, routing, service time, and placeholder workers. The next major step is either real worker hiring or building upgrades.

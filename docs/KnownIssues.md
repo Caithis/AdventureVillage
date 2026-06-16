@@ -1,10 +1,12 @@
 # Known Issues
 
-## v0.4.7
+## v0.5.0
 
 Known limitations:
-- The newest placed building of a type is still the active route.
-- Multiple stores/inns do not yet split customers.
-- Per-building state exists, but routing does not yet distribute across all instances.
-- Adventurers already in a service state may finish before using the updated route.
-- Save/load covers placed building instance IDs, but not full game state.
+- Workers are placeholders, not real NPCs.
+- Worker counts can be adjusted freely for testing.
+- Worker changes do not cost money.
+- Worker counts are capped at 3.
+- Fallback building worker counts are not saved.
+- Service speed uses simple seconds and does not yet consider building level.
+- Building labels can look crowded because they now show capacity, queue, service, and worker info.

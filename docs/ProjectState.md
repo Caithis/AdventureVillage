@@ -101,3 +101,18 @@ Building capacity now has visible queue slots. Waiting adventurers move to Store
 ## v0.4.7 Update Notes
 
 Placed buildings now receive unique instance IDs. Capacity and queue state now key off active building instance IDs instead of only building type. Route labels identify active building IDs. Queue fallback after demolition is fixed, and adventurers in travel/queue states retarget when route positions change.
+
+
+## v0.4.8 Update Notes
+
+Adventurer building routing now chooses per adventurer. Placed General Stores and Inns are preferred over fallback, nearest open buildings are preferred, and if all placed buildings are full the lowest-pressure building is selected. Route labels show routing mode, building count, open slots, and queue count.
+
+
+## v0.4.9 Update Notes
+
+Queue visuals are now attached to individual General Store and Inn buildings. Each service building shows local queue slots and local capacity/queue text on its label. This removes the previous single shared queue marker limitation.
+
+
+## v0.5.0 Update Notes
+
+General Store and Inn now have service time and worker placeholder counts. Worker placeholders affect service speed, labels show service time/worker count, and the building menu can adjust placeholder workers. Placed building worker counts are saved.

@@ -1,37 +1,48 @@
-# Changelog
-
-## v0.4.7 - Per-Building Instance Data Foundation
-
-### Added
-- Unique placed building instance IDs.
-- Instance IDs shown on placed building labels.
-- Route labels identify active building ID.
-- Capacity state keyed by active building instance ID.
-- Queue state keyed by active building instance ID.
-- Fallback building instance IDs.
-- Save/load preserves building instance IDs.
-- First-pass dynamic route retargeting for adventurers in travel/queue states.
-- Per-building instance data documentation.
+## v0.5.0.1 - BuildingMenu Type Inference Hotfix
 
 ### Fixed
-- Queue markers now return to fallback store/inn after placed building demolition.
-- Queue markers no longer fall back to `Vector2.ZERO` when no placed building exists.
+- Fixed launch-blocking `BuildingMenu.gd` parser error caused by Godot being unable to infer the type of `can_adjust_workers`.
+- Added explicit bool typing for worker/service menu visibility checks.
 
-### Not Yet Added
-- True multi-building routing.
-- Per-building worker assignments.
-- Per-building upgrades.
-- Player-selected active building.
-- Capacity distribution across multiple buildings.
+# Changelog
 
-## v0.4.6 - Building Queue Positions
+## v0.5.0 - Building Service Speed / Workers Foundation
 
 ### Added
-- Store and Inn queue positions.
+- Base service time per service building type.
+- General Store service duration.
+- Inn rest service duration.
+- Worker placeholder count per building.
+- Worker speed bonus effect.
+- Building labels show service time and worker count.
+- Building menu shows service summary.
+- Add Worker Placeholder button.
+- Remove Worker Placeholder button.
+- Placed building worker counts save/load.
+- Service speed / worker documentation.
+
+### Changed
+- General Store purchase/sale service wait now uses building service speed.
+- Inn rest wait now uses building service speed.
+- Store and Inn labels now show more local service information.
+
+### Not Yet Added
+- Real worker NPCs.
+- Hiring/wages.
+- Worker schedules.
+- Worker skill/quality.
+- Service speed upgrades.
+- Worker assignment by job category.
+
+## v0.4.9 - Per-Building Queue Visuals
+
+### Added
+- Per-building local queue visuals.
 
 ## Earlier v0.4.x
 
-- Capacity foundation.
-- Save/load foundation.
-- Routing foundation.
+- Multi-building routing.
+- Per-building instance IDs.
+- Capacity.
+- Save/load.
 - Building placement/move/demolish/costs.

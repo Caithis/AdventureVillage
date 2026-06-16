@@ -1,58 +1,91 @@
 # Dungeon Frontier Guild-Town
 
-Version: v0.4.7 - Per-Building Instance Data Foundation
+Version: v0.5.0 - Building Service Speed / Workers Foundation
 
-## What v0.4.7 Adds
+## What v0.5.0 Adds
 
-This patch starts moving the building system away from shared building-type state and toward individual building instances.
+This patch makes service buildings differ beyond location and capacity.
 
-## Unique Placed Building IDs
+## Building Service Time
 
-Placed buildings now receive unique instance IDs such as:
+Current base service times:
 
 ```text
+General Store: 1.75 seconds
+Inn Rest: 3.0 seconds
+```
+
+These values are placeholders for testing.
+
+## Worker Placeholder Effect
+
+General Stores and Inns now have worker placeholder counts.
+
+Current rule:
+
+```text
+Each worker adds +20% service speed.
+Worker placeholders are capped at 3.
+```
+
+Example:
+
+```text
+0 workers: x1.00 speed
+1 worker: x1.20 speed
+2 workers: x1.40 speed
+3 workers: x1.60 speed
+```
+
+Service time is calculated as:
+
+```text
+base service time / speed multiplier
+```
+
+## Building Labels Show Service Speed
+
+Store and Inn labels now show:
+
+```text
+capacity / queue
+service time
+worker count
+```
+
+Example:
+
+```text
+General Store
 general_store_001
-inn_002
-guild_hall_003
+1/2 Q:0
+Svc:1.5s W:1
 ```
 
-These IDs are shown on placed building labels and route labels.
+## Building Menu Worker Controls
 
-## Per-Building Capacity State
+Click a General Store or Inn to open the building menu.
 
-Capacity and queue state now use the active building instance ID instead of only the building type.
-
-Examples:
+The menu now shows service information and has placeholder worker controls:
 
 ```text
-general_store_001 has its own occupants and queue.
-inn_002 has its own occupants and queue.
-fallback_general_store has fallback state.
-fallback_inn has fallback state.
+Add Worker Placeholder
+Remove Worker Placeholder
 ```
 
-This is still an active-building prototype, but it is now built on instance IDs instead of one shared type bucket.
+For placed buildings, worker count is saved and loaded.
 
-## Route Labels Identify Active Building ID
+## Current Limitation
 
-Route labels now show:
+This is not a real worker hiring system yet.
 
-```text
-ACTIVE STORE
-PLACED general_store_001
-2/2 occupied | Q:1
+Workers are placeholder values attached to buildings. There is no worker population, wages, schedule, skill, happiness, or staffing simulation yet.
 
-ACTIVE INN
-FALLBACK fallback_inn
-0/5 occupied | Q:0
-```
+## Hotfix v0.5.0.1 Notice
 
-## Queue Fallback Bug Fixed
+This package fixes the launch-blocking `BuildingMenu.gd` parser error from v0.5.0.
 
-If you demolish a placed General Store or Inn, the queue markers should now return to the fallback building instead of jumping off-screen toward the map origin.
-
-## First Dynamic Retargeting Fix
-
-When a placed General Store or Inn is moved or demolished, adventurers currently traveling to that building should update their target if they are in a travel or queue state.
-
-This is a first-pass fix. Adventurers already inside service states may still finish their current service before using the new route.
+Fixed:
+- Explicitly typed `can_show_service` as `bool`.
+- Explicitly typed `can_adjust_workers` as `bool`.
+- Wrapped the dynamic worker-adjustment method result with `bool(...)`.

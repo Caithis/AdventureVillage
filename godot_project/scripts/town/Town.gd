@@ -18,6 +18,22 @@ const BUILDING_COSTS := {
 const DEMOLISH_REFUND_RATIO := 0.50
 const BUILDING_SAVE_PATH := "user://placed_buildings.json"
 const BUILDING_SAVE_VERSION := 1
+const ROUTING_MODE_TEXT := "Nearest Open"
+const LOCAL_QUEUE_SLOT_SIZE := Vector2(14, 14)
+
+const BUILDING_BASE_SERVICE_SECONDS := {
+	"general_store": 1.75,
+	"inn": 3.0,
+}
+
+const DEFAULT_WORKER_PLACEHOLDERS := {
+	"general_store": 1,
+	"inn": 1,
+}
+
+const WORKER_SPEED_BONUS_PER_WORKER := 0.20
+const MAX_WORKER_PLACEHOLDER_COUNT := 3
+const MIN_SERVICE_SECONDS := 0.50
 
 const BUILDING_CAPACITY := {
 	"general_store": 2,
@@ -74,8 +90,10 @@ var fallback_general_store_position: Vector2 = Vector2.ZERO
 var fallback_inn_position: Vector2 = Vector2.ZERO
 var active_store_route_visual: Node2D = null
 var active_inn_route_visual: Node2D = null
-var active_store_queue_visuals: Array[Node2D] = []
-var active_inn_queue_visuals: Array[Node2D] = []
+var last_selected_route_targets: Dictionary = {
+	"general_store": "",
+	"inn": "",
+}
 
 var active_building_instance_ids: Dictionary = {
 	"general_store": "",
@@ -157,13 +175,14 @@ func spawn_placeholder_adventurer() -> void:
 	var queue_offset := Vector2((spawn_count % 4) * 18, floori(float(spawn_count) / 4.0) * 12)
 
 	var entrance_position := town_entrance.global_position + spawn_offset
-	var shop_position := general_store_point.global_position + queue_offset
 	var exit_position := exit_to_world_point.global_position + Vector2(0, spawn_offset.y)
 
 	adventurer.global_position = entrance_position
 
 	if adventurer.has_method("setup_placeholder"):
 		adventurer.setup_placeholder(_generate_adventurer_name(), "fighter", 1)
+
+	var shop_position := assign_building_route_for_adventurer("general_store", adventurer, entrance_position) + queue_offset
 
 	if adventurer.has_method("start_town_routine"):
 		adventurer.start_town_routine(
@@ -199,14 +218,16 @@ func _spawn_returned_adventurer(traveler_data: Dictionary) -> void:
 
 	var return_offset := Vector2((return_spawn_count % 5) * 22, -floori(float(return_spawn_count) / 5.0) * 22)
 	var spawn_position := exit_to_world_point.global_position + Vector2(-65, -20) + return_offset
-	var shop_position := general_store_point.global_position + Vector2((return_spawn_count % 4) * 18, 24 + floori(float(return_spawn_count) / 4.0) * 12)
-	var inn_position := inn_point.global_position + Vector2((return_spawn_count % 4) * 18, 24 + floori(float(return_spawn_count) / 4.0) * 12)
+	var queue_offset := Vector2((return_spawn_count % 4) * 18, 24 + floori(float(return_spawn_count) / 4.0) * 12)
 	var exit_position := exit_to_world_point.global_position + Vector2(0, return_offset.y)
 
 	adventurer.global_position = spawn_position
 
 	if adventurer.has_method("setup_from_traveler_data"):
 		adventurer.setup_from_traveler_data(traveler_data)
+
+	var shop_position := assign_building_route_for_adventurer("general_store", adventurer, spawn_position) + queue_offset
+	var inn_position := assign_building_route_for_adventurer("inn", adventurer, spawn_position) + queue_offset
 
 	if adventurer.has_method("start_return_to_town_routine"):
 		adventurer.start_return_to_town_routine(spawn_position, shop_position, inn_position, exit_position)
@@ -236,12 +257,18 @@ func _mark_fixed_fallback_buildings() -> void:
 	for building in buildings_container.get_children():
 		building.set_meta("is_fixed_fallback", true)
 
+		var building_id := str(building.get("building_id"))
+		if _is_queue_capable_building_type(building_id) and not building.has_meta("worker_count"):
+			building.set_meta("worker_count", _get_default_worker_count(building_id))
+
 		var label := building.get_node_or_null("Label") as Label
 		if label == null:
 			label = building.get_node_or_null("BuildingLabel") as Label
 
-		if label != null and not label.text.contains("Fixed"):
-			label.text = "%s\n(Fixed Test)" % label.text
+		if label != null:
+			label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			if not label.text.contains("Fixed"):
+				label.text = "%s\n(Fixed Test)" % label.text
 
 func _register_existing_buildings() -> void:
 	for building in buildings_container.get_children():
@@ -258,7 +285,7 @@ func _on_building_clicked(building_id: String, building_node: Node = null) -> vo
 		select_building(building_node as ColorRect)
 
 	if building_menu != null and building_menu.has_method("open_for_building"):
-		building_menu.open_for_building(building_id)
+		building_menu.open_for_building(building_id, building_node, self)
 
 func _create_build_panel() -> void:
 	build_panel = PanelContainer.new()
@@ -502,17 +529,20 @@ func _place_building(building_type: String, placement_rect: Rect2) -> ColorRect:
 	building.set_meta("is_fixed_fallback", false)
 	building.set_meta("is_placed_building", true)
 	building.set_meta("original_cost", get_building_cost(building_type))
+	building.set_meta("worker_count", _get_default_worker_count(building_type))
 	var instance_id := _assign_new_building_instance_id(building, building_type)
 
 	buildings_container.add_child(building)
 
 	var label := Label.new()
 	label.name = "BuildingLabel"
-	label.text = "%s\n%s" % [_get_building_display_name(building_type), instance_id]
-	label.position = Vector2(10, placement_rect.size.y * 0.5 - 12)
-	label.size = Vector2(placement_rect.size.x - 20, 28)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.position = Vector2(10, 8)
+	label.size = Vector2(placement_rect.size.x - 20, placement_rect.size.y - 16)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	building.add_child(label)
+	_update_placed_building_label(building)
 
 	if building.has_signal("building_clicked"):
 		building.connect("building_clicked", Callable(self, "_on_building_clicked"))
@@ -732,7 +762,8 @@ func save_placed_buildings_to_file(show_feedback: bool = true) -> void:
 			"position_y": building_control.position.y,
 			"size_x": building_control.size.x,
 			"size_y": building_control.size.y,
-			"original_cost": int(building_control.get_meta("original_cost", get_building_cost(str(building_control.get("building_id")))))
+			"original_cost": int(building_control.get_meta("original_cost", get_building_cost(str(building_control.get("building_id"))))),
+			"worker_count": get_worker_count_for_building(building_control)
 		})
 
 	var save_data: Dictionary = {
@@ -834,10 +865,14 @@ func _recreate_placed_building_from_save(building_data: Dictionary) -> void:
 		if saved_instance_id != "":
 			building.set_meta("building_instance_id", saved_instance_id)
 			_advance_next_building_instance_number_from_id(saved_instance_id)
+			_update_placed_building_label(building)
 		else:
 			_ensure_building_instance_id(building)
 
 		building.set_meta("original_cost", int(building_data.get("original_cost", get_building_cost(building_type))))
+		building.set_meta("worker_count", int(building_data.get("worker_count", _get_default_worker_count(building_type))))
+		_update_local_building_visuals(building)
+
 
 
 
@@ -845,7 +880,12 @@ func request_building_capacity(building_type: String, adventurer: Node) -> bool:
 	if adventurer == null:
 		return false
 
-	var instance_id := _get_active_building_instance_id(building_type)
+	var instance_id := _get_preferred_instance_id_for_adventurer(building_type, adventurer)
+
+	if _is_instance_full(building_type, instance_id) and _has_available_placed_building(building_type):
+		assign_building_route_for_adventurer(building_type, adventurer, adventurer.global_position)
+		instance_id = _get_preferred_instance_id_for_adventurer(building_type, adventurer)
+
 	_cleanup_building_occupants(instance_id)
 	_cleanup_building_queue(instance_id)
 
@@ -899,7 +939,7 @@ func request_building_queue_slot(building_type: String, adventurer: Node) -> Vec
 	if adventurer == null:
 		return _get_active_building_route_position(building_type)
 
-	var instance_id := _get_active_building_instance_id(building_type)
+	var instance_id := _get_preferred_instance_id_for_adventurer(building_type, adventurer)
 	_cleanup_building_queue(instance_id)
 
 	var queue: Array = building_waiting_queues.get(instance_id, [])
@@ -945,8 +985,8 @@ func release_all_building_capacity_for_adventurer(adventurer: Node) -> void:
 	release_building_queue_slot("inn", adventurer)
 
 func get_queue_slot_position(building_type: String, adventurer: Node) -> Vector2:
-	var instance_id := _get_active_building_instance_id(building_type)
-	var route_position := _get_active_building_route_position(building_type)
+	var instance_id := _get_preferred_instance_id_for_adventurer(building_type, adventurer)
+	var route_position := _get_building_route_position_for_instance(building_type, instance_id)
 	var queue: Array = building_waiting_queues.get(instance_id, [])
 	var index: int = queue.find(adventurer)
 
@@ -979,10 +1019,19 @@ func get_building_queue_count(building_type: String) -> int:
 	return queue.size()
 
 func get_building_capacity_summary(building_type: String) -> String:
-	return "%d/%d occupied | Q:%d" % [
-		get_building_occupancy_count(building_type),
-		get_building_capacity(building_type),
-		get_building_queue_count(building_type)
+	if _count_placed_buildings_of_type(building_type) <= 0:
+		return "%d/%d occupied | Q:%d" % [
+			get_building_occupancy_count(building_type),
+			get_building_capacity(building_type),
+			get_building_queue_count(building_type)
+		]
+
+	return "Mode:%s | B:%d | Open:%d/%d | Q:%d" % [
+		ROUTING_MODE_TEXT,
+		_count_placed_buildings_of_type(building_type),
+		_get_total_open_slots_for_type(building_type),
+		_get_total_capacity_for_type(building_type),
+		_get_total_queue_count_for_type(building_type)
 	]
 
 func _cleanup_building_occupants(instance_id: String) -> void:
@@ -1055,6 +1104,64 @@ func _get_capacity_meta_key(building_type: String) -> String:
 func _get_queue_meta_key(building_type: String) -> String:
 	return "queue_instance_%s" % building_type
 
+func _get_route_meta_key(building_type: String) -> String:
+	return "route_instance_%s" % building_type
+
+func _is_instance_full(building_type: String, instance_id: String) -> bool:
+	_cleanup_building_occupants(instance_id)
+	var occupants: Array = building_occupants.get(instance_id, [])
+	return occupants.size() >= get_building_capacity(building_type)
+
+func _has_available_placed_building(building_type: String) -> bool:
+	for building in _get_placed_buildings_of_type(building_type):
+		var instance_id := _ensure_building_instance_id(building)
+		if not _is_instance_full(building_type, instance_id):
+			return true
+
+	return false
+
+func _get_total_capacity_for_type(building_type: String) -> int:
+	var placed_count := _count_placed_buildings_of_type(building_type)
+	if placed_count <= 0:
+		return get_building_capacity(building_type)
+
+	return placed_count * get_building_capacity(building_type)
+
+func _get_total_open_slots_for_type(building_type: String) -> int:
+	var instance_ids := _get_routable_instance_ids_for_type(building_type)
+	var open_slots: int = 0
+
+	for instance_id in instance_ids:
+		_cleanup_building_occupants(instance_id)
+		var occupants: Array = building_occupants.get(instance_id, [])
+		open_slots += maxi(get_building_capacity(building_type) - occupants.size(), 0)
+
+	return open_slots
+
+func _get_total_queue_count_for_type(building_type: String) -> int:
+	var instance_ids := _get_routable_instance_ids_for_type(building_type)
+	var queue_total: int = 0
+
+	for instance_id in instance_ids:
+		_cleanup_building_queue(instance_id)
+		var queue: Array = building_waiting_queues.get(instance_id, [])
+		queue_total += queue.size()
+
+	return queue_total
+
+func _get_routable_instance_ids_for_type(building_type: String) -> Array[String]:
+	var ids: Array[String] = []
+	var placed_buildings := _get_placed_buildings_of_type(building_type)
+
+	if placed_buildings.is_empty():
+		ids.append(_get_fallback_instance_id(building_type))
+		return ids
+
+	for building in placed_buildings:
+		ids.append(_ensure_building_instance_id(building))
+
+	return ids
+
 
 func _assign_new_building_instance_id(building: ColorRect, building_type: String) -> String:
 	var instance_id := "%s_%03d" % [building_type, next_building_instance_number]
@@ -1086,8 +1193,8 @@ func _advance_next_building_instance_number_from_id(instance_id: String) -> void
 func _get_fallback_instance_id(building_type: String) -> String:
 	return "fallback_%s" % building_type
 
-func _get_primary_placed_building(building_type: String) -> ColorRect:
-	var chosen_building: ColorRect = null
+func _get_placed_buildings_of_type(building_type: String) -> Array:
+	var placed_buildings: Array = []
 
 	for building in buildings_container.get_children():
 		if not building is ColorRect:
@@ -1097,10 +1204,28 @@ func _get_primary_placed_building(building_type: String) -> ColorRect:
 		if bool(building_control.get_meta("is_fixed_fallback", false)):
 			continue
 
+		if not bool(building_control.get_meta("is_placed_building", false)):
+			continue
+
 		if str(building_control.get("building_id")) != building_type:
 			continue
 
-		chosen_building = building_control
+		placed_buildings.append(building_control)
+
+	return placed_buildings
+
+func _count_placed_buildings_of_type(building_type: String) -> int:
+	return _get_placed_buildings_of_type(building_type).size()
+
+func _get_primary_placed_building(building_type: String) -> ColorRect:
+	var chosen_building: ColorRect = null
+	var placed_buildings := _get_placed_buildings_of_type(building_type)
+
+	if placed_buildings.is_empty():
+		return null
+
+	for building in placed_buildings:
+		chosen_building = building as ColorRect
 
 	return chosen_building
 
@@ -1120,6 +1245,43 @@ func _get_fallback_route_position(building_type: String) -> Vector2:
 
 	return Vector2.ZERO
 
+func _get_building_by_instance_id(instance_id: String) -> ColorRect:
+	if instance_id.begins_with("fallback_"):
+		return null
+
+	for building in buildings_container.get_children():
+		if not building is ColorRect:
+			continue
+
+		var building_control := building as ColorRect
+		if bool(building_control.get_meta("is_fixed_fallback", false)):
+			continue
+
+		if _ensure_building_instance_id(building_control) == instance_id:
+			return building_control
+
+	return null
+
+func _is_building_instance_valid_for_type(building_type: String, instance_id: String) -> bool:
+	if instance_id == _get_fallback_instance_id(building_type):
+		return _count_placed_buildings_of_type(building_type) <= 0
+
+	var building := _get_building_by_instance_id(instance_id)
+	if building == null:
+		return false
+
+	return str(building.get("building_id")) == building_type
+
+func _get_building_route_position_for_instance(building_type: String, instance_id: String) -> Vector2:
+	if instance_id == _get_fallback_instance_id(building_type):
+		return _get_fallback_route_position(building_type)
+
+	var building := _get_building_by_instance_id(instance_id)
+	if building == null:
+		return _get_fallback_route_position(building_type)
+
+	return building.global_position + building.size * 0.5
+
 func _get_building_route_position(building_type: String, fallback_position: Vector2) -> Vector2:
 	var placed_building := _get_primary_placed_building(building_type)
 
@@ -1132,14 +1294,95 @@ func _get_active_building_route_position(building_type: String) -> Vector2:
 	return _get_building_route_position(building_type, _get_fallback_route_position(building_type))
 
 func _is_route_using_placed_building(building_type: String) -> bool:
-	return _get_primary_placed_building(building_type) != null
+	return _get_placed_buildings_of_type(building_type).size() > 0
 
 func _get_active_route_source_text(building_type: String) -> String:
+	if _count_placed_buildings_of_type(building_type) > 1:
+		return "MODE %s" % ROUTING_MODE_TEXT
+
 	var instance_id := _get_active_building_instance_id(building_type)
 	if _is_route_using_placed_building(building_type):
 		return "PLACED %s" % instance_id
 
 	return "FALLBACK %s" % instance_id
+
+func assign_building_route_for_adventurer(building_type: String, adventurer: Node, from_position: Vector2) -> Vector2:
+	if adventurer == null:
+		return _get_active_building_route_position(building_type)
+
+	var instance_id := _select_best_building_instance_for_position(building_type, from_position)
+	adventurer.set_meta(_get_route_meta_key(building_type), instance_id)
+	last_selected_route_targets[building_type] = instance_id
+	_update_active_route_visuals()
+	return _get_building_route_position_for_instance(building_type, instance_id)
+
+func get_route_position_for_adventurer(building_type: String, adventurer: Node) -> Vector2:
+	if adventurer == null:
+		return _get_active_building_route_position(building_type)
+
+	var instance_id := _get_preferred_instance_id_for_adventurer(building_type, adventurer)
+	return _get_building_route_position_for_instance(building_type, instance_id)
+
+func _get_preferred_instance_id_for_adventurer(building_type: String, adventurer: Node) -> String:
+	if adventurer == null:
+		return _get_active_building_instance_id(building_type)
+
+	var meta_key := _get_route_meta_key(building_type)
+
+	if adventurer.has_meta(meta_key):
+		var current_id := str(adventurer.get_meta(meta_key))
+		if _is_building_instance_valid_for_type(building_type, current_id):
+			return current_id
+
+	return _select_and_store_best_building_instance(building_type, adventurer)
+
+func _select_and_store_best_building_instance(building_type: String, adventurer: Node) -> String:
+	var from_position := Vector2.ZERO
+	if adventurer != null:
+		from_position = adventurer.global_position
+
+	var instance_id := _select_best_building_instance_for_position(building_type, from_position)
+
+	if adventurer != null:
+		adventurer.set_meta(_get_route_meta_key(building_type), instance_id)
+
+	last_selected_route_targets[building_type] = instance_id
+	return instance_id
+
+func _select_best_building_instance_for_position(building_type: String, from_position: Vector2) -> String:
+	var placed_buildings := _get_placed_buildings_of_type(building_type)
+
+	if placed_buildings.is_empty():
+		return _get_fallback_instance_id(building_type)
+
+	var best_available_id := ""
+	var best_available_distance := 99999999.0
+
+	var best_fallback_id := ""
+	var best_fallback_score := 99999999.0
+
+	for building in placed_buildings:
+		var building_control := building as ColorRect
+		var instance_id := _ensure_building_instance_id(building_control)
+		var route_position := building_control.global_position + building_control.size * 0.5
+		var distance := from_position.distance_to(route_position)
+		var occupants: Array = building_occupants.get(instance_id, [])
+		var queue: Array = building_waiting_queues.get(instance_id, [])
+		var has_open_capacity := occupants.size() < get_building_capacity(building_type)
+
+		if has_open_capacity and distance < best_available_distance:
+			best_available_distance = distance
+			best_available_id = instance_id
+
+		var pressure_score := float(occupants.size() + queue.size()) * 10000.0 + distance
+		if pressure_score < best_fallback_score:
+			best_fallback_score = pressure_score
+			best_fallback_id = instance_id
+
+	if best_available_id != "":
+		return best_available_id
+
+	return best_fallback_id
 
 func _refresh_dynamic_route_markers() -> void:
 	var old_store_id := str(active_building_instance_ids.get("general_store", ""))
@@ -1153,80 +1396,298 @@ func _refresh_dynamic_route_markers() -> void:
 
 	_cleanup_inactive_building_instance_state()
 	_update_active_route_visuals()
-
-	if old_store_id != str(active_building_instance_ids.get("general_store", "")) or old_inn_id != str(active_building_instance_ids.get("inn", "")):
-		_notify_adventurers_routes_changed()
-	else:
-		_notify_adventurers_routes_changed()
+	_notify_adventurers_routes_changed()
 
 func _notify_adventurers_routes_changed() -> void:
 	for adventurer in adventurers_container.get_children():
 		if adventurer == null:
 			continue
 
+		var store_position := get_route_position_for_adventurer("general_store", adventurer)
+		var inn_route_position := get_route_position_for_adventurer("inn", adventurer)
+
 		var ai := adventurer.get_node_or_null("AdventurerAI")
 		if ai != null and ai.has_method("update_town_route_positions"):
 			ai.update_town_route_positions(
-				general_store_point.global_position,
-				inn_point.global_position,
+				store_position,
+				inn_route_position,
 				exit_to_world_point.global_position
 			)
 
+
+
+func _get_route_visual_position_for_type(building_type: String) -> Vector2:
+	var last_id := str(last_selected_route_targets.get(building_type, ""))
+	if last_id != "" and _is_building_instance_valid_for_type(building_type, last_id):
+		return _get_building_route_position_for_instance(building_type, last_id)
+
+	return _get_active_building_route_position(building_type)
+
 func _create_queue_slot_visuals() -> void:
-	active_store_queue_visuals = _create_queue_visuals_for_building("StoreQueueSlot", "S", STORE_QUEUE_OFFSETS, Color(0.95, 0.85, 0.25, 0.34))
-	active_inn_queue_visuals = _create_queue_visuals_for_building("InnQueueSlot", "I", INN_QUEUE_OFFSETS, Color(0.55, 0.40, 1.0, 0.32))
+	_update_queue_slot_visuals()
 
-func _create_queue_visuals_for_building(node_prefix: String, label_prefix: String, offsets: Array[Vector2], marker_color: Color) -> Array[Node2D]:
-	var visuals: Array[Node2D] = []
+func _update_queue_slot_visuals() -> void:
+	_update_all_building_local_visuals()
 
-	for index in range(offsets.size()):
-		var queue_root := Node2D.new()
-		queue_root.name = "%s_%d" % [node_prefix, index + 1]
-		queue_root.z_index = 7
-		add_child(queue_root)
+func _update_all_building_local_visuals() -> void:
+	for building in buildings_container.get_children():
+		if not building is ColorRect:
+			continue
+
+		_update_local_building_visuals(building as ColorRect)
+
+func _update_local_building_visuals(building: ColorRect) -> void:
+	if building == null:
+		return
+
+	var building_type := str(building.get("building_id"))
+
+	if not _is_queue_capable_building_type(building_type):
+		_remove_local_queue_visuals(building)
+		_update_placed_building_label(building)
+		return
+
+	_ensure_local_queue_visuals_for_building(building)
+	_update_local_queue_visuals_for_building(building)
+	_update_placed_building_label(building)
+
+func _ensure_local_queue_visuals_for_building(building: ColorRect) -> void:
+	if building == null:
+		return
+
+	var building_type := str(building.get("building_id"))
+	var offsets := _get_queue_offsets(building_type)
+
+	var queue_root := building.get_node_or_null("LocalQueueVisuals") as Control
+	if queue_root == null:
+		queue_root = Control.new()
+		queue_root.name = "LocalQueueVisuals"
+		queue_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		queue_root.position = Vector2.ZERO
+		queue_root.size = building.size
+		queue_root.z_index = 92
+		building.add_child(queue_root)
+
+	queue_root.position = Vector2.ZERO
+	queue_root.size = building.size
+
+	var expected_count := offsets.size()
+	var existing_count := queue_root.get_child_count()
+
+	while existing_count < expected_count:
+		var index := existing_count
+		var slot_root := Control.new()
+		slot_root.name = "LocalQueueSlot_%d" % (index + 1)
+		slot_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		slot_root.size = Vector2(38, 34)
+		slot_root.z_index = 93
+		queue_root.add_child(slot_root)
 
 		var body := ColorRect.new()
 		body.name = "QueueBody"
 		body.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		body.position = Vector2(-8, -8)
-		body.size = Vector2(16, 16)
-		body.color = marker_color
-		queue_root.add_child(body)
+		body.size = LOCAL_QUEUE_SLOT_SIZE
+		body.position = -LOCAL_QUEUE_SLOT_SIZE * 0.5
+		body.color = Color(0.55, 0.55, 0.55, 0.20)
+		slot_root.add_child(body)
 
 		var label := Label.new()
 		label.name = "QueueLabel"
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		label.position = Vector2(-18, 8)
+		label.position = Vector2(-18, 6)
 		label.size = Vector2(36, 18)
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		label.text = "%s%d" % [label_prefix, index + 1]
-		queue_root.add_child(label)
+		label.text = str(index + 1)
+		slot_root.add_child(label)
 
-		visuals.append(queue_root)
+		existing_count += 1
 
-	return visuals
+	while queue_root.get_child_count() > expected_count:
+		var child := queue_root.get_child(queue_root.get_child_count() - 1)
+		queue_root.remove_child(child)
+		child.queue_free()
 
-func _update_queue_slot_visuals() -> void:
-	_update_queue_slot_visuals_for_building("general_store", active_store_queue_visuals)
-	_update_queue_slot_visuals_for_building("inn", active_inn_queue_visuals)
+func _update_local_queue_visuals_for_building(building: ColorRect) -> void:
+	if building == null:
+		return
 
-func _update_queue_slot_visuals_for_building(building_type: String, visuals: Array[Node2D]) -> void:
-	var route_position := _get_active_building_route_position(building_type)
+	var building_type := str(building.get("building_id"))
 	var offsets := _get_queue_offsets(building_type)
-	var queue_count := get_building_queue_count(building_type)
+	var instance_id := _get_building_instance_id_for_visuals(building)
+	var queue_count := _get_queue_count_for_instance(instance_id)
 
-	for index in range(visuals.size()):
-		var visual := visuals[index]
-		if visual == null:
+	var queue_root := building.get_node_or_null("LocalQueueVisuals") as Control
+	if queue_root == null:
+		return
+
+	queue_root.position = Vector2.ZERO
+	queue_root.size = building.size
+
+	for index in range(queue_root.get_child_count()):
+		var slot_root := queue_root.get_child(index) as Control
+		if slot_root == null:
 			continue
 
-		visual.global_position = route_position + offsets[index]
-		var body := visual.get_node_or_null("QueueBody") as ColorRect
+		if index < offsets.size():
+			slot_root.position = building.size * 0.5 + offsets[index]
+
+		var body := slot_root.get_node_or_null("QueueBody") as ColorRect
 		if body != null:
 			if index < queue_count:
-				body.color = Color(1.0, 0.35, 0.25, 0.62)
+				body.color = Color(1.0, 0.35, 0.25, 0.70)
 			else:
 				body.color = Color(0.55, 0.55, 0.55, 0.20)
+
+func _remove_local_queue_visuals(building: ColorRect) -> void:
+	if building == null:
+		return
+
+	var queue_root := building.get_node_or_null("LocalQueueVisuals")
+	if queue_root != null:
+		building.remove_child(queue_root)
+		queue_root.queue_free()
+
+func _get_building_instance_id_for_visuals(building: ColorRect) -> String:
+	if building == null:
+		return ""
+
+	var building_type := str(building.get("building_id"))
+
+	if bool(building.get_meta("is_fixed_fallback", false)):
+		return _get_fallback_instance_id(building_type)
+
+	return _ensure_building_instance_id(building)
+
+func _get_occupancy_count_for_instance(instance_id: String) -> int:
+	_cleanup_building_occupants(instance_id)
+	var occupants: Array = building_occupants.get(instance_id, [])
+	return occupants.size()
+
+func _get_queue_count_for_instance(instance_id: String) -> int:
+	_cleanup_building_queue(instance_id)
+	var queue: Array = building_waiting_queues.get(instance_id, [])
+	return queue.size()
+
+
+func get_service_seconds_for_adventurer(building_type: String, adventurer: Node, fallback_seconds: float = 1.0) -> float:
+	if not _is_queue_capable_building_type(building_type):
+		return fallback_seconds
+
+	var instance_id := _get_active_building_instance_id(building_type)
+
+	if adventurer != null:
+		instance_id = _get_preferred_instance_id_for_adventurer(building_type, adventurer)
+
+	return get_service_seconds_for_instance(building_type, instance_id)
+
+func get_service_seconds_for_building(building: ColorRect) -> float:
+	if building == null:
+		return 1.0
+
+	var building_type := str(building.get("building_id"))
+	var worker_count := get_worker_count_for_building(building)
+	return _calculate_service_seconds(building_type, worker_count)
+
+func get_service_seconds_for_instance(building_type: String, instance_id: String) -> float:
+	var worker_count := get_worker_count_for_instance(building_type, instance_id)
+	return _calculate_service_seconds(building_type, worker_count)
+
+func _calculate_service_seconds(building_type: String, worker_count: int) -> float:
+	var base_seconds := float(BUILDING_BASE_SERVICE_SECONDS.get(building_type, 1.5))
+	var speed_multiplier := get_service_speed_multiplier_for_worker_count(worker_count)
+	return maxf(MIN_SERVICE_SECONDS, base_seconds / speed_multiplier)
+
+func get_service_speed_multiplier_for_worker_count(worker_count: int) -> float:
+	return 1.0 + float(maxi(worker_count, 0)) * WORKER_SPEED_BONUS_PER_WORKER
+
+func get_worker_count_for_building(building: ColorRect) -> int:
+	if building == null:
+		return 0
+
+	var building_type := str(building.get("building_id"))
+	return int(building.get_meta("worker_count", _get_default_worker_count(building_type)))
+
+func get_worker_count_for_instance(building_type: String, instance_id: String) -> int:
+	if instance_id.begins_with("fallback_"):
+		return _get_default_worker_count(building_type)
+
+	var building := _get_building_by_instance_id(instance_id)
+	if building == null:
+		return _get_default_worker_count(building_type)
+
+	return get_worker_count_for_building(building)
+
+func _get_default_worker_count(building_type: String) -> int:
+	return int(DEFAULT_WORKER_PLACEHOLDERS.get(building_type, 0))
+
+func get_building_service_summary(building_node: Node) -> String:
+	if not building_node is ColorRect:
+		return "Service: -"
+
+	var building := building_node as ColorRect
+	var building_type := str(building.get("building_id"))
+
+	if not _is_queue_capable_building_type(building_type):
+		return "Service: no service controls yet."
+
+	var worker_count := get_worker_count_for_building(building)
+	var service_seconds := get_service_seconds_for_building(building)
+	var speed_multiplier := get_service_speed_multiplier_for_worker_count(worker_count)
+	return "Service: %.1fs | Workers: %d/%d | Speed: x%.2f" % [
+		service_seconds,
+		worker_count,
+		MAX_WORKER_PLACEHOLDER_COUNT,
+		speed_multiplier
+	]
+
+func can_adjust_building_workers(building_node: Node) -> bool:
+	if not building_node is ColorRect:
+		return false
+
+	var building := building_node as ColorRect
+	return _is_queue_capable_building_type(str(building.get("building_id")))
+
+func adjust_building_worker_count(building_node: Node, delta: int) -> void:
+	if not can_adjust_building_workers(building_node):
+		return
+
+	var building := building_node as ColorRect
+	var building_type := str(building.get("building_id"))
+	var current_workers := get_worker_count_for_building(building)
+	var new_workers := clampi(current_workers + delta, 0, MAX_WORKER_PLACEHOLDER_COUNT)
+	building.set_meta("worker_count", new_workers)
+
+	_update_local_building_visuals(building)
+	_update_active_route_visuals()
+
+	if bool(building.get_meta("is_placed_building", false)):
+		save_placed_buildings_to_file(false)
+
+	_update_build_status("%s workers set to %d. Service %.1fs." % [
+		_get_building_display_name(building_type),
+		new_workers,
+		get_service_seconds_for_building(building)
+	])
+
+func _get_capacity_summary_for_building(building: ColorRect) -> String:
+	if building == null:
+		return ""
+
+	var building_type := str(building.get("building_id"))
+	if not _is_queue_capable_building_type(building_type):
+		return ""
+
+	var instance_id := _get_building_instance_id_for_visuals(building)
+	return "%d/%d Q:%d\nSvc:%.1fs W:%d" % [
+		_get_occupancy_count_for_instance(instance_id),
+		get_building_capacity(building_type),
+		_get_queue_count_for_instance(instance_id),
+		get_service_seconds_for_building(building),
+		get_worker_count_for_building(building)
+	]
+
+func _is_queue_capable_building_type(building_type: String) -> bool:
+	return building_type == "general_store" or building_type == "inn"
 
 func _create_active_route_visuals() -> void:
 	active_store_route_visual = _create_route_visual("ActiveStoreRoute", "ACTIVE STORE ROUTE", Color(0.95, 0.85, 0.25, 0.60))
@@ -1259,18 +1720,47 @@ func _create_route_visual(node_name: String, label_text: String, marker_color: C
 
 func _update_active_route_visuals() -> void:
 	if active_store_route_visual != null:
-		active_store_route_visual.global_position = general_store_point.global_position
+		active_store_route_visual.global_position = _get_route_visual_position_for_type("general_store")
 		var store_label := active_store_route_visual.get_node_or_null("RouteLabel") as Label
 		if store_label != null:
 			store_label.text = "ACTIVE STORE\n%s\n%s" % [_get_active_route_source_text("general_store"), get_building_capacity_summary("general_store")]
 
 	if active_inn_route_visual != null:
-		active_inn_route_visual.global_position = inn_point.global_position
+		active_inn_route_visual.global_position = _get_route_visual_position_for_type("inn")
 		var inn_label := active_inn_route_visual.get_node_or_null("RouteLabel") as Label
 		if inn_label != null:
 			inn_label.text = "ACTIVE INN\n%s\n%s" % [_get_active_route_source_text("inn"), get_building_capacity_summary("inn")]
 
 	_update_queue_slot_visuals()
+
+func _update_placed_building_label(building: ColorRect) -> void:
+	if building == null:
+		return
+
+	var label := building.get_node_or_null("BuildingLabel") as Label
+	if label == null:
+		label = building.get_node_or_null("Label") as Label
+
+	if label == null:
+		return
+
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var building_type := str(building.get("building_id"))
+	var display_name := _get_building_display_name(building_type)
+
+	if bool(building.get_meta("is_fixed_fallback", false)):
+		if _is_queue_capable_building_type(building_type):
+			label.text = "%s\n(Fixed Test)\n%s" % [display_name, _get_capacity_summary_for_building(building)]
+		else:
+			label.text = "%s\n(Fixed Test)" % display_name
+		return
+
+	var instance_id := _ensure_building_instance_id(building)
+	if _is_queue_capable_building_type(building_type):
+		label.text = "%s\n%s\n%s" % [display_name, instance_id, _get_capacity_summary_for_building(building)]
+	else:
+		label.text = "%s\n%s" % [display_name, instance_id]
 
 func _get_building_size(building_type: String) -> Vector2:
 	match building_type:
