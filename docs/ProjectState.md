@@ -76,3 +76,8 @@ Building placement now affects village funds. Guild Hall, Inn, and General Store
 ## v0.4.3 Update Notes
 
 Placed General Stores and Inns can now become active adventurer destinations. Dynamic route markers update after placement, movement, and demolition. Fixed fallback buildings are used only when no placed version exists. Build Mode panel is now collapsible to reduce screen clutter.
+
+
+## v0.4.4 Update Notes
+
+Placed buildings now save to `user://placed_buildings.json` and load when the Town scene starts. The system preserves building type, position, size, and original cost. Active route markers rebuild after load so placed General Stores and Inns can remain active destinations.

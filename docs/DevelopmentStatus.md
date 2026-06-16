@@ -135,3 +135,15 @@ Full intended game: about 9-11%
 ```
 
 The building pillar now affects adventurer routing for store and inn destinations. Still missing: capacity, save/load, building workers, upgrades, roads/pathfinding, and player selection of active buildings.
+
+
+## v0.4.4 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 19%
+Full intended game: about 10-12%
+```
+
+The building pillar now has a first save/load foundation. This is a key step, but the project still needs a full SaveManager for money, time, adventurers, world state, upgrades, and progression.

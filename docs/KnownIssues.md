@@ -1,13 +1,12 @@
 # Known Issues
 
-## v0.4.3
+## v0.4.4
 
 Known limitations:
-- Route choice uses the newest placed building of that type.
-- No nearest-building routing yet.
-- No building capacity yet.
-- No save/load for placed buildings.
-- Fixed fallback buildings are still required as fallback.
-- Active route markers are placeholder visuals.
-- Build menu is collapsible but not scrollable yet.
-- Existing adventurers keep their assigned route; route changes mainly affect newly spawned/returned adventurers.
+- Only placed buildings are saved.
+- Money is not saved yet.
+- Adventurers are not saved yet.
+- World Map simulation is not saved yet.
+- Save file uses direct JSON with no migration system beyond a version field.
+- Manual load removes current placed buildings and recreates them from file.
+- If a building is placed somewhere valid now but future rules change, old save data may still load it.

@@ -1,69 +1,69 @@
 # Dungeon Frontier Guild-Town
 
-Version: v0.4.3 - Placed Building Destination Routing
+Version: v0.4.4 - Building Save / Load Foundation
 
-## What v0.4.3 Adds
+## What v0.4.4 Adds
 
-This patch starts connecting placed buildings to actual gameplay.
+This patch starts preserving placed buildings between runs.
 
-## Placed General Store Routing
+## Save File
 
-If at least one placed General Store exists:
-
-```text
-Adventurers use the placed General Store as their shopping/selling destination.
-```
-
-If no placed General Store exists:
+Placed building data is saved to Godot user storage:
 
 ```text
-Adventurers use the fixed fallback General Store.
+user://placed_buildings.json
 ```
 
-## Placed Inn Routing
+## Auto Save
 
-If at least one placed Inn exists:
+Placed buildings are automatically saved after:
 
 ```text
-Returned or resting adventurers use the placed Inn as their rest/sleep destination.
+placing a building
+moving a building
+demolishing a building
 ```
 
-If no placed Inn exists:
+## Auto Load
+
+When the Town scene starts, it attempts to load placed buildings from:
 
 ```text
-Adventurers use the fixed fallback Inn.
+user://placed_buildings.json
 ```
 
-## Dynamic Route Markers
+If no save exists yet, the game continues normally.
 
-The active route markers now update when buildings are:
+## Manual Save / Load Buttons
+
+The Build Mode panel now includes:
 
 ```text
-Placed
-Moved
-Demolished
+Save Buildings
+Load Buildings
 ```
 
-The Town view now shows:
+These are mainly for testing and debugging the save/load system.
+
+## Preserved Data
+
+Each placed building saves:
 
 ```text
-ACTIVE STORE - PLACED / FALLBACK
-ACTIVE INN - PLACED / FALLBACK
+building type
+position
+size
+original cost
 ```
 
-## Fixed Fallback Buildings
+## Route Rebuild
 
-Fixed fallback buildings remain protected.
+After loading buildings, the active route markers rebuild.
 
-They are only used when no placed version of that building exists.
+That means placed General Stores and Inns should still become the active adventurer destinations after loading.
 
-## Build Menu Collapsing
+## Important Limitation
 
-The Build Mode panel now has:
+This is not a full game save system yet.
 
-```text
-Hide Build Menu
-Show Build Menu
-```
-
-This is the first step toward keeping the build menu from cluttering the screen. A scrollable build menu is still planned once the construction list gets larger.
+It only saves placed buildings. Money, adventurers, world slimes, time, inventory, and other systems are not fully saved yet.

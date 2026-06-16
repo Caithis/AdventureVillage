@@ -16,6 +16,8 @@ const BUILDING_COSTS := {
 }
 
 const DEMOLISH_REFUND_RATIO := 0.50
+const BUILDING_SAVE_PATH := "user://placed_buildings.json"
+const BUILDING_SAVE_VERSION := 1
 
 @onready var buildings_container: Node2D = $Buildings
 @onready var adventurers_container: Node2D = $Adventurers
@@ -56,6 +58,7 @@ func _ready() -> void:
 	GameState.state_changed.connect(_on_game_state_changed)
 	_register_existing_buildings()
 	_mark_fixed_fallback_buildings()
+	load_placed_buildings_from_file(false)
 	_create_build_panel()
 	_create_entrance_exit_visuals()
 	_create_active_route_visuals()
@@ -226,8 +229,8 @@ func _create_build_panel() -> void:
 	build_panel = PanelContainer.new()
 	build_panel.name = "BuildPanel"
 	build_panel.position = Vector2(930, 12)
-	build_panel.size = Vector2(290, 230)
-	build_panel.custom_minimum_size = Vector2(290, 230)
+	build_panel.size = Vector2(290, 300)
+	build_panel.custom_minimum_size = Vector2(290, 300)
 	build_panel.z_index = 100
 	build_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(build_panel)
@@ -284,6 +287,18 @@ func _create_build_panel() -> void:
 	demolish_button.pressed.connect(_on_demolish_selected_button_pressed)
 	vbox.add_child(demolish_button)
 
+	var save_button := Button.new()
+	save_button.text = "Save Buildings"
+	save_button.focus_mode = Control.FOCUS_NONE
+	save_button.pressed.connect(_on_save_buildings_button_pressed)
+	vbox.add_child(save_button)
+
+	var load_button := Button.new()
+	load_button.text = "Load Buildings"
+	load_button.focus_mode = Control.FOCUS_NONE
+	load_button.pressed.connect(_on_load_buildings_button_pressed)
+	vbox.add_child(load_button)
+
 	var cancel_button := Button.new()
 	cancel_button.text = "Cancel Build / Move"
 	cancel_button.focus_mode = Control.FOCUS_NONE
@@ -313,8 +328,8 @@ func _on_toggle_build_panel_collapsed() -> void:
 		build_panel.size = Vector2(290, 40)
 	else:
 		build_panel_collapse_button.text = "Hide Build Menu"
-		build_panel.custom_minimum_size = Vector2(290, 230)
-		build_panel.size = Vector2(290, 230)
+		build_panel.custom_minimum_size = Vector2(290, 300)
+		build_panel.size = Vector2(290, 300)
 
 func _on_build_button_pressed(building_type: String) -> void:
 	print("Build button pressed: ", building_type)
@@ -432,11 +447,12 @@ func _try_place_active_building() -> void:
 
 		_place_building(active_building_type, placement_rect)
 		_refresh_dynamic_route_markers()
+		save_placed_buildings_to_file(false)
 		show_town_floating_text("-%dg %s" % [building_cost, _get_building_display_name(active_building_type)], placement_rect.position + placement_rect.size * 0.5)
 		_update_build_status("Placed %s for %dg. Funds %dg." % [_get_building_display_name(active_building_type), building_cost, GameState.money])
 	cancel_build_mode()
 
-func _place_building(building_type: String, placement_rect: Rect2) -> void:
+func _place_building(building_type: String, placement_rect: Rect2) -> ColorRect:
 	placed_building_count += 1
 
 	var building := ColorRect.new()
@@ -464,6 +480,8 @@ func _place_building(building_type: String, placement_rect: Rect2) -> void:
 
 	if building.has_signal("building_clicked"):
 		building.connect("building_clicked", Callable(self, "_on_building_clicked"))
+
+	return building
 
 
 func select_building(building: ColorRect) -> void:
@@ -537,6 +555,7 @@ func _complete_move_selected_building(placement_rect: Rect2) -> void:
 	moving_building = null
 	_update_selected_outline()
 	_refresh_dynamic_route_markers()
+	save_placed_buildings_to_file(false)
 	_update_build_status("Moved %s. Routes updated." % _get_building_display_name(active_building_type))
 
 func _on_demolish_selected_button_pressed() -> void:
@@ -558,6 +577,7 @@ func _on_demolish_selected_button_pressed() -> void:
 	building_to_remove.queue_free()
 	await get_tree().process_frame
 	_refresh_dynamic_route_markers()
+	save_placed_buildings_to_file(false)
 
 	if refund_amount > 0:
 		GameState.add_money(refund_amount)
@@ -644,6 +664,130 @@ func show_town_floating_text(text: String, world_position: Vector2) -> void:
 	if floating_text.has_method("setup"):
 		floating_text.setup(text)
 
+
+
+func _on_save_buildings_button_pressed() -> void:
+	save_placed_buildings_to_file(true)
+
+func _on_load_buildings_button_pressed() -> void:
+	load_placed_buildings_from_file(true)
+
+func save_placed_buildings_to_file(show_feedback: bool = true) -> void:
+	var placed_buildings_data: Array[Dictionary] = []
+
+	for building in buildings_container.get_children():
+		if not building is ColorRect:
+			continue
+
+		var building_control := building as ColorRect
+		if bool(building_control.get_meta("is_fixed_fallback", false)):
+			continue
+
+		if not bool(building_control.get_meta("is_placed_building", false)):
+			continue
+
+		placed_buildings_data.append({
+			"building_type": str(building_control.get("building_id")),
+			"position_x": building_control.position.x,
+			"position_y": building_control.position.y,
+			"size_x": building_control.size.x,
+			"size_y": building_control.size.y,
+			"original_cost": int(building_control.get_meta("original_cost", get_building_cost(str(building_control.get("building_id")))))
+		})
+
+	var save_data: Dictionary = {
+		"version": BUILDING_SAVE_VERSION,
+		"placed_buildings": placed_buildings_data
+	}
+
+	var file := FileAccess.open(BUILDING_SAVE_PATH, FileAccess.WRITE)
+	if file == null:
+		var error_text := "Building save failed. File error %s." % str(FileAccess.get_open_error())
+		_update_build_status(error_text)
+		if show_feedback:
+			show_town_floating_text("Save Failed", Vector2(620, 120))
+		return
+
+	file.store_string(JSON.stringify(save_data, "\t"))
+	file.close()
+
+	if show_feedback:
+		_update_build_status("Saved %d placed building(s)." % placed_buildings_data.size())
+		show_town_floating_text("Buildings Saved", Vector2(620, 120))
+
+func load_placed_buildings_from_file(show_feedback: bool = true) -> void:
+	if not FileAccess.file_exists(BUILDING_SAVE_PATH):
+		if show_feedback:
+			_update_build_status("No building save found yet.")
+			show_town_floating_text("No Save Found", Vector2(620, 120))
+		return
+
+	var file := FileAccess.open(BUILDING_SAVE_PATH, FileAccess.READ)
+	if file == null:
+		var error_text := "Building load failed. File error %s." % str(FileAccess.get_open_error())
+		_update_build_status(error_text)
+		if show_feedback:
+			show_town_floating_text("Load Failed", Vector2(620, 120))
+		return
+
+	var file_text := file.get_as_text()
+	file.close()
+
+	var parsed: Variant = JSON.parse_string(file_text)
+	if not parsed is Dictionary:
+		_update_build_status("Building save data is invalid.")
+		if show_feedback:
+			show_town_floating_text("Invalid Save", Vector2(620, 120))
+		return
+
+	var save_data: Dictionary = parsed
+	var placed_buildings_data: Array = save_data.get("placed_buildings", [])
+
+	clear_selected_building()
+	_remove_all_placed_buildings()
+
+	for building_data in placed_buildings_data:
+		if not building_data is Dictionary:
+			continue
+
+		_recreate_placed_building_from_save(building_data)
+
+	_refresh_dynamic_route_markers()
+
+	if show_feedback:
+		_update_build_status("Loaded %d placed building(s)." % placed_buildings_data.size())
+		show_town_floating_text("Buildings Loaded", Vector2(620, 120))
+
+func _remove_all_placed_buildings() -> void:
+	for index in range(buildings_container.get_child_count() - 1, -1, -1):
+		var building := buildings_container.get_child(index)
+
+		if not building is ColorRect:
+			continue
+
+		var building_control := building as ColorRect
+		if bool(building_control.get_meta("is_fixed_fallback", false)):
+			continue
+
+		if bool(building_control.get_meta("is_placed_building", false)):
+			buildings_container.remove_child(building_control)
+			building_control.queue_free()
+
+func _recreate_placed_building_from_save(building_data: Dictionary) -> void:
+	var building_type: String = str(building_data.get("building_type", "building"))
+	var position := Vector2(
+		float(building_data.get("position_x", 160.0)),
+		float(building_data.get("position_y", 120.0))
+	)
+	var size := Vector2(
+		float(building_data.get("size_x", _get_building_size(building_type).x)),
+		float(building_data.get("size_y", _get_building_size(building_type).y))
+	)
+	var placement_rect := Rect2(position, size)
+
+	var building := _place_building(building_type, placement_rect)
+	if building != null:
+		building.set_meta("original_cost", int(building_data.get("original_cost", get_building_cost(building_type))))
 
 func _get_primary_placed_building(building_type: String) -> ColorRect:
 	var chosen_building: ColorRect = null
