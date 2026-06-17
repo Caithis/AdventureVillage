@@ -35,6 +35,12 @@ const WORKER_SPEED_BONUS_PER_WORKER := 0.20
 const MAX_WORKER_PLACEHOLDER_COUNT := 3
 const MIN_SERVICE_SECONDS := 0.50
 
+const GAMEPLAY_VIEWPORT_WIDTH := 1280.0
+const SIDEBAR_WIDTH := 320.0
+const SIDEBAR_MARGIN := 10.0
+const SIDEBAR_TOP := 12.0
+const SIDEBAR_HEIGHT := 696.0
+
 const MAX_BUILDING_UPGRADE_LEVEL := 3
 const UPGRADE_CAPACITY_BONUS_PER_LEVEL := {
 	"general_store": 1,
@@ -91,6 +97,17 @@ var moving_building: ColorRect = null
 var selected_outline: ColorRect = null
 var build_ghost: ColorRect = null
 var build_ghost_label: Label = null
+var sidebar_panel: PanelContainer = null
+var sidebar_content: VBoxContainer = null
+var sidebar_mode_title_label: Label = null
+var sidebar_body: VBoxContainer = null
+var sidebar_modes: Dictionary = {}
+var sidebar_mode_buttons: Dictionary = {}
+var active_sidebar_mode: String = ""
+var building_details_holder: Control = null
+var build_menu_holder: Control = null
+var debug_placeholder_holder: Control = null
+
 var build_panel: PanelContainer = null
 var build_panel_root_container: VBoxContainer = null
 var build_panel_collapse_button: Button = null
@@ -123,7 +140,10 @@ func _ready() -> void:
 	_register_existing_buildings()
 	_mark_fixed_fallback_buildings()
 	load_placed_buildings_from_file(false)
+	_create_sidebar_manager()
 	_create_build_panel()
+	_dock_build_panel_in_sidebar()
+	_dock_building_details_in_sidebar()
 	_create_entrance_exit_visuals()
 	_create_active_route_visuals()
 	_create_queue_slot_visuals()
@@ -160,6 +180,9 @@ func _input(event: InputEvent) -> void:
 
 
 func _is_mouse_over_ui(mouse_position: Vector2) -> bool:
+	if sidebar_panel != null and _control_contains_global_point(sidebar_panel, mouse_position):
+		return true
+
 	if build_panel != null and _control_contains_global_point(build_panel, mouse_position):
 		return true
 
@@ -207,6 +230,16 @@ func spawn_placeholder_adventurer() -> void:
 
 	spawn_count += 1
 	print("Spawned adventurer: ", adventurer.name)
+
+func _refresh_build_menu_funds_text() -> void:
+	if build_panel_root_container == null:
+		return
+
+	for child in build_panel_root_container.get_children():
+		if child is Label and str(child.text).begins_with("Funds:"):
+			var label := child as Label
+			label.text = "Funds: %dg\nChoose a building, then place it in the town.\nLeft-click valid ground to confirm. Right-click to cancel." % GameState.money
+			return
 
 func _on_game_state_changed() -> void:
 	_check_for_returned_travelers()
@@ -299,15 +332,170 @@ func _on_building_clicked(building_id: String, building_node: Node = null) -> vo
 	if building_node is ColorRect:
 		select_building(building_node as ColorRect)
 
+	open_sidebar_mode("building_details")
+
 	if building_menu != null and building_menu.has_method("open_for_building"):
 		building_menu.open_for_building(building_id, building_node, self)
+
+
+func _create_sidebar_manager() -> void:
+	sidebar_panel = PanelContainer.new()
+	sidebar_panel.name = "RightSidebar"
+	sidebar_panel.position = Vector2(GAMEPLAY_VIEWPORT_WIDTH + SIDEBAR_MARGIN, SIDEBAR_TOP)
+	sidebar_panel.size = Vector2(SIDEBAR_WIDTH - SIDEBAR_MARGIN * 2.0, SIDEBAR_HEIGHT)
+	sidebar_panel.custom_minimum_size = Vector2(SIDEBAR_WIDTH - SIDEBAR_MARGIN * 2.0, SIDEBAR_HEIGHT)
+	sidebar_panel.z_index = 120
+	sidebar_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(sidebar_panel)
+
+	sidebar_content = VBoxContainer.new()
+	sidebar_content.name = "SidebarContent"
+	sidebar_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sidebar_content.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	sidebar_panel.add_child(sidebar_content)
+
+	var mode_button_row := HBoxContainer.new()
+	mode_button_row.name = "SidebarModeButtons"
+	mode_button_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sidebar_content.add_child(mode_button_row)
+
+	_create_sidebar_mode_button(mode_button_row, "building_details", "Details")
+	_create_sidebar_mode_button(mode_button_row, "build_menu", "Build")
+	_create_sidebar_mode_button(mode_button_row, "debug_placeholder", "Debug")
+
+	sidebar_mode_title_label = Label.new()
+	sidebar_mode_title_label.name = "SidebarModeTitle"
+	sidebar_mode_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	sidebar_mode_title_label.text = "Sidebar"
+	sidebar_content.add_child(sidebar_mode_title_label)
+
+	sidebar_body = VBoxContainer.new()
+	sidebar_body.name = "SidebarBody"
+	sidebar_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sidebar_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	sidebar_content.add_child(sidebar_body)
+
+	building_details_holder = _create_sidebar_holder("BuildingDetailsHolder")
+	sidebar_body.add_child(building_details_holder)
+	sidebar_modes["building_details"] = building_details_holder
+
+	build_menu_holder = _create_sidebar_holder("BuildMenuHolder")
+	sidebar_body.add_child(build_menu_holder)
+	sidebar_modes["build_menu"] = build_menu_holder
+
+	debug_placeholder_holder = _create_sidebar_holder("DebugPlaceholderHolder")
+	sidebar_body.add_child(debug_placeholder_holder)
+	sidebar_modes["debug_placeholder"] = debug_placeholder_holder
+	_populate_debug_placeholder()
+
+	open_sidebar_mode("build_menu")
+
+func _create_sidebar_mode_button(parent: Control, mode_id: String, button_text: String) -> void:
+	var button := Button.new()
+	button.name = "%sButton" % mode_id.capitalize()
+	button.text = button_text
+	button.focus_mode = Control.FOCUS_NONE
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.pressed.connect(func() -> void:
+		open_sidebar_mode(mode_id)
+	)
+	parent.add_child(button)
+	sidebar_mode_buttons[mode_id] = button
+
+func _create_sidebar_holder(holder_name: String) -> Control:
+	var holder := VBoxContainer.new()
+	holder.name = holder_name
+	holder.visible = false
+	holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	holder.custom_minimum_size = Vector2(SIDEBAR_WIDTH - SIDEBAR_MARGIN * 2.0 - 24.0, 0.0)
+	return holder
+
+func _populate_debug_placeholder() -> void:
+	if debug_placeholder_holder == null:
+		return
+
+	var label := Label.new()
+	label.name = "DebugPlaceholderLabel"
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.custom_minimum_size = Vector2(SIDEBAR_WIDTH - SIDEBAR_MARGIN * 2.0 - 36.0, 0.0)
+	label.text = "DEBUG PLACEHOLDER\n\nThe old Debug overlay still works from the top-left Show Debug button.\n\nThis sidebar mode is reserved for a future migration of debug tools into the right sidebar."
+	debug_placeholder_holder.add_child(label)
+
+func open_sidebar_mode(mode_id: String) -> void:
+	if sidebar_modes.is_empty():
+		return
+
+	active_sidebar_mode = mode_id
+
+	for key in sidebar_modes.keys():
+		var holder := sidebar_modes[key] as Control
+		if holder != null:
+			holder.visible = key == mode_id
+
+	for key in sidebar_mode_buttons.keys():
+		var button := sidebar_mode_buttons[key] as Button
+		if button != null:
+			button.disabled = key == mode_id
+
+	if sidebar_mode_title_label != null:
+		match mode_id:
+			"building_details":
+				sidebar_mode_title_label.text = "Building Details"
+			"build_menu":
+				sidebar_mode_title_label.text = "Build Menu"
+			"debug_placeholder":
+				sidebar_mode_title_label.text = "Debug"
+			_:
+				sidebar_mode_title_label.text = "Sidebar"
+
+	if building_menu != null:
+		building_menu.visible = mode_id == "building_details" and building_menu.current_building_id != ""
+
+func _dock_build_panel_in_sidebar() -> void:
+	if build_panel == null or build_menu_holder == null:
+		return
+
+	if build_panel.get_parent() != null:
+		build_panel.get_parent().remove_child(build_panel)
+
+	build_menu_holder.add_child(build_panel)
+	build_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	build_panel.offset_left = 0.0
+	build_panel.offset_top = 0.0
+	build_panel.offset_right = 0.0
+	build_panel.offset_bottom = 0.0
+	build_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	build_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	build_panel.visible = true
+
+func _dock_building_details_in_sidebar() -> void:
+	if building_menu == null or building_details_holder == null:
+		return
+
+	if building_menu.get_parent() != null:
+		building_menu.get_parent().remove_child(building_menu)
+
+	building_details_holder.add_child(building_menu)
+	building_menu.set_anchors_preset(Control.PRESET_FULL_RECT)
+	building_menu.offset_left = 0.0
+	building_menu.offset_top = 0.0
+	building_menu.offset_right = 0.0
+	building_menu.offset_bottom = 0.0
+	building_menu.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	building_menu.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	building_menu.visible = false
+
+	if building_menu.has_method("set_embedded_in_sidebar"):
+		building_menu.set_embedded_in_sidebar(true)
 
 func _create_build_panel() -> void:
 	build_panel = PanelContainer.new()
 	build_panel.name = "BuildPanel"
-	build_panel.position = Vector2(930, 12)
-	build_panel.size = Vector2(290, 300)
-	build_panel.custom_minimum_size = Vector2(290, 300)
+	build_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	build_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	build_panel.custom_minimum_size = Vector2(0, 0)
 	build_panel.z_index = 100
 	build_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(build_panel)
@@ -320,9 +508,10 @@ func _create_build_panel() -> void:
 	build_panel_root_container = vbox
 
 	build_panel_collapse_button = Button.new()
-	build_panel_collapse_button.text = "Hide Build Menu"
+	build_panel_collapse_button.text = "Build Options"
 	build_panel_collapse_button.focus_mode = Control.FOCUS_NONE
-	build_panel_collapse_button.pressed.connect(_on_toggle_build_panel_collapsed)
+	build_panel_collapse_button.disabled = true
+	build_panel_collapse_button.visible = false
 	vbox.add_child(build_panel_collapse_button)
 
 	var title_label := Label.new()
@@ -334,50 +523,58 @@ func _create_build_panel() -> void:
 	note_label.autowrap_mode = 3
 	vbox.add_child(note_label)
 
+	var civic_category_label := Label.new()
+	civic_category_label.text = "CIVIC"
+	vbox.add_child(civic_category_label)
+
 	var guild_button := Button.new()
-	guild_button.text = "Build Guild Hall (%dg)" % get_building_cost("guild_hall")
+	guild_button.text = "Guild Hall - %dg" % get_building_cost("guild_hall")
 	guild_button.focus_mode = Control.FOCUS_NONE
 	guild_button.pressed.connect(_on_build_button_pressed.bind("guild_hall"))
 	vbox.add_child(guild_button)
 
+	var service_category_label := Label.new()
+	service_category_label.text = "SERVICES"
+	vbox.add_child(service_category_label)
+
 	var inn_button := Button.new()
-	inn_button.text = "Build Inn (%dg)" % get_building_cost("inn")
+	inn_button.text = "Inn - %dg" % get_building_cost("inn")
 	inn_button.focus_mode = Control.FOCUS_NONE
 	inn_button.pressed.connect(_on_build_button_pressed.bind("inn"))
 	vbox.add_child(inn_button)
 
 	var store_button := Button.new()
-	store_button.text = "Build General Store (%dg)" % get_building_cost("general_store")
+	store_button.text = "General Store - %dg" % get_building_cost("general_store")
 	store_button.focus_mode = Control.FOCUS_NONE
 	store_button.pressed.connect(_on_build_button_pressed.bind("general_store"))
 	vbox.add_child(store_button)
 
 	var move_button := Button.new()
-	move_button.text = "Move Selected"
+	move_button.text = "Move Selected Building"
 	move_button.focus_mode = Control.FOCUS_NONE
 	move_button.pressed.connect(_on_move_selected_button_pressed)
 	vbox.add_child(move_button)
 
 	var demolish_button := Button.new()
-	demolish_button.text = "Demolish Selected"
+	demolish_button.text = "Demolish Selected Building"
 	demolish_button.focus_mode = Control.FOCUS_NONE
 	demolish_button.pressed.connect(_on_demolish_selected_button_pressed)
 	vbox.add_child(demolish_button)
 
 	var save_button := Button.new()
-	save_button.text = "Save Buildings"
+	save_button.text = "Save Building Layout"
 	save_button.focus_mode = Control.FOCUS_NONE
 	save_button.pressed.connect(_on_save_buildings_button_pressed)
 	vbox.add_child(save_button)
 
 	var load_button := Button.new()
-	load_button.text = "Load Buildings"
+	load_button.text = "Load Building Layout"
 	load_button.focus_mode = Control.FOCUS_NONE
 	load_button.pressed.connect(_on_load_buildings_button_pressed)
 	vbox.add_child(load_button)
 
 	var cancel_button := Button.new()
-	cancel_button.text = "Cancel Build / Move"
+	cancel_button.text = "Cancel Placement / Move"
 	cancel_button.focus_mode = Control.FOCUS_NONE
 	cancel_button.pressed.connect(cancel_build_mode)
 	vbox.add_child(cancel_button)
@@ -388,25 +585,8 @@ func _create_build_panel() -> void:
 	vbox.add_child(build_status_label)
 
 func _on_toggle_build_panel_collapsed() -> void:
-	build_panel_collapsed = not build_panel_collapsed
-
-	if build_panel_root_container == null:
-		return
-
-	for child in build_panel_root_container.get_children():
-		if child == build_panel_collapse_button:
-			continue
-
-		child.visible = not build_panel_collapsed
-
-	if build_panel_collapsed:
-		build_panel_collapse_button.text = "Show Build Menu"
-		build_panel.custom_minimum_size = Vector2(290, 40)
-		build_panel.size = Vector2(290, 40)
-	else:
-		build_panel_collapse_button.text = "Hide Build Menu"
-		build_panel.custom_minimum_size = Vector2(290, 300)
-		build_panel.size = Vector2(290, 300)
+	# Collapse behavior is intentionally disabled now that Build Menu lives inside sidebar modes.
+	build_panel_collapsed = false
 
 func _on_build_button_pressed(building_type: String) -> void:
 	print("Build button pressed: ", building_type)

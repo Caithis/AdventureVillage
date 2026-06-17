@@ -1,12 +1,11 @@
 # Known Issues
 
-## v0.5.3
+## v0.5.5
 
 Known limitations:
-- This is a scrollable panel, not the final shared sidebar manager.
-- Build Menu and Debug UI are not yet unified into the same sidebar system.
-- Only Building Details uses this scrollable sidebar-style layout for now.
-- No tabs yet.
-- No economy/trend panel yet.
-- Visual styling is still placeholder.
-- The main game resolution is still small for the amount of UI we are testing.
+- Sidebar is still built in `Town.gd`, not a dedicated scene.
+- Build Menu is still dynamically generated.
+- Debug sidebar mode is still a placeholder.
+- The old Debug overlay remains separate.
+- The wider viewport is a prototype layout decision and may need scaling options later.
+- Final visual styling is still placeholder.

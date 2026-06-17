@@ -131,3 +131,13 @@ The building detail menu now uses a cleaner sectioned layout with Identity, Capa
 ## v0.5.3 Update Notes
 
 The building detail panel now uses scrollable content and compact button rows so controls are not pushed off-screen. This patch also documents the future direction of a dedicated right-side sidebar for build/debug/building/economy menus while preserving the center gameplay viewport.
+
+
+## v0.5.4 Update Notes
+
+The Town scene now has a right sidebar container with mode buttons for Details, Build, and Debug. Building Details and Build Menu are docked into the sidebar, and only one sidebar mode is visible at a time. Debug is currently a placeholder while the existing debug overlay remains separate.
+
+
+## v0.5.5 Update Notes
+
+The project viewport is widened to create a right-side sidebar lane outside the original 1280-wide gameplay area. The Build Menu has been cleaned up for sidebar use with funds, placement instructions, compact buttons, and categories. The old Build Menu collapse behavior is hidden. Debug placeholder wrapping is fixed.

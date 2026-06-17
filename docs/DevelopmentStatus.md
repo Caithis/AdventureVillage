@@ -255,3 +255,27 @@ Full intended game: about 18-20%
 ```
 
 This patch is UI infrastructure polish. It does not add a major simulation system, but it makes the growing building systems usable and establishes the direction for a proper sidebar information layout.
+
+
+## v0.5.4 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 29%
+Full intended game: about 19-21%
+```
+
+This patch introduces the first shared sidebar UI foundation. It is an important structural step toward keeping the gameplay viewport readable while supporting deeper management menus.
+
+
+## v0.5.5 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 30%
+Full intended game: about 20-22%
+```
+
+This patch improves the sidebar layout and begins separating gameplay view space from UI space. That is important for future economy trends, debug tools, build tools, and management information.

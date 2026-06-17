@@ -1,61 +1,62 @@
 # Dungeon Frontier Guild-Town
 
-Version: v0.5.3 - Building Menu Scroll / Compact Mode
+Version: v0.5.5 - Sidebar Build Menu Cleanup
 
-## What v0.5.3 Adds
+## What v0.5.5 Adds
 
-This patch prevents the building detail UI from becoming too tall and hiding controls.
+This patch makes the Build Menu feel more native to the sidebar and fixes the debug placeholder wrapping issue.
 
-## Scrollable Building Detail Content
+## Dedicated Sidebar Lane
 
-The building menu now uses a scrollable content area.
+The project window is widened from the original gameplay width so the right sidebar can live beside the town view instead of covering it.
 
-The title and close button stay outside the scrolling section.
-
-This means lower controls such as:
+Current layout direction:
 
 ```text
-Toggle Slime Gel
-Upgrade Building
-Worker buttons
+Left / center: 1280-wide gameplay area
+Right: sidebar UI lane
 ```
 
-should remain reachable even when the panel contains many sections.
+This is still prototype UI, but it better matches the long-term strategy/management layout direction.
 
-## Compact Button Layout
+## Build Menu Cleanup
 
-Worker controls now use a compact horizontal row:
+The Build Menu now uses a cleaner sidebar layout:
 
 ```text
-+ Worker    - Worker
+BUILD MENU
+Funds display
+Placement instructions
+CIVIC
+Guild Hall button
+SERVICES
+Inn button
+General Store button
+Management controls
 ```
 
-The Slime Gel policy button is shortened to:
+## Compact Build Buttons
+
+Build buttons are shortened:
 
 ```text
-Toggle Slime Gel (...)
+Guild Hall - 250g
+Inn - 150g
+General Store - 175g
 ```
 
-## Better Panel Sizing
+## Old Collapse Behavior Hidden
 
-The building detail panel now behaves more like a right-side sidebar panel:
+The old Build Menu collapse behavior is hidden because sidebar mode buttons now handle switching menus.
 
-```text
-Fixed right-side position
-Taller panel area
-Scrollable details
-Close button at bottom
-```
+## Debug Placeholder Fix
 
-## Sidebar Direction Documented
+The Debug placeholder text should no longer wrap vertically one letter per line.
 
-This patch also documents the future UI direction:
+Debug still remains a placeholder inside the sidebar. The old Debug overlay still works separately from the top-left Show Debug button.
 
-```text
-center gameplay viewport
-right-side menu/info sidebar
-one major sidebar mode open at a time
-future build/debug/economy/info panels living in the sidebar
-```
+## Current Limitation
 
-This is inspired by management/strategy layouts where the player can keep the main map readable while using side panels for information and controls.
+This is not a full sidebar UI manager scene yet.
+
+The sidebar is still built inside `Town.gd`, but it now has a clearer layout direction and a dedicated screen lane.

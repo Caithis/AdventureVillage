@@ -1,39 +1,37 @@
 # Changelog
 
-## v0.5.3 - Building Menu Scroll / Compact Mode
+## v0.5.5 - Sidebar Build Menu Cleanup
 
 ### Added
-- Scrollable building detail content.
-- Compact worker button row.
-- Taller right-side building detail panel.
-- Close button remains outside scroll area.
-- Placement section in building detail panel.
-- Future sidebar UI direction documentation.
-
-### Changed
-- Building menu now behaves more like a right sidebar panel.
-- Slime Gel toggle button moved into scrollable content.
-- Slime Gel toggle button uses more compact text.
-- Worker buttons use compact `+ Worker` / `- Worker` labels.
+- Wider project viewport to reserve right-side sidebar lane.
+- Cleaner Build Menu sidebar layout.
+- Current funds display in Build Menu.
+- Placement instructions in Build Menu.
+- Build categories: Civic and Services.
+- Compact build button labels.
+- Sidebar viewport layout documentation.
+- Sidebar Build Menu cleanup documentation.
 
 ### Fixed / Improved
-- Building controls should no longer be pushed off-screen by the growing detail panel.
-- General Store policy toggle should now be reachable by scrolling.
+- Debug placeholder no longer wraps one character per line.
+- Sidebar is moved outside the original 1280-wide gameplay area.
+- Old Build Menu collapse behavior is hidden because sidebar modes handle menu switching.
 
 ### Not Yet Added
-- Full shared sidebar manager.
-- Tabs/categories.
-- Economy trend panel.
-- Debug/build/sidebar mode exclusivity.
-- Final visual styling.
+- Dedicated BuildMenuPanel scene.
+- Real Debug sidebar controls.
+- Economy trends sidebar mode.
+- Sidebar collapse hotkey.
+- Final styling.
 
-## v0.5.2 - Building Detail Panel Polish
+## v0.5.4 - Sidebar Manager Foundation
 
 ### Added
-- Sectioned building details.
+- Shared right sidebar with Details / Build / Debug modes.
 
 ## Earlier v0.5.x
 
-- Building upgrades.
-- Service speed.
-- Worker placeholders.
+- Scrollable building detail panel.
+- Building detail polish.
+- Upgrades.
+- Service speed/workers.

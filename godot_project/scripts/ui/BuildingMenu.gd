@@ -1,10 +1,12 @@
 extends Control
 
-const PANEL_LEFT := 860.0
+const PANEL_LEFT := 1290.0
 const PANEL_TOP := 72.0
-const PANEL_RIGHT := 1240.0
+const PANEL_RIGHT := 1590.0
 const PANEL_BOTTOM := 690.0
 const SCROLL_MIN_HEIGHT := 500.0
+
+var embedded_in_sidebar: bool = false
 
 @onready var panel_container: PanelContainer = $PanelContainer
 @onready var root_vbox: VBoxContainer = $PanelContainer/VBoxContainer
@@ -42,7 +44,25 @@ func _ready() -> void:
 	GameState.state_changed.connect(_refresh)
 	visible = false
 
+func set_embedded_in_sidebar(value: bool) -> void:
+	embedded_in_sidebar = value
+	_configure_panel_size()
+
 func _configure_panel_size() -> void:
+	if panel_container == null:
+		return
+
+	if embedded_in_sidebar:
+		panel_container.set_anchors_preset(Control.PRESET_FULL_RECT)
+		panel_container.offset_left = 0.0
+		panel_container.offset_top = 0.0
+		panel_container.offset_right = 0.0
+		panel_container.offset_bottom = 0.0
+		panel_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		panel_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		panel_container.custom_minimum_size = Vector2(0, 0)
+		return
+
 	panel_container.offset_left = PANEL_LEFT
 	panel_container.offset_top = PANEL_TOP
 	panel_container.offset_right = PANEL_RIGHT
