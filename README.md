@@ -1,64 +1,61 @@
 # Dungeon Frontier Guild-Town
 
-Version: v0.5.2 - Building Detail Panel Polish
+Version: v0.5.3 - Building Menu Scroll / Compact Mode
 
-## What v0.5.2 Adds
+## What v0.5.3 Adds
 
-This patch makes the building menu easier to read as building controls grow.
+This patch prevents the building detail UI from becoming too tall and hiding controls.
 
-## Cleaner Building Menu Layout
+## Scrollable Building Detail Content
 
-The building menu is now organized into sections:
+The building menu now uses a scrollable content area.
 
-```text
-IDENTITY
-CAPACITY / QUEUE
-SERVICE
-WORKERS
-UPGRADES
-POLICY
-```
+The title and close button stay outside the scrolling section.
 
-This replaces the older stacked text/control approach that was becoming hard to scan.
-
-## Better Fixed vs Placed Labels
-
-The Identity section now clearly distinguishes:
+This means lower controls such as:
 
 ```text
-Placed building
-Fixed fallback building
-Protected test/safety building
+Toggle Slime Gel
+Upgrade Building
+Worker buttons
 ```
 
-Fixed fallback buildings should read as protected fallback buildings instead of looking like normal player-owned buildings.
+should remain reachable even when the panel contains many sections.
 
-## Cleaner Control Visibility
+## Compact Button Layout
 
-Unavailable controls are hidden more cleanly.
-
-Examples:
+Worker controls now use a compact horizontal row:
 
 ```text
-Guild Hall does not show worker controls yet.
-Fixed fallback buildings do not show upgrade controls.
-Non-service buildings show "not used yet" for capacity/queue/service sections.
-General Store policy controls only show on General Store.
++ Worker    - Worker
 ```
 
-## Added Town Detail Helpers
-
-Town now exposes cleaner building-detail helper methods for the UI:
+The Slime Gel policy button is shortened to:
 
 ```text
-get_building_identity_summary()
-get_building_capacity_queue_summary()
-get_building_worker_summary()
-get_building_placement_summary()
+Toggle Slime Gel (...)
 ```
 
-## Current Limitation
+## Better Panel Sizing
 
-This is still a simple prototype panel, not the final UI.
+The building detail panel now behaves more like a right-side sidebar panel:
 
-Later this should become a proper styled building detail window with icons, tabs, compact spacing, and better pixel-art presentation.
+```text
+Fixed right-side position
+Taller panel area
+Scrollable details
+Close button at bottom
+```
+
+## Sidebar Direction Documented
+
+This patch also documents the future UI direction:
+
+```text
+center gameplay viewport
+right-side menu/info sidebar
+one major sidebar mode open at a time
+future build/debug/economy/info panels living in the sidebar
+```
+
+This is inspired by management/strategy layouts where the player can keep the main map readable while using side panels for information and controls.

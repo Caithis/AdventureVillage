@@ -126,3 +126,8 @@ Placed buildings now have upgrade levels. General Store and Inn upgrades increas
 ## v0.5.2 Update Notes
 
 The building detail menu now uses a cleaner sectioned layout with Identity, Capacity/Queue, Service, Workers, Upgrades, and Policy sections. Fixed fallback buildings are labeled more clearly and unavailable controls are hidden more cleanly.
+
+
+## v0.5.3 Update Notes
+
+The building detail panel now uses scrollable content and compact button rows so controls are not pushed off-screen. This patch also documents the future direction of a dedicated right-side sidebar for build/debug/building/economy menus while preserving the center gameplay viewport.

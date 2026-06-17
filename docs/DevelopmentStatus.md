@@ -243,3 +243,15 @@ Full intended game: about 17-19%
 ```
 
 This patch improves usability rather than adding a large new simulation layer. That matters because building systems are now numerous enough that readable UI is becoming part of the core foundation.
+
+
+## v0.5.3 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 28%
+Full intended game: about 18-20%
+```
+
+This patch is UI infrastructure polish. It does not add a major simulation system, but it makes the growing building systems usable and establishes the direction for a proper sidebar information layout.

@@ -1,12 +1,12 @@
 # Known Issues
 
-## v0.5.2
+## v0.5.3
 
 Known limitations:
-- The building menu is cleaner but still visually plain.
-- The menu may become tall as more sections are added.
-- No icons or progress bars yet.
-- No tabbed layout yet.
-- No scroll container yet.
-- Some labels may still feel text-heavy.
-- Guild Hall details are still mostly placeholder.
+- This is a scrollable panel, not the final shared sidebar manager.
+- Build Menu and Debug UI are not yet unified into the same sidebar system.
+- Only Building Details uses this scrollable sidebar-style layout for now.
+- No tabs yet.
+- No economy/trend panel yet.
+- Visual styling is still placeholder.
+- The main game resolution is still small for the amount of UI we are testing.

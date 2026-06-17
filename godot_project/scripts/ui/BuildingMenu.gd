@@ -1,5 +1,13 @@
 extends Control
 
+const PANEL_LEFT := 860.0
+const PANEL_TOP := 72.0
+const PANEL_RIGHT := 1240.0
+const PANEL_BOTTOM := 690.0
+const SCROLL_MIN_HEIGHT := 500.0
+
+@onready var panel_container: PanelContainer = $PanelContainer
+@onready var root_vbox: VBoxContainer = $PanelContainer/VBoxContainer
 @onready var title_label: Label = $PanelContainer/VBoxContainer/TitleLabel
 @onready var description_label: Label = $PanelContainer/VBoxContainer/DescriptionLabel
 @onready var policy_label: Label = $PanelContainer/VBoxContainer/PolicyLabel
@@ -10,86 +18,122 @@ var current_building_id: String = ""
 var current_building_node: Node = null
 var current_town_node: Node = null
 
+var detail_scroll: ScrollContainer = null
+var detail_content_vbox: VBoxContainer = null
+
 var identity_section_label: Label = null
 var capacity_section_label: Label = null
 var service_section_label: Label = null
 var worker_section_label: Label = null
 var upgrade_section_label: Label = null
 var policy_section_label: Label = null
+var placement_section_label: Label = null
 
+var worker_button_row: HBoxContainer = null
 var add_worker_button: Button = null
 var remove_worker_button: Button = null
 var upgrade_button: Button = null
 
 func _ready() -> void:
+	_configure_panel_size()
 	toggle_slime_gel_button.pressed.connect(_on_toggle_slime_gel_pressed)
 	close_button.pressed.connect(_on_close_pressed)
-	_create_detail_panel_layout()
+	_create_scrollable_detail_layout()
 	GameState.state_changed.connect(_refresh)
 	visible = false
 
-func _create_detail_panel_layout() -> void:
-	var vbox := $PanelContainer/VBoxContainer
+func _configure_panel_size() -> void:
+	panel_container.offset_left = PANEL_LEFT
+	panel_container.offset_top = PANEL_TOP
+	panel_container.offset_right = PANEL_RIGHT
+	panel_container.offset_bottom = PANEL_BOTTOM
+	panel_container.custom_minimum_size = Vector2(PANEL_RIGHT - PANEL_LEFT, PANEL_BOTTOM - PANEL_TOP)
 
+func _create_scrollable_detail_layout() -> void:
 	description_label.visible = false
 	policy_label.visible = false
 	toggle_slime_gel_button.visible = false
 
+	title_label.text = "Building Details"
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+	detail_scroll = ScrollContainer.new()
+	detail_scroll.name = "DetailScroll"
+	detail_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	detail_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	detail_scroll.custom_minimum_size = Vector2(0, SCROLL_MIN_HEIGHT)
+	root_vbox.add_child(detail_scroll)
+	root_vbox.move_child(detail_scroll, close_button.get_index())
+
+	detail_content_vbox = VBoxContainer.new()
+	detail_content_vbox.name = "DetailContentVBox"
+	detail_content_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	detail_scroll.add_child(detail_content_vbox)
+
 	identity_section_label = _create_section_label("IdentitySectionLabel")
-	vbox.add_child(identity_section_label)
-	vbox.move_child(identity_section_label, close_button.get_index())
+	detail_content_vbox.add_child(identity_section_label)
+
+	placement_section_label = _create_section_label("PlacementSectionLabel")
+	detail_content_vbox.add_child(placement_section_label)
 
 	capacity_section_label = _create_section_label("CapacitySectionLabel")
-	vbox.add_child(capacity_section_label)
-	vbox.move_child(capacity_section_label, close_button.get_index())
+	detail_content_vbox.add_child(capacity_section_label)
 
 	service_section_label = _create_section_label("ServiceSectionLabel")
-	vbox.add_child(service_section_label)
-	vbox.move_child(service_section_label, close_button.get_index())
+	detail_content_vbox.add_child(service_section_label)
 
 	worker_section_label = _create_section_label("WorkerSectionLabel")
-	vbox.add_child(worker_section_label)
-	vbox.move_child(worker_section_label, close_button.get_index())
+	detail_content_vbox.add_child(worker_section_label)
+
+	worker_button_row = HBoxContainer.new()
+	worker_button_row.name = "WorkerButtonRow"
+	worker_button_row.visible = false
+	worker_button_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	detail_content_vbox.add_child(worker_button_row)
 
 	add_worker_button = Button.new()
 	add_worker_button.name = "AddWorkerButton"
-	add_worker_button.text = "Add Worker Placeholder"
-	add_worker_button.visible = false
+	add_worker_button.text = "+ Worker"
+	add_worker_button.visible = true
+	add_worker_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	add_worker_button.pressed.connect(_on_add_worker_pressed)
-	vbox.add_child(add_worker_button)
-	vbox.move_child(add_worker_button, close_button.get_index())
+	worker_button_row.add_child(add_worker_button)
 
 	remove_worker_button = Button.new()
 	remove_worker_button.name = "RemoveWorkerButton"
-	remove_worker_button.text = "Remove Worker Placeholder"
-	remove_worker_button.visible = false
+	remove_worker_button.text = "- Worker"
+	remove_worker_button.visible = true
+	remove_worker_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	remove_worker_button.pressed.connect(_on_remove_worker_pressed)
-	vbox.add_child(remove_worker_button)
-	vbox.move_child(remove_worker_button, close_button.get_index())
+	worker_button_row.add_child(remove_worker_button)
 
 	upgrade_section_label = _create_section_label("UpgradeSectionLabel")
-	vbox.add_child(upgrade_section_label)
-	vbox.move_child(upgrade_section_label, close_button.get_index())
+	detail_content_vbox.add_child(upgrade_section_label)
 
 	upgrade_button = Button.new()
 	upgrade_button.name = "UpgradeButton"
 	upgrade_button.text = "Upgrade Building"
 	upgrade_button.visible = false
+	upgrade_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	upgrade_button.pressed.connect(_on_upgrade_pressed)
-	vbox.add_child(upgrade_button)
-	vbox.move_child(upgrade_button, close_button.get_index())
+	detail_content_vbox.add_child(upgrade_button)
 
 	policy_section_label = _create_section_label("PolicySectionLabel")
-	vbox.add_child(policy_section_label)
-	vbox.move_child(policy_section_label, close_button.get_index())
+	detail_content_vbox.add_child(policy_section_label)
 
-	vbox.move_child(toggle_slime_gel_button, close_button.get_index())
+	root_vbox.remove_child(toggle_slime_gel_button)
+	toggle_slime_gel_button.text = "Toggle Slime Gel"
+	toggle_slime_gel_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	detail_content_vbox.add_child(toggle_slime_gel_button)
+
+	close_button.text = "Close Building Details"
 
 func _create_section_label(label_name: String) -> Label:
 	var label := Label.new()
 	label.name = label_name
 	label.visible = false
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return label
 
 func open_for_building(building_id: String, building_node: Node = null, town_node: Node = null) -> void:
@@ -97,7 +141,11 @@ func open_for_building(building_id: String, building_node: Node = null, town_nod
 	current_building_node = building_node
 	current_town_node = town_node
 	visible = true
+	_configure_panel_size()
 	_refresh()
+
+	if detail_scroll != null:
+		detail_scroll.scroll_vertical = 0
 
 func close() -> void:
 	visible = false
@@ -111,6 +159,7 @@ func _refresh() -> void:
 
 	_refresh_title(has_valid_building)
 	_refresh_identity_section(has_town, has_valid_building)
+	_refresh_placement_section(has_town, has_valid_building)
 	_refresh_capacity_section(has_town, has_valid_building)
 	_refresh_service_section(has_town, has_valid_building)
 	_refresh_worker_section(has_town, has_valid_building)
@@ -140,6 +189,16 @@ func _refresh_identity_section(has_town: bool, has_valid_building: bool) -> void
 
 	if can_show:
 		identity_section_label.text = "IDENTITY\n%s" % current_town_node.get_building_identity_summary(current_building_node)
+
+func _refresh_placement_section(has_town: bool, has_valid_building: bool) -> void:
+	if placement_section_label == null:
+		return
+
+	var can_show: bool = has_town and has_valid_building and current_town_node.has_method("get_building_placement_summary")
+	placement_section_label.visible = can_show
+
+	if can_show:
+		placement_section_label.text = "PLACEMENT\n%s" % current_town_node.get_building_placement_summary(current_building_node)
 
 func _refresh_capacity_section(has_town: bool, has_valid_building: bool) -> void:
 	if capacity_section_label == null:
@@ -173,11 +232,8 @@ func _refresh_worker_section(has_town: bool, has_valid_building: bool) -> void:
 
 	var can_adjust_workers: bool = has_town and has_valid_building and current_town_node.has_method("can_adjust_building_workers") and bool(current_town_node.can_adjust_building_workers(current_building_node))
 
-	if add_worker_button != null:
-		add_worker_button.visible = can_adjust_workers
-
-	if remove_worker_button != null:
-		remove_worker_button.visible = can_adjust_workers
+	if worker_button_row != null:
+		worker_button_row.visible = can_adjust_workers
 
 func _refresh_upgrade_section(has_town: bool, has_valid_building: bool) -> void:
 	if upgrade_section_label == null:
@@ -205,7 +261,7 @@ func _refresh_policy_section(has_town: bool, has_valid_building: bool) -> void:
 
 	if show_general_store_policy:
 		policy_section_label.text = "POLICY\nSlime Gel buying: %s" % GameState.get_general_store_buy_policy_text()
-		toggle_slime_gel_button.text = "Toggle Slime Gel Buying (%s)" % GameState.get_general_store_buy_policy_text()
+		toggle_slime_gel_button.text = "Toggle Slime Gel (%s)" % GameState.get_general_store_buy_policy_text()
 
 func _on_toggle_slime_gel_pressed() -> void:
 	if current_building_id == "general_store":
