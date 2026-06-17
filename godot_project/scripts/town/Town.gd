@@ -1661,6 +1661,72 @@ func get_worker_count_for_instance(building_type: String, instance_id: String) -
 func _get_default_worker_count(building_type: String) -> int:
 	return int(DEFAULT_WORKER_PLACEHOLDERS.get(building_type, 0))
 
+
+func get_building_identity_summary(building_node: Node) -> String:
+	if not building_node is ColorRect:
+		return "No building selected."
+
+	var building := building_node as ColorRect
+	var building_type: String = str(building.get("building_id"))
+	var display_name: String = _get_building_display_name(building_type)
+
+	if bool(building.get_meta("is_fixed_fallback", false)):
+		return "%s\nFixed fallback building\nProtected test/safety building" % display_name
+
+	var instance_id: String = _ensure_building_instance_id(building)
+	return "%s\nPlaced building\nID: %s" % [display_name, instance_id]
+
+func get_building_capacity_queue_summary(building_node: Node) -> String:
+	if not building_node is ColorRect:
+		return "Capacity: -\nQueue: -"
+
+	var building := building_node as ColorRect
+	var building_type: String = str(building.get("building_id"))
+
+	if not _is_queue_capable_building_type(building_type):
+		return "Capacity: not used yet\nQueue: not used yet"
+
+	var instance_id: String = _get_building_instance_id_for_visuals(building)
+	var occupied_count: int = _get_occupancy_count_for_instance(instance_id)
+	var capacity_count: int = get_building_capacity_for_building(building)
+	var queue_count: int = _get_queue_count_for_instance(instance_id)
+
+	return "Capacity: %d/%d occupied\nQueue: %d waiting" % [
+		occupied_count,
+		capacity_count,
+		queue_count
+	]
+
+func get_building_worker_summary(building_node: Node) -> String:
+	if not building_node is ColorRect:
+		return "Workers: -"
+
+	var building := building_node as ColorRect
+	var building_type: String = str(building.get("building_id"))
+
+	if not _is_queue_capable_building_type(building_type):
+		return "Workers: not used yet"
+
+	var worker_count: int = get_worker_count_for_building(building)
+	var speed_multiplier: float = get_service_speed_multiplier_for_worker_count(worker_count)
+
+	return "Workers: %d/%d\nWorker speed: x%.2f" % [
+		worker_count,
+		MAX_WORKER_PLACEHOLDER_COUNT,
+		speed_multiplier
+	]
+
+func get_building_placement_summary(building_node: Node) -> String:
+	if not building_node is ColorRect:
+		return "Placement: -"
+
+	var building := building_node as ColorRect
+
+	if bool(building.get_meta("is_fixed_fallback", false)):
+		return "Placement: fixed fallback\nMove/Demolish: disabled"
+
+	return "Placement: player placed\nMove/Demolish: available"
+
 func get_building_service_summary(building_node: Node) -> String:
 	if not building_node is ColorRect:
 		return "Service: -"

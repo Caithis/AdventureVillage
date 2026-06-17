@@ -231,3 +231,15 @@ Full intended game: about 17-19%
 ```
 
 The building system now supports investment through upgrades. Service buildings can improve capacity and service speed, and those improvements persist through save/load.
+
+
+## v0.5.2 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 27%
+Full intended game: about 17-19%
+```
+
+This patch improves usability rather than adding a large new simulation layer. That matters because building systems are now numerous enough that readable UI is becoming part of the core foundation.

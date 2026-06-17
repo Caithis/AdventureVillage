@@ -1,51 +1,43 @@
+# Changelog
+
+## v0.5.2 - Building Detail Panel Polish
+
+### Added
+- Sectioned building menu layout.
+- Identity section.
+- Capacity / Queue section.
+- Service section.
+- Workers section.
+- Upgrades section.
+- Policy section.
+- Cleaner fixed fallback building labeling.
+- Town detail helper methods for building UI summaries.
+- Building detail panel polish documentation.
+
+### Changed
+- Building menu now hides unavailable controls more cleanly.
+- General Store policy controls only show for General Store.
+- Worker and upgrade controls are visually grouped with their sections.
+
+### Not Yet Added
+- Final menu styling.
+- Icons.
+- Tabs.
+- Scrollable menu content.
+- Dedicated stats widgets.
+- Pixel-art UI polish.
+
 ## v0.5.1.1 - Upgrade Type Inference Hotfix
 
 ### Fixed
-- Fixed launch-blocking `Town.gd` parser error caused by inferred typing on `capacity_bonus`.
-- Hardened upgrade capacity calculations with explicit `int` types.
-- Hardened service-speed calculations with explicit `float` types.
-
-# Changelog
+- Upgrade capacity type inference error.
 
 ## v0.5.1 - Building Upgrade Foundation
 
 ### Added
-- Upgrade level per placed building.
-- Upgrade cost formula.
-- Upgrade Building button in building menu.
-- Upgrade summary in building menu.
-- Upgrade levels saved/loaded.
-- General Store upgrade increases capacity and service speed.
-- Inn upgrade increases capacity and service speed.
-- Building labels show upgrade level.
-- Building instance ID documentation.
+- Upgrade levels and upgrade controls.
 
-### Changed
-- Building capacity can now be affected by upgrade level.
-- Service speed can now be affected by upgrade level.
-- Placed building save data now includes `upgrade_level`.
+## Earlier v0.5.x
 
-### Not Yet Added
-- Upgrade construction time.
-- Upgrade material requirements.
-- Upgrade visual changes.
-- Upgrade confirmation prompt.
-- Full Guild Hall upgrade effects.
-
-## v0.5.0.1 - BuildingMenu Type Inference Hotfix
-
-### Fixed
-- Building menu worker-control launch error.
-
-## v0.5.0 - Building Service Speed / Workers Foundation
-
-### Added
-- Service speed and worker placeholders.
-
-## Earlier v0.4.x
-
-- Per-building queues.
-- Multi-building routing.
-- Capacity.
-- Save/load.
-- Building placement/move/demolish/costs.
+- Service speed.
+- Worker placeholders.

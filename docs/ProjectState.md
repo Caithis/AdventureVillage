@@ -121,3 +121,8 @@ General Store and Inn now have service time and worker placeholder counts. Worke
 ## v0.5.1 Update Notes
 
 Placed buildings now have upgrade levels. General Store and Inn upgrades increase capacity and service speed. Upgrade levels save/load, and the building menu shows upgrade controls. Building instance IDs are intentionally unique and non-recycled; the save file stores only current buildings and the next ID counter.
+
+
+## v0.5.2 Update Notes
+
+The building detail menu now uses a cleaner sectioned layout with Identity, Capacity/Queue, Service, Workers, Upgrades, and Policy sections. Fixed fallback buildings are labeled more clearly and unavailable controls are hidden more cleanly.
