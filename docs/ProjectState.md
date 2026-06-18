@@ -141,3 +141,48 @@ The Town scene now has a right sidebar container with mode buttons for Details, 
 ## v0.5.5 Update Notes
 
 The project viewport is widened to create a right-side sidebar lane outside the original 1280-wide gameplay area. The Build Menu has been cleaned up for sidebar use with funds, placement instructions, compact buttons, and categories. The old Build Menu collapse behavior is hidden. Debug placeholder wrapping is fixed.
+
+
+## v0.5.6 Update Notes
+
+The sidebar now has an Economy mode with placeholder management data: current gold, income/outflow placeholders, and current stock snapshot. This prepares the UI for future economy event logging and trend displays. The duplicate Inn button declaration in the Build Menu was also removed.
+
+
+## v0.5.7 Update Notes
+
+Economy event logging now tracks session totals for shop sales, inn income, material purchase outflow, building construction spend, and upgrade spend. The Economy sidebar now displays real tracked totals and tracked net instead of placeholders.
+
+
+## v0.5.8 Update Notes
+
+Economy tracking now has current day buckets in addition to session totals. The Economy sidebar separates current day values from session totals and now uses scrollable content with Refresh/Reset buttons at the top.
+
+
+## v0.5.9 Update Notes
+
+Economy history now saves/loads from `user://economy_history.json`. The Economy sidebar shows current day, previous day, session totals, and simple current-vs-previous trend text. Manual Save History and Load History buttons were added for testing.
+
+
+## v0.6.0 Update Notes
+
+A new SaveManager autoload now owns shared JSON file I/O. Town still owns building layout data and GameState still owns economy data, but both systems now route save/load through SaveManager. Future save hooks are documented for adventurers, world state, and settings. Future economy graph goals are also documented.
+
+
+## v0.6.1 Update Notes
+
+The sidebar now includes a Save mode exposing SaveManager. Save All and Load All buttons were added, along with a save status display, last save/load result text, and a Slot 1 prototype placeholder. Save All currently covers building layout, economy history, and save index.
+
+
+## v0.6.1 Hotfix 1 Update Notes
+
+Save All / Load All now use separate manual Slot 1 snapshot files instead of the live auto-save files. This fixes the issue where demolishing or placing a building after Save All would overwrite the state that Load All was expected to restore.
+
+
+## v0.6.2 Update Notes
+
+Active town adventurers now export/import save data through SaveManager. Save All writes a manual Slot 1 adventurer roster snapshot and Load All restores saved active town adventurers as SavedInTown. The Save sidebar now shows adventurer save status, including active town count and visitor/resident placeholder counts.
+
+
+## v0.6.3 Update Notes
+
+SaveManager now includes a manual Slot 1 world state snapshot. GameState exports/imports active world travelers, returned traveler records, visible slime state placeholder data, and slime nest growth/status. Loaded town adventurers now resume a basic town routine instead of staying idle after Load All.

@@ -1,37 +1,37 @@
 # Changelog
 
-## v0.5.5 - Sidebar Build Menu Cleanup
+## v0.6.3 - World Traveler Save Data Foundation
 
 ### Added
-- Wider project viewport to reserve right-side sidebar lane.
-- Cleaner Build Menu sidebar layout.
-- Current funds display in Build Menu.
-- Placement instructions in Build Menu.
-- Build categories: Civic and Services.
-- Compact build button labels.
-- Sidebar viewport layout documentation.
-- Sidebar Build Menu cleanup documentation.
+- World state save data export.
+- World state save data import.
+- Manual Slot 1 world state save file.
+- Active world traveler save/load foundation.
+- Returned traveler record save/load foundation.
+- Visible slime state placeholder save/load.
+- Slime nest growth/status save/load.
+- Save sidebar World status section.
+- SaveManager world state save/load methods.
+- World state JSON vector packing/unpacking.
+- World traveler save documentation.
 
-### Fixed / Improved
-- Debug placeholder no longer wraps one character per line.
-- Sidebar is moved outside the original 1280-wide gameplay area.
-- Old Build Menu collapse behavior is hidden because sidebar modes handle menu switching.
+### Fixed
+- Loaded town adventurers no longer remain permanently idle after Load All.
+- Loaded town adventurers now resume a basic town routine.
 
 ### Not Yet Added
-- Dedicated BuildMenuPanel scene.
-- Real Debug sidebar controls.
-- Economy trends sidebar mode.
-- Sidebar collapse hotkey.
-- Final styling.
+- Perfect combat-state restoration.
+- Dungeon/portal state persistence.
+- Fog-of-war persistence.
+- Monster ecology history.
+- World event persistence.
 
-## v0.5.4 - Sidebar Manager Foundation
+## v0.6.2 - Adventurer Save Data Foundation
 
 ### Added
-- Shared right sidebar with Details / Build / Debug modes.
+- Active town adventurer save/load.
 
-## Earlier v0.5.x
+## v0.6.1.1 - Manual Save Snapshot Fix
 
-- Scrollable building detail panel.
-- Building detail polish.
-- Upgrades.
-- Service speed/workers.
+### Fixed
+- Save All uses separate manual Slot 1 snapshots.

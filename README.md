@@ -1,62 +1,85 @@
 # Dungeon Frontier Guild-Town
 
-Version: v0.5.5 - Sidebar Build Menu Cleanup
+Version: v0.6.3 - World Traveler Save Data Foundation
 
-## What v0.5.5 Adds
+## What v0.6.3 Adds
 
-This patch makes the Build Menu feel more native to the sidebar and fixes the debug placeholder wrapping issue.
+This patch starts saving world-side simulation state and fixes loaded town adventurers standing still.
 
-## Dedicated Sidebar Lane
+## Fix: Loaded Adventurers Resume Movement
 
-The project window is widened from the original gameplay width so the right sidebar can live beside the town view instead of covering it.
+In v0.6.2, loaded adventurers restored their identity data but were set to `Idle`, so they stayed stationary with a save/load label.
 
-Current layout direction:
+Now loaded town adventurers resume a basic town routine after Load All.
 
-```text
-Left / center: 1280-wide gameplay area
-Right: sidebar UI lane
-```
-
-This is still prototype UI, but it better matches the long-term strategy/management layout direction.
-
-## Build Menu Cleanup
-
-The Build Menu now uses a cleaner sidebar layout:
+They should display:
 
 ```text
-BUILD MENU
-Funds display
-Placement instructions
-CIVIC
-Guild Hall button
-SERVICES
-Inn button
-General Store button
-Management controls
+Loaded. Resuming town routine.
 ```
 
-## Compact Build Buttons
+Then move through the town loop again.
 
-Build buttons are shortened:
+## World State Saved
+
+Save All now includes:
 
 ```text
-Guild Hall - 250g
-Inn - 150g
-General Store - 175g
+active world travelers
+returned traveler records
+visible slime state placeholder
+slime nest growth/status
+slime nest level
+raid pressure summary
+next world traveler/slime IDs
+slime spawn timer
 ```
 
-## Old Collapse Behavior Hidden
+## New Save Files
 
-The old Build Menu collapse behavior is hidden because sidebar mode buttons now handle switching menus.
+Manual Slot 1 now writes:
 
-## Debug Placeholder Fix
+```text
+user://slot_1_building_layout.json
+user://slot_1_economy_history.json
+user://slot_1_adventurer_roster.json
+user://slot_1_world_state.json
+```
 
-The Debug placeholder text should no longer wrap vertically one letter per line.
+A live world-state path also exists for future use:
 
-Debug still remains a placeholder inside the sidebar. The old Debug overlay still works separately from the top-left Show Debug button.
+```text
+user://world_state.json
+```
 
-## Current Limitation
+## Visible Slime State Placeholder
 
-This is not a full sidebar UI manager scene yet.
+Visible slime state now saves enough placeholder data to restore currently tracked slime dictionaries.
 
-The sidebar is still built inside `Town.gd`, but it now has a clearer layout direction and a dedicated screen lane.
+This is still not final ecological persistence. It is a first foundation.
+
+## Save Sidebar Status
+
+The Save sidebar now includes a World section showing:
+
+```text
+world travelers
+returned records
+visible slimes
+slime nest status
+nest level
+growth
+raid pressure
+```
+
+## Current Limitations
+
+This is not full world simulation persistence yet.
+
+Not yet saved perfectly:
+- exact combat animation state
+- future dungeon/portal state
+- long-term zone discovery
+- fog of war
+- world events
+- monster ecology history

@@ -279,3 +279,99 @@ Full intended game: about 20-22%
 ```
 
 This patch improves the sidebar layout and begins separating gameplay view space from UI space. That is important for future economy trends, debug tools, build tools, and management information.
+
+
+## v0.5.6 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 31%
+Full intended game: about 20-22%
+```
+
+This patch adds the first economy sidebar placeholder. It does not yet track real trends, but it reserves the UI space and data categories needed for future management feedback.
+
+
+## v0.5.7 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 32%
+Full intended game: about 21-23%
+```
+
+The project now has the first real economy event logging foundation. The next logical step is either saving economy history or showing clearer trend/history summaries over time.
+
+
+## v0.5.8 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 33%
+Full intended game: about 22-24%
+```
+
+The economy system now has basic time-bucketed data. This is still session-only, but it starts moving the project toward trend analysis instead of static totals.
+
+
+## v0.5.9 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 34%
+Full intended game: about 23-25%
+```
+
+The economy system now has persisted history and basic trend comparison. This is still not deep analytics, but it creates the foundation for charts, rolling averages, and per-building profitability later.
+
+
+## v0.6.0 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 35%
+Full intended game: about 24-26%
+```
+
+This is an architecture milestone. It does not add flashy gameplay, but it prevents save/load from becoming scattered as the project grows.
+
+
+## v0.6.1 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 36%
+Full intended game: about 24-27%
+```
+
+This patch makes the save architecture visible and testable. It is still not a complete full-game save, but it establishes the UI path for save slots and central save/load controls.
+
+
+## v0.6.2 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 37%
+Full intended game: about 25-28%
+```
+
+The save system now covers the first slice of adventurer persistence. This is intentionally identity/progression-first rather than exact AI-state restoration.
+
+
+## v0.6.3 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 38%
+Full intended game: about 26-29%
+```
+
+The save system now covers the first slice of world-state persistence. This is still not complete simulation restoration, but it is a meaningful foundation for future dungeons, monsters, and world events.

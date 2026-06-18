@@ -30,6 +30,7 @@ var current_state: String = "Idle"
 var last_purchase_message: String = ""
 var traveler_id: int = -1
 var is_returned_adventurer: bool = false
+var roster_role: String = "visitor"
 var trip_count: int = 0
 var max_trip_count: int = 2
 var last_night_sleep_day: int = -1
@@ -157,6 +158,7 @@ func rest_at_inn() -> void:
     if gold >= INN_REST_FEE:
         gold -= INN_REST_FEE
         GameState.add_money(INN_REST_FEE)
+        GameState.record_inn_income(INN_REST_FEE, "rest", 1)
         health = max_health
         energy = max_energy
         set_purchase_message("Paid %dg for Inn rest" % INN_REST_FEE)
@@ -175,6 +177,7 @@ func sleep_at_inn_for_night() -> void:
     if gold >= NIGHT_LODGING_FEE:
         gold -= NIGHT_LODGING_FEE
         GameState.add_money(NIGHT_LODGING_FEE)
+        GameState.record_inn_income(NIGHT_LODGING_FEE, "night_lodging", 1)
         health = max_health
         energy = max_energy
         last_night_sleep_day = GameClock.day_number
@@ -221,6 +224,7 @@ func try_buy_small_potion() -> String:
 
     add_item(SMALL_POTION_ID, 1)
     GameState.add_money(SMALL_POTION_PRICE)
+    GameState.record_shop_sale_income(SMALL_POTION_PRICE, SMALL_POTION_ID, 1)
     set_purchase_message("Bought potion")
     show_floating_text("-15g Potion")
     return "bought"
@@ -245,6 +249,7 @@ func try_sell_slime_gel() -> String:
     inventory[SLIME_GEL_ID] = 0
     gold += sale_total
     GameState.add_money(-sale_total)
+    GameState.record_material_purchase_outflow(sale_total, SLIME_GEL_ID, slime_gel_amount)
     GameState.add_item(SLIME_GEL_ID, slime_gel_amount)
 
     var sale_message := "Sold %d Slime Gel for %dg" % [slime_gel_amount, sale_total]
@@ -254,6 +259,95 @@ func try_sell_slime_gel() -> String:
     _update_returned_record("SoldLoot", sale_message)
     _refresh_label()
     return "sold"
+
+
+func get_adventurer_save_data() -> Dictionary:
+    var inventory_summary: Dictionary = {}
+
+    for item_id in inventory.keys():
+        inventory_summary[str(item_id)] = int(inventory.get(item_id, 0))
+
+    return {
+        "version": 1,
+        "display_name": display_name,
+        "class_id": class_id,
+        "level": level,
+        "gold": gold,
+        "happiness": happiness,
+        "health": health,
+        "max_health": max_health,
+        "energy": energy,
+        "max_energy": max_energy,
+        "inventory": inventory_summary,
+        "trip_count": trip_count,
+        "max_trip_count": max_trip_count,
+        "last_night_sleep_day": last_night_sleep_day,
+        "traveler_id": traveler_id,
+        "is_returned_adventurer": is_returned_adventurer,
+        "roster_role": roster_role,
+        "is_resident_placeholder": roster_role == "resident_placeholder",
+        "saved_state": current_state,
+        "last_purchase_message": last_purchase_message,
+        "position_x": global_position.x,
+        "position_y": global_position.y
+    }
+
+func setup_from_adventurer_save_data(save_data: Dictionary) -> void:
+    display_name = str(save_data.get("display_name", "Saved Adventurer"))
+    class_id = str(save_data.get("class_id", "fighter"))
+    level = int(save_data.get("level", 1))
+    gold = int(save_data.get("gold", 0))
+    happiness = int(save_data.get("happiness", 0))
+    health = int(save_data.get("health", 30))
+    max_health = int(save_data.get("max_health", 30))
+    energy = int(save_data.get("energy", 100))
+    max_energy = int(save_data.get("max_energy", 100))
+    trip_count = int(save_data.get("trip_count", 0))
+    max_trip_count = int(save_data.get("max_trip_count", 2))
+    last_night_sleep_day = int(save_data.get("last_night_sleep_day", -1))
+    traveler_id = int(save_data.get("traveler_id", -1))
+    is_returned_adventurer = bool(save_data.get("is_returned_adventurer", false))
+    roster_role = str(save_data.get("roster_role", "visitor"))
+
+    var saved_inventory: Variant = save_data.get("inventory", {})
+    if saved_inventory is Dictionary:
+        inventory = (saved_inventory as Dictionary).duplicate(true)
+    else:
+        inventory = {}
+
+    var saved_position := Vector2(
+        float(save_data.get("position_x", global_position.x)),
+        float(save_data.get("position_y", global_position.y))
+    )
+
+    global_position = saved_position
+    target_position = saved_position
+    has_target = false
+    has_entered_world_travel = false
+    last_purchase_message = "Loaded from save"
+
+    name = "SavedAdventurer_%s" % display_name.replace(" ", "_")
+
+    if ai != null and ai.has_method("set_state"):
+        ai.set_state("Idle")
+
+    set_state("SavedInTown")
+    _refresh_label()
+
+func get_inventory_summary_text() -> String:
+    if inventory.is_empty():
+        return "None"
+
+    var parts: Array[String] = []
+    for item_id in inventory.keys():
+        var amount: int = int(inventory.get(item_id, 0))
+        if amount > 0:
+            parts.append("%s:%d" % [str(item_id), amount])
+
+    if parts.is_empty():
+        return "None"
+
+    return ", ".join(parts)
 
 func _update_returned_record(new_status: String, sale_message: String) -> void:
     if traveler_id < 0:
