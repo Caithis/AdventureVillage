@@ -13,7 +13,7 @@ var current_view_name: String = "None"
 func _ready() -> void:
 	SceneRouter.set_main(self)
 	_load_persistent_views()
-	_spawn_debug_ui()
+	# Debug UI is now docked inside the Town sidebar instead of the old top-left overlay.
 	SceneRouter.go_to_town()
 
 func _load_persistent_views() -> void:
@@ -29,19 +29,43 @@ func _load_persistent_views() -> void:
 
 	for view in views.values():
 		view.visible = false
+		_set_view_input_enabled(view, false)
 
 func _spawn_debug_ui() -> void:
-	var debug_ui := DEBUG_UI_SCENE.instantiate()
-	ui_layer.add_child(debug_ui)
+	# Legacy top-left debug overlay disabled in v0.6.09 hotfix 1.
+	# Debug tools now live in the right sidebar Debug tab.
+	pass
+
+func _set_view_input_enabled(view: Node, enabled: bool) -> void:
+	if view == null:
+		return
+
+	view.set_process_input(enabled)
+	view.set_process_unhandled_input(enabled)
+
+func _close_transient_ui_before_view_switch() -> void:
+	for view in views.values():
+		if view != null and view.has_method("force_close_transient_ui"):
+			view.force_close_transient_ui()
+
+	if GameState.has_method("set_simulation_paused"):
+		GameState.set_simulation_paused(false)
+
+	if get_tree() != null:
+		get_tree().paused = false
 
 func show_view(view_name: String) -> void:
 	if not views.has(view_name):
 		push_error("Main does not have a persistent view named: " + view_name)
 		return
 
+	_close_transient_ui_before_view_switch()
+
 	for existing_view_name in views.keys():
 		var view: Node = views[existing_view_name]
-		view.visible = existing_view_name == view_name
+		var is_active_view: bool = existing_view_name == view_name
+		view.visible = is_active_view
+		_set_view_input_enabled(view, is_active_view)
 
 	current_view_name = view_name
 	GameState.current_view_name = view_name

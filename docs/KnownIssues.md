@@ -1,12 +1,9 @@
 # Known Issues
 
-## v0.6.09
+## v0.6.10.2
 
 Known limitations:
-- ESC menu is an in-game overlay only, not a true title screen.
-- Save / Load tab is informational only.
-- Settings/Graphics/Audio/Controls sections are placeholders only.
-- Quit button is placeholder only and does not exit.
-- Continue/New/Load title menu flow is documented but not implemented yet.
-- Autosave loads are not exposed as a button yet.
-- Sidebar is still verbose for testing.
+- ESC/menu code is still duplicated between Town and World Map.
+- A future UI refactor should move ESC menu and sidebar behavior into shared reusable scenes/scripts.
+- ResetPause remains available as a debug recovery tool.
+- Visitor cycling remains foundation-level.

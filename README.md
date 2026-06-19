@@ -1,117 +1,47 @@
 # Dungeon Frontier Guild-Town
 
-Version: v0.6.09 - ESC Main Menu Foundation
+Version: v0.6.10 Hotfix 2 - Active Scene ESC Input Fix
 
-## What v0.6.09 Adds
+## What This Fixes
 
-This patch adds a first ESC main menu overlay and changes autosave policy.
+This hotfix fixes the issue where ESC paused the Town scene but the ESC menu did not appear in Town.
 
-## ESC Main Menu Overlay
+## Root Cause
 
-Pressing ESC now opens/closes a main menu overlay.
+Town and World Map are persistent scenes.
 
-Current buttons:
+Even when one scene was hidden, its input handler could still receive ESC.
+
+That meant this could happen:
 
 ```text
-Resume
-Save / Load
-Settings
-Quit
-Graphics
-Audio
-Controls
+Player is in Town.
+Player presses ESC.
+Hidden World Map catches ESC first.
+World Map opens its hidden ESC menu.
+Game pauses.
+Town menu never appears.
 ```
 
-## Resume Button
+This made it look like Town pause worked but Town's ESC menu was missing.
 
-Resume closes the overlay and returns to the current game.
+## Fix
 
-## Save / Load Placeholder
+Main now disables input handling on hidden persistent views.
 
-The Save / Load tab currently shows:
+Only the active visible view can receive:
 
 ```text
-current manual slot summary
-autosave status
-future main menu flow notes
+_input
+_unhandled_input
 ```
 
-Actual Save All / Load All is still handled in the sidebar for now.
+Town and World Map also now check whether they are the active scene before handling ESC.
 
-## Settings Placeholder
-
-Settings has placeholder text for future:
+## Changed Files
 
 ```text
-Graphics
-Audio
-Controls
-Accessibility
-Gameplay/UI preferences
-```
-
-## Graphics / Audio / Controls Placeholders
-
-The overlay now has placeholder sections for:
-
-```text
-Graphics options
-Audio options
-Controls options
-```
-
-These are not functional settings yet.
-
-## Autosave Policy Change
-
-Autosave is now daily-only.
-
-Autosave currently runs at the new-day boundary:
-
-```text
-new_day_X
-```
-
-Autosave no longer runs after every building placement, move, demolish, or upgrade.
-
-## Why Autosave Changed
-
-Autosave after every action can trap the player immediately after a bad decision.
-
-Daily autosave gives safety without removing player recovery.
-
-## Future Main Menu Design
-
-Long-term title menu flow should be:
-
-```text
-Continue
-New
-Load
-Settings
-Quit
-```
-
-Design intent:
-
-```text
-Continue loads autosave.
-New starts a new save state.
-Load lets player pick a manual save slot.
-Settings opens graphics/audio/control options.
-Quit exits safely.
-```
-
-## Adventurer Population Reminder
-
-The design notes now reiterate:
-
-```text
-Adventurers should cycle naturally through the village.
-Visitors stay for several days, then leave the region.
-Past visitors can return later from the adventurer pool.
-Favorites can become permanent residents through happiness/satisfaction and contracts.
-The cap includes both village and world-map adventurers.
-The cap should scale with Guild Hall or town level.
-The current two-trip dormancy behavior is temporary prototype logic.
+res://scripts/main/Main.gd
+res://scripts/town/Town.gd
+res://scripts/world_map/WorldMap.gd
 ```

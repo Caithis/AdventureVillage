@@ -18,6 +18,9 @@ func _ready() -> void:
 	time_updated.emit(day_number, get_phase_name(), get_time_remaining(), get_phase_progress())
 
 func _process(delta: float) -> void:
+	if GameState.has_method("is_simulation_paused") and GameState.is_simulation_paused():
+		return
+
 	phase_elapsed += delta
 	tick_elapsed += delta
 

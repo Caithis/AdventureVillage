@@ -122,10 +122,14 @@ var save_slot_buttons: Dictionary = {}
 
 var esc_main_menu_overlay: Control = null
 var esc_main_menu_panel: PanelContainer = null
+var esc_submenu_panel: PanelContainer = null
 var esc_main_menu_title_label: Label = null
-var esc_main_menu_body_label: Label = null
-var esc_main_menu_active_tab: String = "save_load"
+var esc_submenu_title_label: Label = null
+var esc_submenu_body_label: Label = null
+var esc_main_menu_active_tab: String = ""
 var debug_placeholder_holder: Control = null
+var debug_sidebar_label: Label = null
+var debug_sidebar_scroll: ScrollContainer = null
 
 var build_panel: PanelContainer = null
 var build_panel_root_container: VBoxContainer = null
@@ -152,6 +156,7 @@ var building_occupants: Dictionary = {}
 var building_waiting_queues: Dictionary = {}
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	print("Town scene loaded.")
 	fallback_general_store_position = general_store_point.global_position
 	fallback_inn_position = inn_point.global_position
@@ -160,6 +165,8 @@ func _ready() -> void:
 		GameState.load_economy_history_from_file(false)
 	if GameClock.has_signal("day_started") and not GameClock.day_started.is_connected(_on_game_clock_day_started):
 		GameClock.day_started.connect(_on_game_clock_day_started)
+	if GameClock.has_signal("time_updated") and not GameClock.time_updated.is_connected(_on_town_time_updated):
+		GameClock.time_updated.connect(_on_town_time_updated)
 	_register_existing_buildings()
 	_create_esc_main_menu_overlay()
 	_mark_fixed_fallback_buildings()
@@ -174,7 +181,13 @@ func _ready() -> void:
 	_refresh_dynamic_route_markers()
 	_check_for_returned_travelers()
 
+func _is_active_input_scene() -> bool:
+	return visible and SceneRouter.current_view_name == SceneRouter.TOWN_VIEW_NAME
+
 func _unhandled_input(event: InputEvent) -> void:
+	if not _is_active_input_scene():
+		return
+
 	if event.is_action_pressed("ui_cancel"):
 		_toggle_esc_main_menu()
 		get_viewport().set_input_as_handled()
@@ -184,6 +197,9 @@ func _process(_delta: float) -> void:
 		_update_build_ghost()
 
 func _input(event: InputEvent) -> void:
+	if not _is_active_input_scene():
+		return
+
 	if active_building_type == "":
 		return
 
@@ -209,6 +225,9 @@ func _input(event: InputEvent) -> void:
 
 
 func _is_mouse_over_ui(mouse_position: Vector2) -> bool:
+	if esc_main_menu_overlay != null and esc_main_menu_overlay.visible:
+		return true
+
 	if sidebar_panel != null and _control_contains_global_point(sidebar_panel, mouse_position):
 		return true
 
@@ -227,10 +246,31 @@ func _control_contains_global_point(control: Control, point: Vector2) -> bool:
 	return Rect2(control.global_position, control.size).has_point(point)
 
 func _exit_tree() -> void:
+	if GameState.has_method("set_simulation_paused"):
+		GameState.set_simulation_paused(false)
+	if get_tree() != null:
+		get_tree().paused = false
+
 	if GameState.state_changed.is_connected(_on_game_state_changed):
 		GameState.state_changed.disconnect(_on_game_state_changed)
 
+	if GameClock.has_signal("time_updated") and GameClock.time_updated.is_connected(_on_town_time_updated):
+		GameClock.time_updated.disconnect(_on_town_time_updated)
+
 func spawn_placeholder_adventurer() -> void:
+	if GameState.has_method("can_spawn_regional_visitor") and not GameState.can_spawn_regional_visitor():
+		_update_build_status("Regional adventurer cap full. Visitors active: %s" % GameState.get_visitor_population_status_text())
+		show_town_floating_text("Visitor cap full", town_entrance.global_position + Vector2(60, -20))
+		return
+
+	var visitor_data: Dictionary = {}
+	if GameState.has_method("request_visitor_for_spawn"):
+		visitor_data = GameState.request_visitor_for_spawn(_generate_adventurer_name())
+
+	if visitor_data.is_empty():
+		_update_build_status("No visitor slot available.")
+		return
+
 	_refresh_dynamic_route_markers()
 	var adventurer := ADVENTURER_SCENE.instantiate()
 	adventurers_container.add_child(adventurer)
@@ -243,8 +283,10 @@ func spawn_placeholder_adventurer() -> void:
 
 	adventurer.global_position = entrance_position
 
-	if adventurer.has_method("setup_placeholder"):
-		adventurer.setup_placeholder(_generate_adventurer_name(), "fighter", 1)
+	if adventurer.has_method("setup_from_visitor_data"):
+		adventurer.setup_from_visitor_data(visitor_data)
+	elif adventurer.has_method("setup_placeholder"):
+		adventurer.setup_placeholder(str(visitor_data.get("display_name", _generate_adventurer_name())), str(visitor_data.get("class_id", "fighter")), int(visitor_data.get("level", 1)))
 
 	var shop_position := assign_building_route_for_adventurer("general_store", adventurer, entrance_position) + queue_offset
 
@@ -258,7 +300,7 @@ func spawn_placeholder_adventurer() -> void:
 	GameState.register_adventurer(adventurer)
 
 	spawn_count += 1
-	print("Spawned adventurer: ", adventurer.name)
+	print("Spawned visitor adventurer: ", adventurer.name)
 
 func _refresh_build_menu_funds_text() -> void:
 	if build_panel_root_container == null:
@@ -275,15 +317,50 @@ func _on_game_clock_day_started(day_number: int) -> void:
 		GameState.ensure_economy_bucket_for_day(day_number)
 	if GameState.has_method("save_economy_history_to_file"):
 		GameState.save_economy_history_to_file(false)
+	_process_visitor_departures_for_day(day_number)
 	_request_autosave("new_day_%d" % day_number)
 	_refresh_economy_sidebar()
 
 func _on_game_state_changed() -> void:
 	_refresh_build_menu_funds_text()
 	_refresh_economy_sidebar()
+	_refresh_sidebar_debug()
 	if active_sidebar_mode == "save_manager":
 		_refresh_save_manager_panel()
 	_check_for_returned_travelers()
+
+func _on_town_time_updated(_day_number: int, _phase_name: String, _time_remaining: float, _phase_progress: float) -> void:
+	if active_sidebar_mode == "debug_placeholder":
+		_refresh_sidebar_debug()
+
+func _process_visitor_departures_for_day(_day_number: int) -> void:
+	var departing: Array[Node] = []
+
+	for child in adventurers_container.get_children():
+		if child == null:
+			continue
+
+		if GameState.has_method("should_visitor_depart") and GameState.should_visitor_depart(child):
+			departing.append(child)
+
+	for adventurer in departing:
+		if adventurer == null:
+			continue
+
+		if has_method("release_all_building_capacity_for_adventurer"):
+			release_all_building_capacity_for_adventurer(adventurer)
+
+		if GameState.has_method("release_visitor_to_pool_from_adventurer"):
+			GameState.release_visitor_to_pool_from_adventurer(adventurer, "visit_days_complete")
+
+		var departure_position: Vector2 = adventurer.global_position
+		var departure_name: String = str(adventurer.get("display_name")) if adventurer.get("display_name") != null else "Visitor"
+		adventurers_container.remove_child(adventurer)
+		adventurer.queue_free()
+		show_town_floating_text("%s left region" % departure_name, departure_position)
+
+	if departing.size() > 0:
+		_update_build_status("%d visitor(s) left the local region. They can return later." % departing.size())
 
 func _check_for_returned_travelers() -> void:
 	if is_checking_returned_travelers:
@@ -466,66 +543,141 @@ func _create_sidebar_holder(holder_name: String) -> Control:
 
 
 
+
+
+func _make_menu_panel_style() -> StyleBoxFlat:
+	var style_box := StyleBoxFlat.new()
+	style_box.bg_color = Color(0.045, 0.05, 0.045, 0.99)
+	style_box.border_color = Color(0.26, 0.34, 0.26, 1.0)
+	style_box.set_border_width_all(2)
+	style_box.set_corner_radius_all(6)
+	style_box.content_margin_left = 14.0
+	style_box.content_margin_right = 14.0
+	style_box.content_margin_top = 12.0
+	style_box.content_margin_bottom = 12.0
+	return style_box
+
 func _create_esc_main_menu_overlay() -> void:
 	esc_main_menu_overlay = Control.new()
-	esc_main_menu_overlay.name = "EscMainMenuOverlay"
+	esc_main_menu_overlay.name = "EscInGameMenuOverlay"
 	esc_main_menu_overlay.visible = false
 	esc_main_menu_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	esc_main_menu_overlay.process_mode = Node.PROCESS_MODE_ALWAYS
 	esc_main_menu_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	esc_main_menu_overlay.z_index = 500
 	add_child(esc_main_menu_overlay)
 
 	var dim_background := ColorRect.new()
-	dim_background.name = "DimBackground"
-	dim_background.color = Color(0, 0, 0, 0.55)
+	dim_background.name = "SolidDimBackground"
+	dim_background.color = Color(0, 0, 0, 0.80)
+	dim_background.mouse_filter = Control.MOUSE_FILTER_STOP
+	dim_background.process_mode = Node.PROCESS_MODE_ALWAYS
 	dim_background.set_anchors_preset(Control.PRESET_FULL_RECT)
 	esc_main_menu_overlay.add_child(dim_background)
 
 	esc_main_menu_panel = PanelContainer.new()
-	esc_main_menu_panel.name = "EscMainMenuPanel"
-	esc_main_menu_panel.offset_left = 350.0
-	esc_main_menu_panel.offset_top = 100.0
-	esc_main_menu_panel.offset_right = 930.0
-	esc_main_menu_panel.offset_bottom = 620.0
+	esc_main_menu_panel.name = "EscMainButtonPanel"
+	esc_main_menu_panel.offset_left = 460.0
+	esc_main_menu_panel.offset_top = 155.0
+	esc_main_menu_panel.offset_right = 800.0
+	esc_main_menu_panel.offset_bottom = 500.0
+	esc_main_menu_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	esc_main_menu_panel.process_mode = Node.PROCESS_MODE_ALWAYS
+	esc_main_menu_panel.add_theme_stylebox_override("panel", _make_menu_panel_style())
 	esc_main_menu_overlay.add_child(esc_main_menu_panel)
 
-	var root_vbox := VBoxContainer.new()
-	root_vbox.name = "EscMainMenuRootVBox"
-	root_vbox.add_theme_constant_override("separation", 8)
-	esc_main_menu_panel.add_child(root_vbox)
+	var main_vbox := VBoxContainer.new()
+	main_vbox.name = "EscMainButtonVBox"
+	main_vbox.add_theme_constant_override("separation", 10)
+	main_vbox.process_mode = Node.PROCESS_MODE_ALWAYS
+	esc_main_menu_panel.add_child(main_vbox)
 
 	esc_main_menu_title_label = Label.new()
-	esc_main_menu_title_label.name = "EscMainMenuTitleLabel"
+	esc_main_menu_title_label.name = "EscMenuTitle"
 	esc_main_menu_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	esc_main_menu_title_label.text = "Dungeon Frontier Guild-Town"
-	root_vbox.add_child(esc_main_menu_title_label)
+	esc_main_menu_title_label.text = "Paused"
+	esc_main_menu_title_label.process_mode = Node.PROCESS_MODE_ALWAYS
+	main_vbox.add_child(esc_main_menu_title_label)
 
-	var top_button_row := HBoxContainer.new()
-	top_button_row.name = "EscMainMenuTopButtonRow"
-	top_button_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	root_vbox.add_child(top_button_row)
+	_create_esc_menu_button(main_vbox, "Resume", "Return to the current game.", _on_esc_resume_pressed)
+	_create_esc_menu_button(main_vbox, "Save / Load", "Open in-game save/load information.", func() -> void: _open_esc_submenu("save_load"))
+	_create_esc_menu_button(main_vbox, "Settings", "Open settings categories.", func() -> void: _open_esc_submenu("settings"))
+	_create_esc_menu_button(main_vbox, "Quit", "Quit placeholder. Title menu and exit flow come later.", func() -> void: _open_esc_submenu("quit"))
 
-	_create_esc_menu_button(top_button_row, "Resume", "Return to the current game.", _on_esc_resume_pressed)
-	_create_esc_menu_button(top_button_row, "Save / Load", "Open save/load information placeholder.", func() -> void: _set_esc_main_menu_tab("save_load"))
-	_create_esc_menu_button(top_button_row, "Settings", "Open general settings placeholder.", func() -> void: _set_esc_main_menu_tab("settings"))
-	_create_esc_menu_button(top_button_row, "Quit", "Quit placeholder. Export builds will later route this safely.", _on_esc_quit_placeholder_pressed)
+	esc_submenu_panel = PanelContainer.new()
+	esc_submenu_panel.name = "EscSubmenuPanel"
+	esc_submenu_panel.visible = false
+	esc_submenu_panel.offset_left = 545.0
+	esc_submenu_panel.offset_top = 105.0
+	esc_submenu_panel.offset_right = 1055.0
+	esc_submenu_panel.offset_bottom = 630.0
+	esc_submenu_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	esc_submenu_panel.process_mode = Node.PROCESS_MODE_ALWAYS
+	esc_submenu_panel.add_theme_stylebox_override("panel", _make_menu_panel_style())
+	esc_main_menu_overlay.add_child(esc_submenu_panel)
 
-	var settings_button_row := HBoxContainer.new()
-	settings_button_row.name = "EscSettingsButtonRow"
-	settings_button_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	root_vbox.add_child(settings_button_row)
+	var submenu_vbox := VBoxContainer.new()
+	submenu_vbox.name = "EscSubmenuVBox"
+	submenu_vbox.add_theme_constant_override("separation", 8)
+	submenu_vbox.process_mode = Node.PROCESS_MODE_ALWAYS
+	esc_submenu_panel.add_child(submenu_vbox)
 
-	_create_esc_menu_button(settings_button_row, "Graphics", "Graphics settings placeholder.", func() -> void: _set_esc_main_menu_tab("graphics"))
-	_create_esc_menu_button(settings_button_row, "Audio", "Audio settings placeholder.", func() -> void: _set_esc_main_menu_tab("audio"))
-	_create_esc_menu_button(settings_button_row, "Controls", "Control settings placeholder.", func() -> void: _set_esc_main_menu_tab("controls"))
+	var submenu_header := HBoxContainer.new()
+	submenu_header.name = "EscSubmenuHeader"
+	submenu_header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	submenu_header.process_mode = Node.PROCESS_MODE_ALWAYS
+	submenu_vbox.add_child(submenu_header)
 
-	esc_main_menu_body_label = Label.new()
-	esc_main_menu_body_label.name = "EscMainMenuBodyLabel"
-	esc_main_menu_body_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	esc_main_menu_body_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	esc_main_menu_body_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	root_vbox.add_child(esc_main_menu_body_label)
+	esc_submenu_title_label = Label.new()
+	esc_submenu_title_label.name = "EscSubmenuTitle"
+	esc_submenu_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	esc_submenu_title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	esc_submenu_title_label.text = "Menu"
+	esc_submenu_title_label.process_mode = Node.PROCESS_MODE_ALWAYS
+	submenu_header.add_child(esc_submenu_title_label)
 
-	_refresh_esc_main_menu_body()
+	var close_button := Button.new()
+	close_button.name = "EscSubmenuCloseButton"
+	close_button.text = "X"
+	close_button.tooltip_text = "Close this submenu and return to the pause menu."
+	close_button.focus_mode = Control.FOCUS_NONE
+	close_button.custom_minimum_size = Vector2(42, 32)
+	close_button.process_mode = Node.PROCESS_MODE_ALWAYS
+	close_button.pressed.connect(_close_esc_submenu)
+	submenu_header.add_child(close_button)
+
+	var settings_row := HBoxContainer.new()
+	settings_row.name = "EscSettingsCategoryRow"
+	settings_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	settings_row.visible = false
+	settings_row.process_mode = Node.PROCESS_MODE_ALWAYS
+	submenu_vbox.add_child(settings_row)
+
+	_create_esc_menu_button(settings_row, "Graphics", "Show graphics settings placeholder.", func() -> void: _set_esc_submenu_content("graphics"))
+	_create_esc_menu_button(settings_row, "Audio", "Show audio settings placeholder.", func() -> void: _set_esc_submenu_content("audio"))
+	_create_esc_menu_button(settings_row, "Controls", "Show controls settings placeholder.", func() -> void: _set_esc_submenu_content("controls"))
+
+	var submenu_scroll := ScrollContainer.new()
+	submenu_scroll.name = "EscSubmenuScroll"
+	submenu_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	submenu_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	submenu_scroll.custom_minimum_size = Vector2(470, 390)
+	submenu_scroll.process_mode = Node.PROCESS_MODE_ALWAYS
+	submenu_vbox.add_child(submenu_scroll)
+
+	var scroll_content := VBoxContainer.new()
+	scroll_content.name = "EscSubmenuScrollContent"
+	scroll_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll_content.process_mode = Node.PROCESS_MODE_ALWAYS
+	submenu_scroll.add_child(scroll_content)
+
+	esc_submenu_body_label = Label.new()
+	esc_submenu_body_label.name = "EscSubmenuBody"
+	esc_submenu_body_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	esc_submenu_body_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	esc_submenu_body_label.custom_minimum_size = Vector2(452, 0)
+	esc_submenu_body_label.process_mode = Node.PROCESS_MODE_ALWAYS
+	scroll_content.add_child(esc_submenu_body_label)
 
 func _create_esc_menu_button(parent: Control, text: String, tooltip: String, callback: Callable) -> void:
 	var button := Button.new()
@@ -533,6 +685,8 @@ func _create_esc_menu_button(parent: Control, text: String, tooltip: String, cal
 	button.tooltip_text = tooltip
 	button.focus_mode = Control.FOCUS_NONE
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.custom_minimum_size = Vector2(0, 42)
+	button.process_mode = Node.PROCESS_MODE_ALWAYS
 	button.pressed.connect(callback)
 	parent.add_child(button)
 
@@ -540,25 +694,74 @@ func _toggle_esc_main_menu() -> void:
 	if esc_main_menu_overlay == null:
 		return
 
-	esc_main_menu_overlay.visible = not esc_main_menu_overlay.visible
-
 	if esc_main_menu_overlay.visible:
-		_refresh_esc_main_menu_body()
+		_close_esc_main_menu()
+	else:
+		_open_esc_main_menu()
 
-func _on_esc_resume_pressed() -> void:
+func _open_esc_main_menu() -> void:
+	if esc_main_menu_overlay == null:
+		return
+
+	esc_main_menu_active_tab = ""
+	esc_main_menu_overlay.visible = true
+	if esc_submenu_panel != null:
+		esc_submenu_panel.visible = false
+
+	if GameState.has_method("set_simulation_paused"):
+		GameState.set_simulation_paused(true)
+	get_tree().paused = true
+
+func _close_esc_main_menu() -> void:
 	if esc_main_menu_overlay != null:
 		esc_main_menu_overlay.visible = false
+	if esc_submenu_panel != null:
+		esc_submenu_panel.visible = false
 
-func _on_esc_quit_placeholder_pressed() -> void:
-	_set_esc_main_menu_tab("quit")
+	if GameState.has_method("set_simulation_paused"):
+		GameState.set_simulation_paused(false)
+	get_tree().paused = false
+
+func _on_esc_resume_pressed() -> void:
+	_close_esc_main_menu()
+
+func force_close_transient_ui() -> void:
+	if esc_main_menu_overlay != null:
+		esc_main_menu_overlay.visible = false
+	if esc_submenu_panel != null:
+		esc_submenu_panel.visible = false
+	if GameState.has_method("set_simulation_paused"):
+		GameState.set_simulation_paused(false)
+	if get_tree() != null:
+		get_tree().paused = false
+
+func _open_esc_submenu(tab_id: String) -> void:
+	if esc_submenu_panel == null:
+		return
+
+	esc_submenu_panel.visible = true
+	_set_esc_submenu_content(tab_id)
+
+func _close_esc_submenu() -> void:
+	if esc_submenu_panel != null:
+		esc_submenu_panel.visible = false
+	esc_main_menu_active_tab = ""
 
 func _set_esc_main_menu_tab(tab_id: String) -> void:
-	esc_main_menu_active_tab = tab_id
-	_refresh_esc_main_menu_body()
+	_open_esc_submenu(tab_id)
 
-func _refresh_esc_main_menu_body() -> void:
-	if esc_main_menu_body_label == null:
+func _on_esc_quit_placeholder_pressed() -> void:
+	_open_esc_submenu("quit")
+
+func _set_esc_submenu_content(tab_id: String) -> void:
+	esc_main_menu_active_tab = tab_id
+
+	if esc_submenu_panel == null or esc_submenu_title_label == null or esc_submenu_body_label == null:
 		return
+
+	var settings_row := esc_submenu_panel.get_node_or_null("EscSubmenuVBox/EscSettingsCategoryRow") as HBoxContainer
+	if settings_row != null:
+		settings_row.visible = tab_id in ["settings", "graphics", "audio", "controls"]
 
 	var save_summary := "SaveManager unavailable."
 	var autosave_summary := "Autosave unavailable."
@@ -569,25 +772,31 @@ func _refresh_esc_main_menu_body() -> void:
 		if save_manager.has_method("get_autosave_status_text"):
 			autosave_summary = str(save_manager.get_autosave_status_text())
 
-	match esc_main_menu_active_tab:
+	match tab_id:
 		"save_load":
-			esc_main_menu_body_label.text = "SAVE / LOAD PLACEHOLDER\n\nCurrent Manual Slot:\n%s\n\n%s\n\nFuture main menu flow:\n- Continue loads the autosave.\n- New starts a new save state.\n- Load opens manual save slot selection.\n- Settings opens graphics/audio/controls.\n- Quit exits safely.\n\nFor now, use the sidebar Save tab for actual Save All / Load All testing." % [
+			esc_submenu_title_label.text = "Save / Load"
+			esc_submenu_body_label.text = "IN-GAME SAVE / LOAD\n\nCurrent Manual Slot:\n%s\n\n%s\n\nFuture final layout:\n- A list of save states.\n- A default save name based on date/time.\n- Player can rename the save.\n- Save button adds/updates the selected save.\n- Continue from title loads autosave.\n\nTesting note: actual Save All / Load All still lives in the sidebar Save tab for now." % [
 				save_summary,
 				autosave_summary
 			]
 		"settings":
-			esc_main_menu_body_label.text = "SETTINGS PLACEHOLDER\n\nFuture settings categories:\n- Graphics\n- Audio\n- Controls\n- Accessibility\n- Gameplay/UI preferences\n\nThis overlay will eventually hold deeper settings so the sidebar can stay focused on quick management actions."
+			esc_submenu_title_label.text = "Settings"
+			esc_submenu_body_label.text = "SETTINGS\n\nSettings is the parent menu for Graphics, Audio, and Controls.\n\nChoose one of the settings categories above.\n\nThese are placeholders for now."
 		"graphics":
-			esc_main_menu_body_label.text = "GRAPHICS PLACEHOLDER\n\nFuture options:\n- Window mode\n- Resolution\n- Pixel scaling\n- UI scale\n- VSync\n- Visual effects intensity"
+			esc_submenu_title_label.text = "Settings / Graphics"
+			esc_submenu_body_label.text = "GRAPHICS PLACEHOLDER\n\nFuture options:\n- Window mode\n- Resolution\n- Pixel scaling\n- UI scale\n- VSync\n- Visual effects intensity"
 		"audio":
-			esc_main_menu_body_label.text = "AUDIO PLACEHOLDER\n\nFuture options:\n- Master volume\n- Music volume\n- SFX volume\n- UI sounds\n- Mute options"
+			esc_submenu_title_label.text = "Settings / Audio"
+			esc_submenu_body_label.text = "AUDIO PLACEHOLDER\n\nFuture options:\n- Master volume\n- Music volume\n- SFX volume\n- UI sounds\n- Mute options"
 		"controls":
-			esc_main_menu_body_label.text = "CONTROLS PLACEHOLDER\n\nFuture options:\n- Rebind controls\n- Camera movement\n- Build mode shortcuts\n- Pause/menu controls\n- Tooltip delay"
+			esc_submenu_title_label.text = "Settings / Controls"
+			esc_submenu_body_label.text = "CONTROLS PLACEHOLDER\n\nFuture options:\n- Rebind controls\n- Camera movement\n- Build mode shortcuts\n- Pause/menu controls\n- Tooltip delay"
 		"quit":
-			esc_main_menu_body_label.text = "QUIT PLACEHOLDER\n\nQuit is intentionally not destructive yet.\n\nFuture behavior:\n- Warn about unsaved manual changes.\n- Offer Save and Quit.\n- Return to title menu.\n- Exit game from exported builds."
+			esc_submenu_title_label.text = "Quit"
+			esc_submenu_body_label.text = "QUIT PLACEHOLDER\n\nThis is intentionally not connected to exit yet.\n\nFuture behavior:\n- Warn about unsaved manual changes.\n- Offer Save and Quit.\n- Return to the separate title/main menu.\n- Exit game from exported builds."
 		_:
-			esc_main_menu_body_label.text = "MAIN MENU PLACEHOLDER"
-
+			esc_submenu_title_label.text = "Menu"
+			esc_submenu_body_label.text = "Select an option."
 
 func _populate_save_manager_panel() -> void:
 	if save_holder == null:
@@ -861,17 +1070,169 @@ func _refresh_save_manager_panel(extra_message: String = "") -> void:
 		last_load_text
 	]
 
+
 func _populate_debug_placeholder() -> void:
 	if debug_placeholder_holder == null:
 		return
 
-	var label := Label.new()
-	label.name = "DebugPlaceholderLabel"
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	label.custom_minimum_size = Vector2(SIDEBAR_WIDTH - SIDEBAR_MARGIN * 2.0 - 36.0, 0.0)
-	label.text = "DEBUG PLACEHOLDER\n\nThe old Debug overlay still works from the top-left Show Debug button.\n\nThis sidebar mode is reserved for a future migration of debug tools into the right sidebar."
-	debug_placeholder_holder.add_child(label)
+	var button_row := HBoxContainer.new()
+	button_row.name = "SidebarDebugButtonRow"
+	button_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	debug_placeholder_holder.add_child(button_row)
+
+	_create_sidebar_debug_button(button_row, "Town", "Switch view to Town.", _on_sidebar_debug_town_pressed)
+	_create_sidebar_debug_button(button_row, "World", "Switch view to World Map.", _on_sidebar_debug_world_pressed)
+	_create_sidebar_debug_button(button_row, "+Gold", "Add 25 gold for testing.", _on_sidebar_debug_add_money_pressed)
+
+	var button_row_2 := HBoxContainer.new()
+	button_row_2.name = "SidebarDebugButtonRow2"
+	button_row_2.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	debug_placeholder_holder.add_child(button_row_2)
+
+	_create_sidebar_debug_button(button_row_2, "+Gel", "Add 1 Slime Gel for testing.", _on_sidebar_debug_add_slime_gel_pressed)
+	_create_sidebar_debug_button(button_row_2, "Nest+", "Grow slime nest by 1.", _on_sidebar_debug_grow_slime_nest_pressed)
+	_create_sidebar_debug_button(button_row_2, "Spawn", "Spawn one placeholder adventurer.", _on_sidebar_debug_spawn_adventurer_pressed)
+
+	var button_row_3 := HBoxContainer.new()
+	button_row_3.name = "SidebarDebugButtonRow3"
+	button_row_3.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	debug_placeholder_holder.add_child(button_row_3)
+
+	_create_sidebar_debug_button(button_row_3, "Night", "Toggle night quests policy.", _on_sidebar_debug_toggle_night_quests_pressed)
+	_create_sidebar_debug_button(button_row_3, "BuyGel", "Toggle General Store Slime Gel buying.", _on_sidebar_debug_toggle_slime_gel_buying_pressed)
+	_create_sidebar_debug_button(button_row_3, "Refresh", "Refresh debug text.", _refresh_sidebar_debug)
+
+	var button_row_4 := HBoxContainer.new()
+	button_row_4.name = "SidebarDebugButtonRow4"
+	button_row_4.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	debug_placeholder_holder.add_child(button_row_4)
+
+	_create_sidebar_debug_button(button_row_4, "ClearAuto", "Press twice to delete autosave files.", _on_sidebar_debug_clear_autosave_pressed)
+	_create_sidebar_debug_button(button_row_4, "ResetPause", "Force-clear pause/menu state if testing gets stuck.", _on_sidebar_debug_reset_pause_pressed)
+
+	debug_sidebar_scroll = ScrollContainer.new()
+	debug_sidebar_scroll.name = "SidebarDebugScroll"
+	debug_sidebar_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	debug_sidebar_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	debug_sidebar_scroll.custom_minimum_size = Vector2(SIDEBAR_WIDTH - SIDEBAR_MARGIN * 2.0 - 36.0, 560.0)
+	debug_placeholder_holder.add_child(debug_sidebar_scroll)
+
+	var debug_content := VBoxContainer.new()
+	debug_content.name = "SidebarDebugContent"
+	debug_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	debug_sidebar_scroll.add_child(debug_content)
+
+	debug_sidebar_label = Label.new()
+	debug_sidebar_label.name = "SidebarDebugLabel"
+	debug_sidebar_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	debug_sidebar_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	debug_sidebar_label.custom_minimum_size = Vector2(SIDEBAR_WIDTH - SIDEBAR_MARGIN * 2.0 - 52.0, 0.0)
+	debug_content.add_child(debug_sidebar_label)
+
+	_refresh_sidebar_debug()
+
+func _create_sidebar_debug_button(parent: Control, text: String, tooltip: String, callback: Callable) -> void:
+	var button := Button.new()
+	button.text = text
+	button.tooltip_text = tooltip
+	button.focus_mode = Control.FOCUS_NONE
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.pressed.connect(callback)
+	parent.add_child(button)
+
+
+func _on_sidebar_debug_clear_autosave_pressed() -> void:
+	var save_manager := get_node_or_null("/root/SaveManager")
+	if save_manager == null or not save_manager.has_method("request_clear_autosave_confirmation"):
+		show_town_floating_text("Autosave clear unavailable", town_entrance.global_position + Vector2(60, -28))
+		_refresh_sidebar_debug()
+		return
+
+	var message: String = str(save_manager.request_clear_autosave_confirmation())
+	show_town_floating_text(message, town_entrance.global_position + Vector2(80, -28))
+	_refresh_sidebar_debug()
+
+func _on_sidebar_debug_reset_pause_pressed() -> void:
+	force_close_transient_ui()
+	if GameState.has_method("set_simulation_paused"):
+		GameState.set_simulation_paused(false)
+	if get_tree() != null:
+		get_tree().paused = false
+	show_town_floating_text("Pause reset", town_entrance.global_position + Vector2(60, -28))
+	_refresh_sidebar_debug()
+
+func _on_sidebar_debug_town_pressed() -> void:
+	force_close_transient_ui()
+	SceneRouter.go_to_town()
+	_refresh_sidebar_debug()
+
+func _on_sidebar_debug_world_pressed() -> void:
+	force_close_transient_ui()
+	SceneRouter.go_to_world_map()
+	_refresh_sidebar_debug()
+
+func _on_sidebar_debug_add_money_pressed() -> void:
+	GameState.add_money(25)
+	_refresh_sidebar_debug()
+
+func _on_sidebar_debug_add_slime_gel_pressed() -> void:
+	GameState.add_item("slime_gel", 1)
+	_refresh_sidebar_debug()
+
+func _on_sidebar_debug_grow_slime_nest_pressed() -> void:
+	GameState.grow_slime_nest(1)
+	_refresh_sidebar_debug()
+
+func _on_sidebar_debug_spawn_adventurer_pressed() -> void:
+	SceneRouter.request_spawn_adventurer()
+	_refresh_sidebar_debug()
+
+func _on_sidebar_debug_toggle_night_quests_pressed() -> void:
+	GameState.toggle_night_quests()
+	_refresh_sidebar_debug()
+
+func _on_sidebar_debug_toggle_slime_gel_buying_pressed() -> void:
+	GameState.toggle_general_store_buys_slime_gel()
+	_refresh_sidebar_debug()
+
+func _refresh_sidebar_debug() -> void:
+	if debug_sidebar_label == null:
+		return
+
+	debug_sidebar_label.text = _get_sidebar_debug_text()
+
+func _get_autosave_clear_debug_text() -> String:
+	var save_manager := get_node_or_null("/root/SaveManager")
+	if save_manager != null and save_manager.has_method("get_autosave_clear_status_text"):
+		return str(save_manager.get_autosave_clear_status_text()).replace("\n", " | ")
+
+	return "Unavailable"
+
+func _get_sidebar_debug_text() -> String:
+	return "DUNGEON FRONTIER DEBUG\n\n-- State --\nView: %s\nTime: Day %d - %s (%ds left)\nVillage Funds: %d\nInventory: Potions %d | Slime Gel %d\nIn-Town Adventurers: %d\nWorld Travelers: %d\nReturned Travelers: %d\nTraveler Status: %s\nReturned: %s\nVisitor Pool: %s\n\n-- Threat --\nSlime Nest: %s | Growth %d | Level %d | %s\nSlime Spawns: %s\nNight Quests: %s\nNight Danger: %s\nRetreat E<=40\nGeneral Store: %s\n\n-- Save --\nAutosave: daily only\nAutosave Clear: %s\nManual slots are controlled from Save tab." % [
+		GameState.current_view_name,
+		GameClock.day_number,
+		GameClock.get_phase_name(),
+		int(ceil(GameClock.get_time_remaining())),
+		GameState.money,
+		GameState.get_item_count("small_potion"),
+		GameState.get_item_count("slime_gel"),
+		GameState.get_adventurer_count(),
+		GameState.get_world_traveler_count(),
+		GameState.get_returned_traveler_count(),
+		GameState.get_world_traveler_summary(),
+		GameState.get_returned_traveler_summary(),
+		GameState.get_visitor_population_status_text() if GameState.has_method("get_visitor_population_status_text") else "Unavailable",
+		GameState.slime_nest_status,
+		GameState.slime_nest_growth,
+		GameState.get_slime_nest_level(),
+		GameState.get_raid_pressure_state(),
+		GameState.get_slime_spawn_summary(),
+		GameState.get_night_quest_policy_text(),
+		GameState.get_night_danger_summary(),
+		GameState.get_general_store_buy_policy_text(),
+		_get_autosave_clear_debug_text()
+	]
 
 
 func _populate_economy_placeholder() -> void:
@@ -1087,6 +1448,7 @@ func open_sidebar_mode(mode_id: String) -> void:
 				_refresh_save_manager_panel()
 			"debug_placeholder":
 				sidebar_mode_title_label.text = "Debug"
+				_refresh_sidebar_debug()
 			_:
 				sidebar_mode_title_label.text = "Sidebar"
 

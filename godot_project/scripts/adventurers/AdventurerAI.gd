@@ -23,6 +23,9 @@ func _ready() -> void:
     set_state("Idle")
 
 func _process(delta: float) -> void:
+    if GameState.has_method("is_simulation_paused") and GameState.is_simulation_paused():
+        return
+
     if _should_interrupt_for_night_sleep():
         set_state("GoToInnForNight")
         return

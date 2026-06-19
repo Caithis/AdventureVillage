@@ -1,41 +1,20 @@
 # Changelog
 
-## v0.6.09 - ESC Main Menu Foundation
-
-### Added
-- ESC main menu overlay.
-- Resume button.
-- Save / Load tab placeholder.
-- Settings tab placeholder.
-- Graphics placeholder section.
-- Audio placeholder section.
-- Controls placeholder section.
-- Quit placeholder section.
-- Main menu flow design notes.
-- Daily-only autosave policy notes.
-- Adventurer population/cap design notes.
-- Updated sidebar/main menu UX direction.
-- Updated progress roadmap.
-
-### Changed
-- Autosave now runs at day boundary only.
-- Removed autosave triggers from building placement/move/demolish/upgrade.
-- Save sidebar now states daily-only autosave policy.
-
-### Not Yet Added
-- True title screen.
-- Continue button loading autosave from title menu.
-- New game flow.
-- Load game slot picker modal.
-- Functional graphics/audio/control settings.
-- Quit-to-title behavior.
-
-## v0.6.08 - Autosave Slot Foundation
-
-### Added
-- Dedicated autosave slot.
-
-## v0.6.07.1 - Save Slot Button Switching Fix
+## v0.6.10.2 - Active Scene ESC Input Fix
 
 ### Fixed
-- Slot 2 / Slot 3 switching.
+- Hidden persistent scenes can no longer capture ESC.
+- Town ESC menu should appear correctly when Town is active.
+- World Map ESC menu should appear correctly when World Map is active.
+- Main now disables input/unhandled input processing for hidden persistent views.
+- Town and World Map now guard ESC input by active scene.
+
+## v0.6.10.1 - Clear Autosave Debug Recovery
+
+### Added
+- ClearAuto and ResetPause debug tools.
+
+## v0.6.10 - Adventurer Visitor Cycling Foundation
+
+### Added
+- Visitor pool foundation.

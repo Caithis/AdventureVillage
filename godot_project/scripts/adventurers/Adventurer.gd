@@ -32,6 +32,11 @@ var traveler_id: int = -1
 var is_returned_adventurer: bool = false
 var roster_role: String = "visitor"
 var saved_resume_state: String = "Idle"
+var visitor_id: int = -1
+var visitor_visit_start_day: int = 1
+var visitor_visit_days_limit: int = 3
+var visitor_total_visits: int = 0
+var departure_reason_placeholder: String = ""
 var trip_count: int = 0
 var max_trip_count: int = 2
 var last_night_sleep_day: int = -1
@@ -47,6 +52,9 @@ func _ready() -> void:
     _refresh_label()
 
 func _process(delta: float) -> void:
+    if GameState.has_method("is_simulation_paused") and GameState.is_simulation_paused():
+        return
+
     _move_toward_target(delta)
 
 func _exit_tree() -> void:
@@ -65,6 +73,22 @@ func _get_town_node() -> Node:
         return null
 
     return container.get_parent()
+
+func setup_from_visitor_data(visitor_data: Dictionary) -> void:
+    visitor_id = int(visitor_data.get("visitor_id", visitor_id))
+    display_name = str(visitor_data.get("display_name", display_name))
+    class_id = str(visitor_data.get("class_id", class_id))
+    level = int(visitor_data.get("level", level))
+    gold = int(visitor_data.get("gold", gold))
+    happiness = int(visitor_data.get("happiness", happiness))
+    roster_role = str(visitor_data.get("roster_role", "visitor"))
+    visitor_visit_start_day = int(visitor_data.get("visit_start_day", GameClock.day_number))
+    visitor_visit_days_limit = int(visitor_data.get("visit_days_limit", visitor_visit_days_limit))
+    visitor_total_visits = int(visitor_data.get("total_visits", visitor_total_visits))
+    departure_reason_placeholder = str(visitor_data.get("departure_reason", ""))
+    max_trip_count = int(visitor_data.get("max_trip_count", max_trip_count))
+    name = "Visitor_%s_%d" % [display_name, visitor_id]
+    _refresh_label()
 
 func setup_placeholder(new_display_name: String, new_class_id: String, new_level: int) -> void:
     display_name = new_display_name
@@ -90,6 +114,11 @@ func setup_from_traveler_data(traveler_data: Dictionary) -> void:
     max_energy = int(traveler_data.get("max_energy", 100))
     trip_count = int(traveler_data.get("trip_count", 0))
     max_trip_count = int(traveler_data.get("max_trip_count", 2))
+    visitor_id = int(traveler_data.get("visitor_id", -1))
+    visitor_visit_start_day = int(traveler_data.get("visitor_visit_start_day", 1))
+    visitor_visit_days_limit = int(traveler_data.get("visitor_visit_days_limit", 3))
+    visitor_total_visits = int(traveler_data.get("visitor_total_visits", 0))
+    roster_role = str(traveler_data.get("roster_role", "visitor"))
     last_night_sleep_day = int(traveler_data.get("last_night_sleep_day", -1))
     is_returned_adventurer = true
     has_entered_world_travel = false
@@ -286,6 +315,11 @@ func get_adventurer_save_data() -> Dictionary:
         "traveler_id": traveler_id,
         "is_returned_adventurer": is_returned_adventurer,
         "roster_role": roster_role,
+        "visitor_id": visitor_id,
+        "visitor_visit_start_day": visitor_visit_start_day,
+        "visitor_visit_days_limit": visitor_visit_days_limit,
+        "visitor_total_visits": visitor_total_visits,
+        "departure_reason_placeholder": departure_reason_placeholder,
         "is_resident_placeholder": roster_role == "resident_placeholder",
         "saved_state": current_state,
         "last_purchase_message": last_purchase_message,
@@ -309,6 +343,11 @@ func setup_from_adventurer_save_data(save_data: Dictionary) -> void:
     traveler_id = int(save_data.get("traveler_id", -1))
     is_returned_adventurer = bool(save_data.get("is_returned_adventurer", false))
     roster_role = str(save_data.get("roster_role", "visitor"))
+    visitor_id = int(save_data.get("visitor_id", -1))
+    visitor_visit_start_day = int(save_data.get("visitor_visit_start_day", 1))
+    visitor_visit_days_limit = int(save_data.get("visitor_visit_days_limit", 3))
+    visitor_total_visits = int(save_data.get("visitor_total_visits", 0))
+    departure_reason_placeholder = str(save_data.get("departure_reason_placeholder", ""))
     saved_resume_state = str(save_data.get("saved_state", "Idle"))
 
     var saved_inventory: Variant = save_data.get("inventory", {})

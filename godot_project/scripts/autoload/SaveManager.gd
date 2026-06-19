@@ -30,7 +30,9 @@ var save_slot_metadata: Dictionary = {}
 
 var overwrite_confirmation_armed: bool = false
 var clear_confirmation_armed: bool = false
+var autosave_clear_confirmation_armed: bool = false
 var slot_warning_message: String = "Overwrite and Clear Slot require confirmation."
+var autosave_warning_message: String = "Autosave can be cleared from debug tools."
 
 func _ready() -> void:
     load_save_slot_metadata(false)
@@ -499,7 +501,7 @@ func get_autosave_status_text() -> String:
     var summary: Dictionary = _get_slot_file_summary(AUTOSAVE_SLOT_ID)
     var occupied_text: String = "Occupied" if bool(slot_data.get("is_occupied", false)) else "Empty"
 
-    return "AUTOSAVE [%s]\nLast Autosave: %s\nReason: %s\nCore: %s | Buildings: %s\nEconomy: %s | Adventurers: %s | World: %s\nResult: %s" % [
+    return "AUTOSAVE [%s]\nLast Autosave: %s\nReason: %s\nCore: %s | Buildings: %s\nEconomy: %s | Adventurers: %s | World: %s\nResult: %s\n%s" % [
         occupied_text,
         str(slot_data.get("last_saved_timestamp", "Never autosaved")),
         str(slot_data.get("last_autosave_reason", "None")),
@@ -508,7 +510,8 @@ func get_autosave_status_text() -> String:
         "saved" if bool(summary.get("economy", false)) else "empty",
         "saved" if bool(summary.get("adventurers", false)) else "empty",
         "saved" if bool(summary.get("world", false)) else "empty",
-        str(slot_data.get("last_save_result", "No autosave has been run yet."))
+        str(slot_data.get("last_save_result", "No autosave has been run yet.")),
+        get_autosave_clear_status_text()
     ]
 
 func save_all(town_node: Node = null, show_warning: bool = true) -> bool:
@@ -770,6 +773,77 @@ func request_clear_slot_confirmation() -> String:
 
 func request_clear_slot_placeholder() -> String:
     return request_clear_slot_confirmation()
+
+
+func get_autosave_clear_status_text() -> String:
+    return "Autosave Clear: %s\n%s" % [
+        "ARMED" if autosave_clear_confirmation_armed else "not armed",
+        autosave_warning_message
+    ]
+
+func request_clear_autosave_confirmation() -> String:
+    var autosave_summary: Dictionary = _get_slot_file_summary(AUTOSAVE_SLOT_ID)
+    var autosave_occupied: bool = _is_slot_summary_occupied(autosave_summary)
+
+    if not autosave_occupied:
+        autosave_clear_confirmation_armed = false
+        autosave_warning_message = "Autosave is already empty. Nothing was deleted."
+        _refresh_autosave_metadata_after_clear(false)
+        save_save_slot_metadata(false)
+        return autosave_warning_message
+
+    if not autosave_clear_confirmation_armed:
+        autosave_clear_confirmation_armed = true
+        autosave_warning_message = "Clear Autosave armed. Press ClearAuto again to delete autosave files."
+        save_save_slot_metadata(false)
+        return autosave_warning_message
+
+    var deleted: bool = clear_autosave_slot_files()
+    autosave_clear_confirmation_armed = false
+
+    if deleted:
+        autosave_warning_message = "Autosave cleared. Autosave files were deleted."
+    else:
+        autosave_warning_message = "Clear Autosave attempted, but one or more autosave files could not be deleted."
+
+    save_save_slot_metadata(false)
+    return autosave_warning_message
+
+func clear_autosave_slot_files() -> bool:
+    var success: bool = true
+    var files_to_delete: Array[String] = [
+        _get_slot_path("buildings", AUTOSAVE_SLOT_ID),
+        _get_slot_path("core_state", AUTOSAVE_SLOT_ID),
+        _get_slot_path("economy", AUTOSAVE_SLOT_ID),
+        _get_slot_path("adventurers", AUTOSAVE_SLOT_ID),
+        _get_slot_path("world", AUTOSAVE_SLOT_ID)
+    ]
+
+    for file_path in files_to_delete:
+        success = _delete_file_if_exists(file_path) and success
+
+    _refresh_autosave_metadata_after_clear(success)
+    _save_index(false)
+    return success
+
+func _refresh_autosave_metadata_after_clear(delete_success: bool) -> void:
+    var slot_data: Dictionary = _get_slot_metadata(AUTOSAVE_SLOT_ID)
+    slot_data["is_occupied"] = false
+    slot_data["last_saved_timestamp"] = "Never autosaved"
+    slot_data["last_loaded_timestamp"] = "Autosave loading not exposed yet"
+    slot_data["last_save_result"] = "Autosave cleared." if delete_success else "Autosave empty."
+    slot_data["last_load_result"] = "Autosave loading not exposed yet."
+    slot_data["last_autosave_reason"] = "None"
+    slot_data["warning_message"] = autosave_warning_message
+    slot_data["summary"] = {
+        "core_state": false,
+        "buildings": false,
+        "economy": false,
+        "adventurers": false,
+        "world": false
+    }
+    slot_data["paths"] = _get_slot_paths_for(AUTOSAVE_SLOT_ID)
+    _set_slot_metadata(AUTOSAVE_SLOT_ID, slot_data, false)
 
 func clear_active_slot_files() -> bool:
     var success: bool = true

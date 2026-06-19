@@ -61,7 +61,30 @@ const POTION_USE_HP_RATIO := 0.40
 const DEFAULT_MAX_ENERGY := 100
 const WORLD_TRIP_ENERGY_COST := 45
 
+const DEFAULT_REGIONAL_ADVENTURER_CAP := 3
+const VISITOR_MIN_VISIT_DAYS := 3
+const VISITOR_MAX_VISIT_DAYS := 5
+const VISITOR_POOL_TEMPLATE_NAMES: Array[String] = [
+	"Rook",
+	"Mira",
+	"Bram",
+	"Tessa",
+	"Galen",
+	"Nia",
+	"Orin",
+	"Lysa",
+	"Perrin",
+	"Sable",
+	"Doran",
+	"Ilyra",
+	"Kest",
+	"Marn",
+    "Vela"
+]
+
 var money: int = 500
+var simulation_paused: bool = false
+
 var current_view_name: String = "Unknown"
 
 var economy_shop_sales_income: int = 0
@@ -97,6 +120,11 @@ var world_travelers: Array[Dictionary] = []
 var returned_travelers: Array[Dictionary] = []
 var world_slimes: Array[Dictionary] = []
 
+var active_regional_adventurer_cap: int = DEFAULT_REGIONAL_ADVENTURER_CAP
+var visitor_pool: Array[Dictionary] = []
+var departed_visitor_history: Array[Dictionary] = []
+var next_visitor_id: int = 1
+
 var next_world_traveler_id: int = 1
 var next_world_slime_id: int = 1
 
@@ -108,6 +136,9 @@ var _world_simulation_emit_interval: float = 0.15
 var _slime_spawn_timer: float = 999.0
 
 func _process(delta: float) -> void:
+	if has_method("is_simulation_paused") and is_simulation_paused():
+		return
+
 	var changed: bool = false
 	changed = _update_world_slimes(delta) or changed
 	changed = _update_world_travelers(delta) or changed
@@ -269,6 +300,17 @@ func reset_economy_event_totals() -> void:
 
 
 
+
+func set_simulation_paused(is_paused: bool) -> void:
+	if simulation_paused == is_paused:
+		return
+
+	simulation_paused = is_paused
+	state_changed.emit()
+
+func is_simulation_paused() -> bool:
+	return simulation_paused
+
 func save_core_state_to_file(show_warning: bool = true) -> bool:
 	var save_manager: Node = get_node_or_null("/root/SaveManager")
 
@@ -300,7 +342,11 @@ func get_core_state_save_data() -> Dictionary:
 		"current_view_name": current_view_name,
 		"town_inventory": _serialize_town_inventory(),
 		"allow_night_quests": allow_night_quests,
-		"general_store_buys_slime_gel": general_store_buys_slime_gel
+		"general_store_buys_slime_gel": general_store_buys_slime_gel,
+		"visitor_pool": visitor_pool.duplicate(true),
+		"departed_visitor_history": departed_visitor_history.duplicate(true),
+		"next_visitor_id": next_visitor_id,
+		"active_regional_adventurer_cap": active_regional_adventurer_cap
 	}
 
 func apply_core_state_save_data(save_data: Dictionary, show_warning: bool = true) -> bool:
@@ -326,16 +372,34 @@ func apply_core_state_save_data(save_data: Dictionary, show_warning: bool = true
 	if not town_inventory.has(SLIME_GEL_ID):
 		town_inventory[SLIME_GEL_ID] = 0
 
+	var raw_visitor_pool: Variant = save_data.get("visitor_pool", [])
+	if raw_visitor_pool is Array:
+		visitor_pool = []
+		for raw_visitor in raw_visitor_pool as Array:
+			if raw_visitor is Dictionary:
+				visitor_pool.append((raw_visitor as Dictionary).duplicate(true))
+
+	var raw_departed_history: Variant = save_data.get("departed_visitor_history", [])
+	if raw_departed_history is Array:
+		departed_visitor_history = []
+		for raw_departed in raw_departed_history as Array:
+			if raw_departed is Dictionary:
+				departed_visitor_history.append((raw_departed as Dictionary).duplicate(true))
+
+	next_visitor_id = maxi(1, int(save_data.get("next_visitor_id", next_visitor_id)))
+	active_regional_adventurer_cap = maxi(1, int(save_data.get("active_regional_adventurer_cap", active_regional_adventurer_cap)))
+
 	state_changed.emit()
 	return true
 
 func get_core_state_status_text() -> String:
-	return "Gold: %dg\nPotions: %d\nSlime Gel: %d\nNight Quests: %s\nStore Buying Slime Gel: %s" % [
+	return "Gold: %dg\nPotions: %d\nSlime Gel: %d\nNight Quests: %s\nStore Buying Slime Gel: %s\n%s" % [
 		money,
 		get_item_count(SMALL_POTION_ID),
 		get_item_count(SLIME_GEL_ID),
 		get_night_quest_policy_text(),
-		"Yes" if general_store_buys_slime_gel else "No"
+		"Yes" if general_store_buys_slime_gel else "No",
+		get_visitor_population_status_text()
 	]
 
 func _serialize_town_inventory() -> Dictionary:
@@ -550,6 +614,178 @@ func get_general_store_buy_policy_text() -> String:
 		return "Buying Slime Gel"
 	return "Not Buying Slime Gel"
 
+
+func get_active_regional_adventurer_count() -> int:
+	return get_adventurer_count() + get_world_traveler_count()
+
+func get_regional_adventurer_cap() -> int:
+	return active_regional_adventurer_cap
+
+func can_spawn_regional_visitor() -> bool:
+	return get_active_regional_adventurer_count() < get_regional_adventurer_cap()
+
+func get_available_visitor_pool_count() -> int:
+	var count: int = 0
+	for visitor in visitor_pool:
+		if str(visitor.get("status", "available")) == "available":
+			count += 1
+	return count
+
+func get_active_visitor_pool_count() -> int:
+	var count: int = 0
+	for visitor in visitor_pool:
+		if str(visitor.get("status", "")) == "active":
+			count += 1
+	return count
+
+func get_visitor_population_status_text() -> String:
+	return "Visitors Active: %d/%d | Pool Available: %d | Pool Total: %d | Departed History: %d | Two-trip cap: temporary" % [
+		get_active_regional_adventurer_count(),
+		get_regional_adventurer_cap(),
+		get_available_visitor_pool_count(),
+		visitor_pool.size(),
+		departed_visitor_history.size()
+	]
+
+func request_visitor_for_spawn(fallback_name: String = "Visitor") -> Dictionary:
+	if not can_spawn_regional_visitor():
+		return {}
+
+	var visitor_index: int = _find_available_visitor_index()
+	var visitor_data: Dictionary = {}
+
+	if visitor_index >= 0:
+		visitor_data = visitor_pool[visitor_index].duplicate(true)
+	else:
+		visitor_data = _create_new_visitor_pool_record(fallback_name)
+		visitor_pool.append(visitor_data.duplicate(true))
+		visitor_index = visitor_pool.size() - 1
+
+	var current_day: int = _get_current_day_number_for_visitors()
+	visitor_data["status"] = "active"
+	visitor_data["visit_start_day"] = current_day
+	visitor_data["visit_days_limit"] = _roll_visitor_days_limit()
+	visitor_data["total_visits"] = int(visitor_data.get("total_visits", 0)) + 1
+	visitor_data["last_spawn_day"] = current_day
+	visitor_data["departure_reason"] = ""
+
+	visitor_pool[visitor_index] = visitor_data.duplicate(true)
+	state_changed.emit()
+	return visitor_data
+
+func release_visitor_to_pool_from_adventurer(adventurer: Node, reason: String = "visit_complete") -> void:
+	if adventurer == null:
+		return
+
+	var visitor_id: int = int(_safe_get_property(adventurer, "visitor_id", -1))
+	if visitor_id < 0:
+		return
+
+	var visitor_data: Dictionary = _visitor_record_from_adventurer(adventurer)
+	visitor_data["status"] = "available"
+	visitor_data["departure_reason"] = reason
+	visitor_data["last_departure_day"] = _get_current_day_number_for_visitors()
+
+	var existing_index: int = _find_visitor_index_by_id(visitor_id)
+	if existing_index >= 0:
+		visitor_pool[existing_index] = visitor_data.duplicate(true)
+	else:
+		visitor_pool.append(visitor_data.duplicate(true))
+
+	departed_visitor_history.append({
+		"visitor_id": visitor_id,
+		"display_name": str(visitor_data.get("display_name", "Visitor")),
+		"departure_day": _get_current_day_number_for_visitors(),
+		"reason": reason
+	})
+
+	if departed_visitor_history.size() > 30:
+		departed_visitor_history.remove_at(0)
+
+	state_changed.emit()
+
+func should_visitor_depart(adventurer: Node) -> bool:
+	if adventurer == null:
+		return false
+
+	var roster_role: String = str(_safe_get_property(adventurer, "roster_role", "visitor"))
+	if roster_role == "resident_placeholder":
+		return false
+
+	var visitor_id: int = int(_safe_get_property(adventurer, "visitor_id", -1))
+	if visitor_id < 0:
+		return false
+
+	var start_day: int = int(_safe_get_property(adventurer, "visitor_visit_start_day", _get_current_day_number_for_visitors()))
+	var limit: int = maxi(1, int(_safe_get_property(adventurer, "visitor_visit_days_limit", VISITOR_MIN_VISIT_DAYS)))
+	var days_present: int = maxi(1, _get_current_day_number_for_visitors() - start_day + 1)
+
+	return days_present >= limit
+
+func _create_new_visitor_pool_record(fallback_name: String) -> Dictionary:
+	var name_index: int = (next_visitor_id - 1) % VISITOR_POOL_TEMPLATE_NAMES.size()
+	var chosen_name: String = fallback_name
+	if chosen_name == "" or chosen_name == "Visitor":
+		chosen_name = VISITOR_POOL_TEMPLATE_NAMES[name_index]
+
+	var visitor_data: Dictionary = {
+		"visitor_id": next_visitor_id,
+		"display_name": chosen_name,
+		"class_id": "fighter",
+		"level": 1,
+		"gold": 50,
+		"happiness": 0,
+		"status": "available",
+		"roster_role": "visitor",
+		"visit_start_day": _get_current_day_number_for_visitors(),
+		"visit_days_limit": _roll_visitor_days_limit(),
+		"total_visits": 0,
+		"departure_reason": "",
+		"max_trip_count": 2
+	}
+
+	next_visitor_id += 1
+	return visitor_data
+
+func _visitor_record_from_adventurer(adventurer: Node) -> Dictionary:
+	return {
+		"visitor_id": int(_safe_get_property(adventurer, "visitor_id", -1)),
+		"display_name": str(_safe_get_property(adventurer, "display_name", "Visitor")),
+		"class_id": str(_safe_get_property(adventurer, "class_id", "fighter")),
+		"level": int(_safe_get_property(adventurer, "level", 1)),
+		"gold": int(_safe_get_property(adventurer, "gold", 0)),
+		"happiness": int(_safe_get_property(adventurer, "happiness", 0)),
+		"status": "available",
+		"roster_role": str(_safe_get_property(adventurer, "roster_role", "visitor")),
+		"visit_start_day": int(_safe_get_property(adventurer, "visitor_visit_start_day", _get_current_day_number_for_visitors())),
+		"visit_days_limit": int(_safe_get_property(adventurer, "visitor_visit_days_limit", VISITOR_MIN_VISIT_DAYS)),
+		"total_visits": int(_safe_get_property(adventurer, "visitor_total_visits", 1)),
+		"departure_reason": str(_safe_get_property(adventurer, "departure_reason_placeholder", "")),
+		"max_trip_count": int(_safe_get_property(adventurer, "max_trip_count", 2))
+	}
+
+func _find_available_visitor_index() -> int:
+	for index in range(visitor_pool.size()):
+		if str(visitor_pool[index].get("status", "available")) == "available":
+			return index
+	return -1
+
+func _find_visitor_index_by_id(visitor_id: int) -> int:
+	for index in range(visitor_pool.size()):
+		if int(visitor_pool[index].get("visitor_id", -1)) == visitor_id:
+			return index
+	return -1
+
+func _roll_visitor_days_limit() -> int:
+	return randi_range(VISITOR_MIN_VISIT_DAYS, VISITOR_MAX_VISIT_DAYS)
+
+func _get_current_day_number_for_visitors() -> int:
+	var clock_node := get_node_or_null("/root/GameClock")
+	if clock_node != null and clock_node.has_method("get"):
+		return int(clock_node.get("day_number"))
+
+	return 1
+
 func register_adventurer(adventurer: Node) -> void:
 	if adventurer == null:
 		return
@@ -587,6 +823,11 @@ func add_world_traveler_from_adventurer(adventurer: Node) -> Dictionary:
 		"inventory": _safe_get_property(adventurer, "inventory", {}).duplicate(true),
 		"trip_count": _safe_get_property(adventurer, "trip_count", 0),
 		"max_trip_count": _safe_get_property(adventurer, "max_trip_count", 2),
+		"visitor_id": _safe_get_property(adventurer, "visitor_id", -1),
+		"visitor_visit_start_day": _safe_get_property(adventurer, "visitor_visit_start_day", 1),
+		"visitor_visit_days_limit": _safe_get_property(adventurer, "visitor_visit_days_limit", VISITOR_MIN_VISIT_DAYS),
+		"visitor_total_visits": _safe_get_property(adventurer, "visitor_total_visits", 1),
+		"roster_role": _safe_get_property(adventurer, "roster_role", "visitor"),
 		"slime_kills_this_outing": 0,
 		"last_night_sleep_day": _safe_get_property(adventurer, "last_night_sleep_day", -1),
 		"energy": _safe_get_property(adventurer, "energy", DEFAULT_MAX_ENERGY),

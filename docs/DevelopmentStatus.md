@@ -459,3 +459,75 @@ Full intended game: about 32-35%
 ```
 
 This patch improves interface structure and save policy. We are close to a point where save/menu infrastructure is good enough for now, and the project should pivot back toward gameplay systems: Guild Hall/adventurer cap, visitor cycling, resident contracts, quest notices, dungeon/portal loop, and economy graphs.
+
+
+## v0.6.09 Hotfix 1 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 44%
+Full intended game: about 32-35%
+```
+
+This hotfix improves UI clarity rather than adding new gameplay. The project should soon move back toward gameplay systems after the menu/sidebar foundation is stable.
+
+
+## v0.6.09 Hotfix 2 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 44%
+Full intended game: about 32-35%
+```
+
+This is UI/pause correction work. Once ESC/menu behavior is stable, we should return toward gameplay systems instead of staying in menu polish.
+
+
+## v0.6.09 Hotfix 3 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 45%
+Full intended game: about 33-36%
+```
+
+This is integration cleanup. The Town and World Map now share the same broad UI expectations, which means we can more safely return to gameplay systems next.
+
+
+## v0.6.10 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 46%
+Full intended game: about 34-37%
+```
+
+This patch moves us back into gameplay structure after UI/save integration. The visitor pool is still rough, but it starts turning adventurers into a rotating population rather than disposable test units.
+
+
+## v0.6.10 Hotfix 1 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 46%
+Full intended game: about 34-37%
+```
+
+This is a testing/recovery hotfix. It does not move gameplay forward, but it protects the next testing session from stale autosave and pause-state confusion.
+
+
+## v0.6.10 Hotfix 2 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 46%
+Full intended game: about 34-37%
+```
+
+This is an input routing correction caused by persistent scenes. It is important cleanup before continuing gameplay work.

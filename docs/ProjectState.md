@@ -226,3 +226,33 @@ Autosave now uses its own dedicated `autosave_1` slot and file paths, separate f
 ## v0.6.09 Update Notes
 
 ESC now opens a first main menu overlay with Resume, Save/Load, Settings, Graphics, Audio, Controls, and Quit placeholders. Autosave policy changed to daily-only to avoid trapping the player after individual mistakes. Main menu flow, sidebar UX direction, and adventurer population/cap cycling design are documented.
+
+
+## v0.6.09 Hotfix 1 Update Notes
+
+The old top-left Debug overlay is disabled and debug tools now live in the right sidebar Debug tab. ESC now opens a solid dark in-game pause menu with vertical Resume, Save/Load, Settings, and Quit buttons. Graphics/Audio/Controls are now Settings sections. Opening ESC pauses the simulation; closing it resumes. The future title/main menu is documented as a separate screen from the in-game ESC menu.
+
+
+## v0.6.09 Hotfix 2 Update Notes
+
+ESC pause now uses explicit GameState simulation pause plus tree pause. GameClock, Adventurer, AdventurerAI, and WorldMap processing now guard against simulation pause. ESC submenus are smaller, solid, scrollable, include an X close button, and Settings categories only appear under Settings-related panels.
+
+
+## v0.6.09 Hotfix 3 Update Notes
+
+The World Map now has compatible UI support: right sidebar, return-to-town navigation, world status, save/load panel access, debug tools, ESC pause menu, and pause guard in WorldMap processing. This clears important integration debt before returning to gameplay systems.
+
+
+## v0.6.10 Update Notes
+
+Added the first adventurer visitor cycling foundation: visitor pool, regional adventurer cap shared by Town/World Map, visitor visit limits, departure/re-entry placeholders, and visitor status in debug panels. Also fixed the ESC scene-switch bug by closing transient UI and clearing pause state before persistent view changes.
+
+
+## v0.6.10 Hotfix 1 Update Notes
+
+Added ClearAuto and ResetPause debug recovery buttons to both Town and World Map. ClearAuto uses a two-step confirmation and deletes only autosave_1 files. ResetPause force-clears ESC overlays, GameState simulation pause, and tree pause.
+
+
+## v0.6.10 Hotfix 2 Update Notes
+
+Fixed the Town ESC menu not appearing by preventing hidden persistent scenes from capturing input. Main now enables input/unhandled input only for the active visible persistent view, and Town/WorldMap guard ESC input by active scene.
