@@ -1,11 +1,12 @@
 # Known Issues
 
-## v0.6.3
+## v0.6.09
 
 Known limitations:
-- World state persistence is a foundation, not final simulation persistence.
-- Exact combat contact/animation state is not fully restored.
-- Visible slime state is still placeholder-level.
-- Loaded town adventurers resume a basic town routine, not their exact pre-save task.
-- World map dungeons/portals do not exist yet and are not saved.
-- Save All is still single-slot only.
+- ESC menu is an in-game overlay only, not a true title screen.
+- Save / Load tab is informational only.
+- Settings/Graphics/Audio/Controls sections are placeholders only.
+- Quit button is placeholder only and does not exit.
+- Continue/New/Load title menu flow is documented but not implemented yet.
+- Autosave loads are not exposed as a button yet.
+- Sidebar is still verbose for testing.

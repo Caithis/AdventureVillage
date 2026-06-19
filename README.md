@@ -1,85 +1,117 @@
 # Dungeon Frontier Guild-Town
 
-Version: v0.6.3 - World Traveler Save Data Foundation
+Version: v0.6.09 - ESC Main Menu Foundation
 
-## What v0.6.3 Adds
+## What v0.6.09 Adds
 
-This patch starts saving world-side simulation state and fixes loaded town adventurers standing still.
+This patch adds a first ESC main menu overlay and changes autosave policy.
 
-## Fix: Loaded Adventurers Resume Movement
+## ESC Main Menu Overlay
 
-In v0.6.2, loaded adventurers restored their identity data but were set to `Idle`, so they stayed stationary with a save/load label.
+Pressing ESC now opens/closes a main menu overlay.
 
-Now loaded town adventurers resume a basic town routine after Load All.
-
-They should display:
+Current buttons:
 
 ```text
-Loaded. Resuming town routine.
+Resume
+Save / Load
+Settings
+Quit
+Graphics
+Audio
+Controls
 ```
 
-Then move through the town loop again.
+## Resume Button
 
-## World State Saved
+Resume closes the overlay and returns to the current game.
 
-Save All now includes:
+## Save / Load Placeholder
+
+The Save / Load tab currently shows:
 
 ```text
-active world travelers
-returned traveler records
-visible slime state placeholder
-slime nest growth/status
-slime nest level
-raid pressure summary
-next world traveler/slime IDs
-slime spawn timer
+current manual slot summary
+autosave status
+future main menu flow notes
 ```
 
-## New Save Files
+Actual Save All / Load All is still handled in the sidebar for now.
 
-Manual Slot 1 now writes:
+## Settings Placeholder
+
+Settings has placeholder text for future:
 
 ```text
-user://slot_1_building_layout.json
-user://slot_1_economy_history.json
-user://slot_1_adventurer_roster.json
-user://slot_1_world_state.json
+Graphics
+Audio
+Controls
+Accessibility
+Gameplay/UI preferences
 ```
 
-A live world-state path also exists for future use:
+## Graphics / Audio / Controls Placeholders
+
+The overlay now has placeholder sections for:
 
 ```text
-user://world_state.json
+Graphics options
+Audio options
+Controls options
 ```
 
-## Visible Slime State Placeholder
+These are not functional settings yet.
 
-Visible slime state now saves enough placeholder data to restore currently tracked slime dictionaries.
+## Autosave Policy Change
 
-This is still not final ecological persistence. It is a first foundation.
+Autosave is now daily-only.
 
-## Save Sidebar Status
-
-The Save sidebar now includes a World section showing:
+Autosave currently runs at the new-day boundary:
 
 ```text
-world travelers
-returned records
-visible slimes
-slime nest status
-nest level
-growth
-raid pressure
+new_day_X
 ```
 
-## Current Limitations
+Autosave no longer runs after every building placement, move, demolish, or upgrade.
 
-This is not full world simulation persistence yet.
+## Why Autosave Changed
 
-Not yet saved perfectly:
-- exact combat animation state
-- future dungeon/portal state
-- long-term zone discovery
-- fog of war
-- world events
-- monster ecology history
+Autosave after every action can trap the player immediately after a bad decision.
+
+Daily autosave gives safety without removing player recovery.
+
+## Future Main Menu Design
+
+Long-term title menu flow should be:
+
+```text
+Continue
+New
+Load
+Settings
+Quit
+```
+
+Design intent:
+
+```text
+Continue loads autosave.
+New starts a new save state.
+Load lets player pick a manual save slot.
+Settings opens graphics/audio/control options.
+Quit exits safely.
+```
+
+## Adventurer Population Reminder
+
+The design notes now reiterate:
+
+```text
+Adventurers should cycle naturally through the village.
+Visitors stay for several days, then leave the region.
+Past visitors can return later from the adventurer pool.
+Favorites can become permanent residents through happiness/satisfaction and contracts.
+The cap includes both village and world-map adventurers.
+The cap should scale with Guild Hall or town level.
+The current two-trip dormancy behavior is temporary prototype logic.
+```

@@ -375,3 +375,87 @@ Full intended game: about 26-29%
 ```
 
 The save system now covers the first slice of world-state persistence. This is still not complete simulation restoration, but it is a meaningful foundation for future dungeons, monsters, and world events.
+
+
+## v0.6.4 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 39%
+Full intended game: about 27-30%
+```
+
+This patch improves save usability and readability. It is still a single-slot prototype, but the UI now gives clearer information about what the slot contains.
+
+
+## v0.6.4 Hotfix 1 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 39%
+Full intended game: about 27-30%
+```
+
+This hotfix improves save correctness by adding core state to the manual snapshot.
+
+
+## v0.6.5 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 40%
+Full intended game: about 28-31%
+```
+
+This patch improves save-slot reliability and moves the save UI toward a real multi-slot structure.
+
+
+## v0.6.6 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 41%
+Full intended game: about 29-32%
+```
+
+This patch makes save-slot destructive actions safer and moves the save system closer to player-facing reliability.
+
+
+## v0.6.07 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 42%
+Full intended game: about 30-33%
+```
+
+This patch makes the save system more usable by adding multiple manual slots. It is still a prototype save system, but it now behaves more like a real player-facing save interface.
+
+
+## v0.6.08 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 43%
+Full intended game: about 31-34%
+```
+
+The project is progressing well through infrastructure, but we should treat the save system as nearing a prototype stopping point. After autosave and perhaps a basic ESC menu foundation, we should pivot back toward gameplay systems such as Guild Hall management, adventurer contracts, quest notices, dungeons/portals, and economy graphs.
+
+
+## v0.6.09 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 44%
+Full intended game: about 32-35%
+```
+
+This patch improves interface structure and save policy. We are close to a point where save/menu infrastructure is good enough for now, and the project should pivot back toward gameplay systems: Guild Hall/adventurer cap, visitor cycling, resident contracts, quest notices, dungeon/portal loop, and economy graphs.

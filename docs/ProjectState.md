@@ -186,3 +186,43 @@ Active town adventurers now export/import save data through SaveManager. Save Al
 ## v0.6.3 Update Notes
 
 SaveManager now includes a manual Slot 1 world state snapshot. GameState exports/imports active world travelers, returned traveler records, visible slime state placeholder data, and slime nest growth/status. Loaded town adventurers now resume a basic town routine instead of staying idle after Load All.
+
+
+## v0.6.4 Update Notes
+
+The Save sidebar now has a more explicit Slot 1 interface: slot label, last saved/loaded timestamp placeholders, slot contents summary, confirm overwrite placeholder, and clear slot placeholder. Save All / Load All behavior remains non-destructive and single-slot for now.
+
+
+## v0.6.4 Hotfix 1 Update Notes
+
+Save All / Load All now includes a core GameState snapshot for Village Funds, town inventory, and policy toggles. This fixes the issue where the debug panel gold did not reset after Load All. Loaded adventurers also avoid blindly resuming the sell-loot path if they have no Slime Gel.
+
+
+## v0.6.5 Update Notes
+
+Save slot metadata now persists in `user://save_slots_metadata.json`. Slot 1 now tracks occupied/empty state, last saved/loaded timestamps, save/load result text, and slot content summary across sessions. The metadata format is dictionary-based so future versions can add Slot 2/Slot 3 without rewriting the format.
+
+
+## v0.6.6 Update Notes
+
+Save slot overwrite and clear controls are now functional. Save All is blocked when Slot 1 is occupied unless overwrite is armed first. Clear Slot now requires two presses and deletes the manual Slot 1 snapshot files while leaving live/autosave files untouched. Slot metadata updates after clearing.
+
+
+## v0.6.07 Update Notes
+
+SaveManager now supports three manual save slots: Slot 1, Slot 2, and Slot 3. Save All, Load All, Clear Slot, and Arm Overwrite now target the active selected slot. Versioning also shifts to zero-padded incremental patch numbers starting at v0.6.07 to avoid symbolically approaching 1.0 too quickly during foundation work.
+
+
+## v0.6.07 Hotfix 1 Update Notes
+
+Slot 2 and Slot 3 button switching was fixed. SaveManager now applies requested active slot changes more directly, and Town's Save slot buttons use bound slot numbers instead of anonymous closures. The active slot is marked by an asterisk and buttons are not disabled.
+
+
+## v0.6.08 Update Notes
+
+Autosave now uses its own dedicated `autosave_1` slot and file paths, separate from manual save slots 1-3. Autosave runs after major safe events such as building placement, movement, demolition, upgrade, and new day start. The Save sidebar now displays autosave status. Future sidebar compaction and ESC main menu direction are documented.
+
+
+## v0.6.09 Update Notes
+
+ESC now opens a first main menu overlay with Resume, Save/Load, Settings, Graphics, Audio, Controls, and Quit placeholders. Autosave policy changed to daily-only to avoid trapping the player after individual mistakes. Main menu flow, sidebar UX direction, and adventurer population/cap cycling design are documented.

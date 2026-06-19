@@ -1,37 +1,41 @@
 # Changelog
 
-## v0.6.3 - World Traveler Save Data Foundation
+## v0.6.09 - ESC Main Menu Foundation
 
 ### Added
-- World state save data export.
-- World state save data import.
-- Manual Slot 1 world state save file.
-- Active world traveler save/load foundation.
-- Returned traveler record save/load foundation.
-- Visible slime state placeholder save/load.
-- Slime nest growth/status save/load.
-- Save sidebar World status section.
-- SaveManager world state save/load methods.
-- World state JSON vector packing/unpacking.
-- World traveler save documentation.
+- ESC main menu overlay.
+- Resume button.
+- Save / Load tab placeholder.
+- Settings tab placeholder.
+- Graphics placeholder section.
+- Audio placeholder section.
+- Controls placeholder section.
+- Quit placeholder section.
+- Main menu flow design notes.
+- Daily-only autosave policy notes.
+- Adventurer population/cap design notes.
+- Updated sidebar/main menu UX direction.
+- Updated progress roadmap.
 
-### Fixed
-- Loaded town adventurers no longer remain permanently idle after Load All.
-- Loaded town adventurers now resume a basic town routine.
+### Changed
+- Autosave now runs at day boundary only.
+- Removed autosave triggers from building placement/move/demolish/upgrade.
+- Save sidebar now states daily-only autosave policy.
 
 ### Not Yet Added
-- Perfect combat-state restoration.
-- Dungeon/portal state persistence.
-- Fog-of-war persistence.
-- Monster ecology history.
-- World event persistence.
+- True title screen.
+- Continue button loading autosave from title menu.
+- New game flow.
+- Load game slot picker modal.
+- Functional graphics/audio/control settings.
+- Quit-to-title behavior.
 
-## v0.6.2 - Adventurer Save Data Foundation
+## v0.6.08 - Autosave Slot Foundation
 
 ### Added
-- Active town adventurer save/load.
+- Dedicated autosave slot.
 
-## v0.6.1.1 - Manual Save Snapshot Fix
+## v0.6.07.1 - Save Slot Button Switching Fix
 
 ### Fixed
-- Save All uses separate manual Slot 1 snapshots.
+- Slot 2 / Slot 3 switching.

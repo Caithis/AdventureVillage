@@ -31,6 +31,7 @@ var last_purchase_message: String = ""
 var traveler_id: int = -1
 var is_returned_adventurer: bool = false
 var roster_role: String = "visitor"
+var saved_resume_state: String = "Idle"
 var trip_count: int = 0
 var max_trip_count: int = 2
 var last_night_sleep_day: int = -1
@@ -308,6 +309,7 @@ func setup_from_adventurer_save_data(save_data: Dictionary) -> void:
     traveler_id = int(save_data.get("traveler_id", -1))
     is_returned_adventurer = bool(save_data.get("is_returned_adventurer", false))
     roster_role = str(save_data.get("roster_role", "visitor"))
+    saved_resume_state = str(save_data.get("saved_state", "Idle"))
 
     var saved_inventory: Variant = save_data.get("inventory", {})
     if saved_inventory is Dictionary:
