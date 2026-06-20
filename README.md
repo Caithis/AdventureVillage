@@ -1,47 +1,90 @@
 # Dungeon Frontier Guild-Town
 
-Version: v0.6.10 Hotfix 2 - Active Scene ESC Input Fix
+Version: v0.6.20 - World Discovery / Known Threats Placeholder
 
-## What This Fixes
+## What v0.6.20 Adds
 
-This hotfix fixes the issue where ESC paused the Town scene but the ESC menu did not appear in Town.
+This patch starts preparing the world map for the future ad-lib quest builder.
 
-## Root Cause
+The guild now tracks discovered world threats.
 
-Town and World Map are persistent scenes.
+## Current Discovery Data
 
-Even when one scene was hidden, its input handler could still receive ESC.
-
-That meant this could happen:
+GameState now tracks:
 
 ```text
-Player is in Town.
-Player presses ESC.
-Hidden World Map catches ESC first.
-World Map opens its hidden ESC menu.
-Game pauses.
-Town menu never appears.
+known_monsters
+known_nests
+discovery_event_log
 ```
 
-This made it look like Town pause worked but Town's ESC menu was missing.
+## Current Known Threats
 
-## Fix
-
-Main now disables input handling on hidden persistent views.
-
-Only the active visible view can receive:
+For now, the only discoverable threat is:
 
 ```text
-_input
-_unhandled_input
+Monster: Slime
+Nest: Slime Nest
 ```
 
-Town and World Map also now check whether they are the active scene before handling ESC.
-
-## Changed Files
+Slime discovery can happen when:
 
 ```text
-res://scripts/main/Main.gd
-res://scripts/town/Town.gd
-res://scripts/world_map/WorldMap.gd
+a Slime is sighted/spawned in the world
+a Slime is defeated
+debug discovery is pressed
 ```
+
+## Known Nest Placeholder
+
+The Slime Nest can now appear as a known nest with:
+
+```text
+nest level
+growth
+active monster count
+raid pressure state
+last discovery source
+```
+
+This is still placeholder data, but it prepares the game for future nest-reduction quest parameters.
+
+## UI Additions
+
+Known threats are now shown in:
+
+```text
+World Map sidebar/info
+World Map debug
+Town debug
+Guild Hall building popup
+Quest Board status text
+```
+
+## Debug Buttons
+
+Town and World debug now include:
+
+```text
+DiscT
+ResetT
+```
+
+`DiscT` discovers Slime and Slime Nest for testing.
+
+`ResetT` clears known threat discovery data.
+
+## Long-Term Quest Builder Direction
+
+The current Slime Hunt quest remains temporary.
+
+Future quest notices should be built from discovered information:
+
+```text
+Hunt [discovered monster] until [X killed]
+Hunt [discovered monster] until [nest reduced to level Y]
+Explore [known/active dungeon]
+Scout [fogged zone]
+```
+
+The player should not be able to target threats the guild has not discovered.

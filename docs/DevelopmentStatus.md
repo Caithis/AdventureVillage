@@ -531,3 +531,123 @@ Full intended game: about 34-37%
 ```
 
 This is an input routing correction caused by persistent scenes. It is important cleanup before continuing gameplay work.
+
+
+## v0.6.11 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 47%
+Full intended game: about 35-38%
+```
+
+This patch connects the visitor population loop back to a player-facing town building. That is a good gameplay-system step: the Guild Hall is starting to matter as a management structure instead of just being a placed object.
+
+
+## v0.6.12 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 48%
+Full intended game: about 36-39%
+```
+
+This patch improves testability and player feedback around visitor cycling. It also removes the worst effect of the temporary two-trip prototype by turning dormancy into region departure/re-entry. The system is still placeholder-heavy, but it is now easier to observe and iterate on.
+
+
+## v0.6.13 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 49%
+Full intended game: about 37-40%
+```
+
+This patch is a meaningful systems step because it starts turning transient visitors into remembered characters. The registry should not be overbuilt yet; its job is to prove that known adventurers can be tracked, favored, and prioritized before we add gifts/contracts.
+
+
+## v0.6.14 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 50%
+Full intended game: about 38-41%
+```
+
+This is a useful milestone: we now have a rough visitor-to-resident data path. My concern is that the Guild Hall UI is now clearly outgrowing the sidebar, so the next smart move is probably a targeted Guild Hall popup/refactor rather than adding more registry features into the cramped sidebar.
+
+
+## v0.6.15 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 51%
+Full intended game: about 39-42%
+```
+
+This is an important UI architecture step. The popup foundation gives us room to build deeper building management without overloading the sidebar. My recommendation after this test pass is to avoid more UI-only expansion unless there is a blocking issue; we should return to gameplay loops next.
+
+
+## v0.6.16 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 53%
+Full intended game: about 41-44%
+```
+
+This is an important gameplay-loop patch. It connects Guild Hall/world/combat/reward into one simple objective chain. The system is intentionally thin, but it gives adventurers a clearer reason to fight and gives the player a basic lever for regional activity.
+
+
+## v0.6.17 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 54%
+Full intended game: about 42-45%
+```
+
+This patch improves the economic logic of quests. Paying adventurers instead of the town is a stronger long-term direction because it makes quests feed the service economy rather than bypassing it.
+
+
+## v0.6.18 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 55%
+Full intended game: about 43-46%
+```
+
+This patch adds needed management tension. The player can now spend town money to influence adventurer behavior, but it is not free or absolute. That fits the game better than direct control.
+
+
+## v0.6.19 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 56%
+Full intended game: about 44-47%
+```
+
+This patch validates an important economy loop: outside quest money can enter through adventurers and later become town income through services. The long-term quest builder/world-map scope has also been captured so the current simple Slime Hunt does not become mistaken for the final quest design.
+
+
+## v0.6.20 Status Update
+
+Estimated progress:
+
+```text
+Prototype / vertical-slice foundation: about 57%
+Full intended game: about 45-48%
+```
+
+This patch is a foundational world-map systems step. It does not add true fog of war yet, but it creates the data layer needed for discovered monsters, known nests, and future quest-builder dropdowns.

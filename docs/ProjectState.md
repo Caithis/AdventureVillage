@@ -256,3 +256,68 @@ Added ClearAuto and ResetPause debug recovery buttons to both Town and World Map
 ## v0.6.10 Hotfix 2 Update Notes
 
 Fixed the Town ESC menu not appearing by preventing hidden persistent scenes from capturing input. Main now enables input/unhandled input only for the active visible persistent view, and Town/WorldMap guard ESC input by active scene.
+
+
+## v0.6.11 Update Notes
+
+Guild Hall now exposes regional adventurer cap and visitor intake controls. Regional cap is currently 3 plus the highest Guild Hall upgrade level as a placeholder. Visitor intake can be toggled through Guild Hall details or Debug tabs, and visitor spawning respects the intake policy.
+
+
+## v0.6.12 Update Notes
+
+Visitor cycling now has clearer feedback: floating text for blocked spawns, new registrations, returning visitors, and departures. A visitor event log placeholder tracks recent visitor events. Visitors who reach the current two-trip prototype limit now leave the local region with reason `debug_max_trips_complete` instead of staying dormant forever. Future Guild Hall registry, pool growth through renown, and priority return messaging are documented.
+
+
+## v0.6.13 Update Notes
+
+Added the first Guild Registry placeholder connected to the Guild Hall. Known adventurers are shown from the visitor pool with visit count, status, last departure reason, favorite placeholder, and priority return placeholder. Guild Hall details now include Toggle Favorite Placeholder and Mark Priority Return. Future polish note added for visitors walking to the village entrance before leaving.
+
+
+## v0.6.14 Update Notes
+
+Added first resident contract placeholder path. Favorite known adventurers can become contract candidates and be marked as resident_placeholder through Guild Hall details. Contracted residents request a house via house_request_status needs_house_placeholder and should not leave through visitor cycling. Added notes for future building detail popup UI, per-adventurer registry buttons, one-at-a-time priority return, and future house assignment.
+
+
+## v0.6.15 Update Notes
+
+Added generic Building Management Popup foundation. Clicking managed buildings now opens a larger main-screen popup with solid background, X close button, scrollable content, and building-specific sections. Guild Hall has the first custom popup with known adventurer registry rows and per-row Favorite, Request Return, and Contract buttons. General Store and Inn now have placeholder popup sections proving the system is not Guild-Hall-only. Sidebar Building Details remains fallback/debug.
+
+
+## v0.6.15 Hotfix 1 Update Notes
+
+Fixed Building Management Popup parse errors by adding safe popup helper wrappers for building type, capacity, service speed, and worker capacity. Corrected invalid ColorRect-to-string helper usage.
+
+
+## v0.6.15 Hotfix 2 Update Notes
+
+Fixed building management popup display path. Popup now lives in its own CanvasLayer, has explicit 1600x720 overlay sizing, is forced visible on open, and is deferred after sidebar/building detail refresh. Building type detection now reads the building_id script property.
+
+
+## v0.6.15 Hotfix 3 Update Notes
+
+Fixed popup not appearing by adding `_create_building_management_popup_overlay()` to the actual Town `_ready()` startup path. Added fallback creation in `_open_building_management_popup()` and duplicate CanvasLayer protection.
+
+
+## v0.6.16 Update Notes
+
+Added first Quest Board / World Objective foundation. A simple Slime Hunt quest can be posted from the Guild Hall popup or debug controls. Adventurers contribute to quest progress when they defeat Slimes. Quest completion pays a gold reward and stores a completed quest record. Quest status appears in Town debug, World Map info/debug, and Guild Hall popup.
+
+
+## v0.6.17 Update Notes
+
+Improved quest feedback and changed quest reward direction. Slime Hunt rewards now go to contributing adventurer wallets instead of directly to village funds. Reward distribution is based on contribution count, recorded in completed quest data, and tracked as external quest reward injection. Quest status now includes recent quest events and last feedback.
+
+
+## v0.6.18 Update Notes
+
+Added paid quest encouragement. The town can spend 35g through the Guild Hall popup or debug EncQ button to encourage adventurers toward the active Slime Hunt quest. Encouragement is influence, not direct control: it gives world travelers a movement/cooldown urgency boost and Quest Notice feedback, while tracking cost as quest_encouragement_outflow. Added notes about quest encouragement as a strategic budget decision rather than a free command.
+
+
+## v0.6.19 Update Notes
+
+Added Quest Reward Spending Loop tracking. Adventurers now track `quest_reward_gold` as a debug sub-wallet. When quest reward money is spent at the General Store or Inn, the economy records how much quest reward money flowed back into the town. Added docs for future adventurer budget scaling and the long-term ad-lib quest builder tied to fog of war, discovered monsters, nests, dungeons, and world-map regional management.
+
+
+## v0.6.20 Update Notes
+
+Added World Discovery / Known Threats placeholder. GameState now tracks known_monsters, known_nests, and discovery_event_log. Slime and Slime Nest can be discovered from sighting/spawn, defeat, or debug discovery. World Map, Town debug, and Guild Hall popup now show discovered threats. Added notes for future fog of war, zones, known dungeons, nest reduction, and ad-lib quest-builder dropdowns.

@@ -20,6 +20,7 @@ var display_name: String = "Rook"
 var class_id: String = "fighter"
 var level: int = 1
 var gold: int = 50
+var quest_reward_gold: int = 0
 var happiness: int = 0
 var health: int = 30
 var max_health: int = 30
@@ -36,6 +37,13 @@ var visitor_id: int = -1
 var visitor_visit_start_day: int = 1
 var visitor_visit_days_limit: int = 3
 var visitor_total_visits: int = 0
+var visitor_registration_day: int = 1
+var priority_invite_placeholder: bool = false
+var favorite_placeholder: bool = false
+var contract_status: String = "no_contract"
+var house_request_status: String = "no_house_request"
+var assigned_house_id: String = ""
+var last_spawn_event: String = "new"
 var departure_reason_placeholder: String = ""
 var trip_count: int = 0
 var max_trip_count: int = 2
@@ -80,11 +88,19 @@ func setup_from_visitor_data(visitor_data: Dictionary) -> void:
     class_id = str(visitor_data.get("class_id", class_id))
     level = int(visitor_data.get("level", level))
     gold = int(visitor_data.get("gold", gold))
+    quest_reward_gold = int(visitor_data.get("quest_reward_gold", quest_reward_gold))
     happiness = int(visitor_data.get("happiness", happiness))
     roster_role = str(visitor_data.get("roster_role", "visitor"))
     visitor_visit_start_day = int(visitor_data.get("visit_start_day", GameClock.day_number))
     visitor_visit_days_limit = int(visitor_data.get("visit_days_limit", visitor_visit_days_limit))
     visitor_total_visits = int(visitor_data.get("total_visits", visitor_total_visits))
+    visitor_registration_day = int(visitor_data.get("registration_day", GameClock.day_number))
+    priority_invite_placeholder = bool(visitor_data.get("priority_invite_placeholder", false))
+    favorite_placeholder = bool(visitor_data.get("favorite_placeholder", false))
+    contract_status = str(visitor_data.get("contract_status", "no_contract"))
+    house_request_status = str(visitor_data.get("house_request_status", "no_house_request"))
+    assigned_house_id = str(visitor_data.get("assigned_house_id", ""))
+    last_spawn_event = str(visitor_data.get("last_spawn_event", "new"))
     departure_reason_placeholder = str(visitor_data.get("departure_reason", ""))
     max_trip_count = int(visitor_data.get("max_trip_count", max_trip_count))
     name = "Visitor_%s_%d" % [display_name, visitor_id]
@@ -107,6 +123,7 @@ func setup_from_traveler_data(traveler_data: Dictionary) -> void:
     class_id = str(traveler_data.get("class_id", "fighter"))
     level = int(traveler_data.get("level", 1))
     gold = int(traveler_data.get("gold", 0))
+    quest_reward_gold = int(traveler_data.get("quest_reward_gold", 0))
     inventory = traveler_data.get("inventory", {}).duplicate(true)
     health = int(traveler_data.get("hp", 1))
     max_health = int(traveler_data.get("max_hp", 30))
@@ -118,6 +135,13 @@ func setup_from_traveler_data(traveler_data: Dictionary) -> void:
     visitor_visit_start_day = int(traveler_data.get("visitor_visit_start_day", 1))
     visitor_visit_days_limit = int(traveler_data.get("visitor_visit_days_limit", 3))
     visitor_total_visits = int(traveler_data.get("visitor_total_visits", 0))
+    visitor_registration_day = int(traveler_data.get("visitor_registration_day", 1))
+    priority_invite_placeholder = bool(traveler_data.get("priority_invite_placeholder", false))
+    favorite_placeholder = bool(traveler_data.get("favorite_placeholder", false))
+    contract_status = str(traveler_data.get("contract_status", "no_contract"))
+    house_request_status = str(traveler_data.get("house_request_status", "no_house_request"))
+    assigned_house_id = str(traveler_data.get("assigned_house_id", ""))
+    last_spawn_event = str(traveler_data.get("last_spawn_event", last_spawn_event))
     roster_role = str(traveler_data.get("roster_role", "visitor"))
     last_night_sleep_day = int(traveler_data.get("last_night_sleep_day", -1))
     is_returned_adventurer = true
@@ -187,6 +211,7 @@ func should_seek_night_sleep() -> bool:
 func rest_at_inn() -> void:
     if gold >= INN_REST_FEE:
         gold -= INN_REST_FEE
+        _record_quest_reward_spending_from_purchase(INN_REST_FEE, "inn_rest")
         GameState.add_money(INN_REST_FEE)
         GameState.record_inn_income(INN_REST_FEE, "rest", 1)
         health = max_health
@@ -206,6 +231,7 @@ func rest_at_inn() -> void:
 func sleep_at_inn_for_night() -> void:
     if gold >= NIGHT_LODGING_FEE:
         gold -= NIGHT_LODGING_FEE
+        _record_quest_reward_spending_from_purchase(NIGHT_LODGING_FEE, "inn_lodging")
         GameState.add_money(NIGHT_LODGING_FEE)
         GameState.record_inn_income(NIGHT_LODGING_FEE, "night_lodging", 1)
         health = max_health
@@ -240,7 +266,7 @@ func try_buy_small_potion() -> String:
         show_floating_text("Can\'t afford potion")
         return "no_gold"
 
-    var spent_gold := spend_gold(SMALL_POTION_PRICE)
+    var spent_gold := spend_gold(SMALL_POTION_PRICE, "general_store_potion")
     if not spent_gold:
         set_purchase_message("Purchase failed")
         return "failed"
@@ -303,6 +329,7 @@ func get_adventurer_save_data() -> Dictionary:
         "class_id": class_id,
         "level": level,
         "gold": gold,
+        "quest_reward_gold": quest_reward_gold,
         "happiness": happiness,
         "health": health,
         "max_health": max_health,
@@ -319,6 +346,13 @@ func get_adventurer_save_data() -> Dictionary:
         "visitor_visit_start_day": visitor_visit_start_day,
         "visitor_visit_days_limit": visitor_visit_days_limit,
         "visitor_total_visits": visitor_total_visits,
+        "visitor_registration_day": visitor_registration_day,
+        "priority_invite_placeholder": priority_invite_placeholder,
+        "favorite_placeholder": favorite_placeholder,
+        "contract_status": contract_status,
+        "house_request_status": house_request_status,
+        "assigned_house_id": assigned_house_id,
+        "last_spawn_event": last_spawn_event,
         "departure_reason_placeholder": departure_reason_placeholder,
         "is_resident_placeholder": roster_role == "resident_placeholder",
         "saved_state": current_state,
@@ -332,6 +366,7 @@ func setup_from_adventurer_save_data(save_data: Dictionary) -> void:
     class_id = str(save_data.get("class_id", "fighter"))
     level = int(save_data.get("level", 1))
     gold = int(save_data.get("gold", 0))
+    quest_reward_gold = int(save_data.get("quest_reward_gold", 0))
     happiness = int(save_data.get("happiness", 0))
     health = int(save_data.get("health", 30))
     max_health = int(save_data.get("max_health", 30))
@@ -347,6 +382,13 @@ func setup_from_adventurer_save_data(save_data: Dictionary) -> void:
     visitor_visit_start_day = int(save_data.get("visitor_visit_start_day", 1))
     visitor_visit_days_limit = int(save_data.get("visitor_visit_days_limit", 3))
     visitor_total_visits = int(save_data.get("visitor_total_visits", 0))
+    visitor_registration_day = int(save_data.get("visitor_registration_day", 1))
+    priority_invite_placeholder = bool(save_data.get("priority_invite_placeholder", false))
+    favorite_placeholder = bool(save_data.get("favorite_placeholder", false))
+    contract_status = str(save_data.get("contract_status", "no_contract"))
+    house_request_status = str(save_data.get("house_request_status", "no_house_request"))
+    assigned_house_id = str(save_data.get("assigned_house_id", ""))
+    last_spawn_event = str(save_data.get("last_spawn_event", last_spawn_event))
     departure_reason_placeholder = str(save_data.get("departure_reason_placeholder", ""))
     saved_resume_state = str(save_data.get("saved_state", "Idle"))
 
@@ -400,6 +442,7 @@ func _update_returned_record(new_status: String, sale_message: String) -> void:
         "class_id": class_id,
         "level": level,
         "gold": gold,
+        "quest_reward_gold": quest_reward_gold,
         "inventory": inventory.duplicate(true),
         "trip_count": trip_count,
         "max_trip_count": max_trip_count,
@@ -438,7 +481,7 @@ func add_item(item_id: String, amount: int) -> void:
 func get_item_count(item_id: String) -> int:
     return int(inventory.get(item_id, 0))
 
-func spend_gold(amount: int) -> bool:
+func spend_gold(amount: int, service_id: String = "spending") -> bool:
     if amount <= 0:
         return false
 
@@ -446,8 +489,23 @@ func spend_gold(amount: int) -> bool:
         return false
 
     gold -= amount
+    _record_quest_reward_spending_from_purchase(amount, service_id)
     _refresh_label()
     return true
+
+func _record_quest_reward_spending_from_purchase(amount: int, service_id: String) -> void:
+    if amount <= 0:
+        return
+
+    var quest_funded_amount: int = mini(quest_reward_gold, amount)
+    if quest_funded_amount <= 0:
+        return
+
+    quest_reward_gold -= quest_funded_amount
+    if GameState.has_method("record_quest_reward_spent_in_town"):
+        GameState.record_quest_reward_spent_in_town(quest_funded_amount, service_id, display_name)
+
+    show_floating_text("%dg Quest Gold Spent" % quest_funded_amount, Vector2(0, -72))
 
 func _move_toward_target(delta: float) -> void:
     if not has_target:
@@ -493,11 +551,12 @@ func _refresh_label() -> void:
     if last_purchase_message != "":
         message_line = "\n%s" % last_purchase_message
 
-    name_label.text = "%s Lv.%d\n%s | %dg | HP:%d/%d E:%d/%d\nP:%d G:%d | T:%d/%d%s" % [
+    name_label.text = "%s Lv.%d\n%s | %dg (Q:%d) | HP:%d/%d E:%d/%d\nP:%d G:%d | T:%d/%d%s" % [
         display_name,
         level,
         current_state,
         gold,
+        quest_reward_gold,
         health,
         max_health,
         energy,
